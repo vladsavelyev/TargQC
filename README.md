@@ -2,6 +2,5 @@
 
 ## Requirements
 
-- sambamba
 - bedtools
 - qualimap

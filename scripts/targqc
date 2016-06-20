@@ -13,12 +13,12 @@ from traceback import format_exc
 import GeneAnnotation
 
 from Utils import logger
-from Utils.logger import critical, err, info, warn
+from Utils.logger import critical, err, info, warn, debug
 from Utils.call_process import run
 from Utils.bam_bed_utils import index_bam, prepare_beds, extract_gene_names_and_filter_exons, verify_bam, verify_bed
 from Utils.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
 from Utils.proc_args import read_samples, find_bams, find_fastq_pairs
-from Utils import fai
+import Utils.reference_data as ref
 
 import targqc
 import targqc.config as tc
@@ -111,6 +111,12 @@ options = [
     #     action='store_true',
     #     default=True)
     #  ),
+    (['--no-prep-bed'], dict(
+        dest='prep_bed',
+        help=SUPPRESS_HELP,
+        default=True,
+        action='store_false'
+     )),
     (['-e', '--extended'], dict(
         dest='extended',
         action='store_true',
@@ -137,7 +143,7 @@ options = [
 
 
 def main(args):
-    output_dir, work_dir, bam_by_sample, fastqs_by_sample, target_bed = process_opts()
+    output_dir, work_dir, bam_by_sample, fastqs_by_sample, target_bed, prep_bed = process_opts()
 
     samples = []
     for sname, (l, r) in fastqs_by_sample.items():
@@ -151,29 +157,30 @@ def main(args):
 
     samples.sort(key=lambda _s: _s.key_to_sort())
 
-    gene_keys_list = None
-    if not tc.features_no_genes_bed:
+    if prep_bed:
         info()
-        info('-' * 70)
-        info('Preparing the BED file')
-        tc.features_bed_fpath, tc.features_no_genes_bed, target_bed, seq2c_bed = prepare_beds(
+        debug('-' * 70)
+        info('Preparing input BED file')
+        tc.features_bed_fpath, target_bed, seq2c_bed = prepare_beds(
             work_dir, tc.fai_fpath, tc.features_bed_fpath, target_bed, tc.cds_bed_fpath, reuse=tc.reuse_intermediate)
 
         tc.original_target_bed = tc.features_bed_fpath
-        gene_keys_set, gene_keys_list, target_bed, tc.features_bed_fpath, tc.features_no_genes_bed = \
-            extract_gene_names_and_filter_exons(work_dir, target_bed, tc.features_bed_fpath, tc.features_no_genes_bed,
-                                                reuse=tc.reuse_intermediate)
+        gene_keys_set, gene_keys_list, target_bed, tc.features_bed_fpath = extract_gene_names_and_filter_exons(
+            work_dir, target_bed, tc.features_bed_fpath, reuse=tc.reuse_intermediate)
     else:
         info('The BED file is ready, skipping preparing.')
         gene_keys_set, gene_keys_list, _, _, _ = extract_gene_names_and_filter_exons(
-            work_dir, target_bed, tc.features_bed_fpath, tc.features_no_genes_bed, reuse=tc.reuse_intermediate)
+            work_dir, target_bed, tc.features_bed_fpath, reuse=tc.reuse_intermediate)
     info('-' * 70)
 
-    threads_one_sample = max(1, tc.threads / len(samples))
+    tc.threads_one_sample = max(1, tc.threads / len(samples))
     for sample in samples:
+        sample_work_dir = join(work_dir, sample.name)
+        safe_mkdir(sample_work_dir)
+
         info()
         info('Processing ' + sample.name)
-        summary_report, gene_report = proc_one_sample(work_dir, sample, target_bed, gene_keys_list)
+        summary_report, gene_report = proc_one_sample(sample_work_dir, sample, target_bed, gene_keys_list)
 
         info('')
         info('*' * 70)
@@ -187,6 +194,9 @@ def main(args):
 
     if not tc.debug and work_dir and isdir(work_dir):
         shutil.rmtree(work_dir)
+
+    info()
+    info('Summarizing')
 
 
 def proc_one_sample(work_dir, sample, bed_fpath, gene_keys_list):
@@ -221,21 +231,17 @@ def set_up_dirs(output_dir=None, work_dir=None, log_dir=None):
     """
     output_dir = adjust_path(output_dir or join(os.getcwd(), targqc.targqc_name))
     safe_mkdir(output_dir, 'output_dir')
-    info('Saving results into ' + output_dir)
+    debug('Saving results into ' + output_dir)
 
-    work_dir = set_up_work_dir(output_dir, work_dir=work_dir)
-    set_up_log(log_dir or output_dir)
-
-    return output_dir, work_dir
-
-
-def set_up_work_dir(output_dir, work_dir=None):
     if not work_dir:
         work_dir_name = 'work'
         work_dir = join(output_dir, work_dir_name)
     safe_mkdir(work_dir, 'working directory')
     tc.work_dir = work_dir
-    return work_dir
+
+    set_up_log(log_dir or output_dir)
+
+    return output_dir, work_dir
 
 
 def set_up_log(log_dir):
@@ -252,8 +258,8 @@ def set_up_log(log_dir):
                 os.rename(log_fpath, mv_log_fpath)
         except OSError:
             pass
-    info('log_fpath: ' + log_fpath)
-    info()
+    debug('Logging to ' + log_fpath)
+    debug()
 
 
 def process_opts():
@@ -263,6 +269,11 @@ def process_opts():
     opts, args = parser.parse_args()
 
     tc.debug = logger.is_debug = opts.debug
+
+    output_dir, work_dir = set_up_dirs(opts.output_dir, opts.work_dir, opts.log_dir)
+    debug(' '.join(sys.argv))
+    debug()
+
     tc.parallel = opts.parallel
     tc.threads = opts.threads
     tc.reuse_intermediate = opts.reuse_intermediate
@@ -292,10 +303,6 @@ def process_opts():
             critical('--bwa-prefix is required when running from fastq')
         tc.bwa_prefix = verify_file(opts.bwa_prefix, is_critical=True)
 
-    output_dir, work_dir = set_up_dirs(opts.output_dir, opts.work_dir, opts.log_dir)
-    info(' '.join(sys.argv))
-    info()
-
     tc.downsample_to = opts.downsample_to
     tc.padding = opts.padding
     tc.genome = opts.genome
@@ -305,8 +312,8 @@ def process_opts():
         tc.features_bed_fpath = verify_bed(opts.features, is_critical=True)
         tc.cds_bed_fpath = verify_bed(opts.cds_bed_fpath, is_critical=True)
     elif tc.genome:
-        tc.features_bed_fpath = verify_file(join(dirname(GeneAnnotation.__file__), GeneAnnotation.ANNOTATION.format(genome=tc.genome)))
-        tc.cds_bed_fpath = verify_file(join(dirname(GeneAnnotation.__file__), GeneAnnotation.CDS.format(genome=tc.genome)))
+        tc.features_bed_fpath = GeneAnnotation.get_all_features_canonical(tc.genome)
+        tc.cds_bed_fpath = GeneAnnotation.get_cds(tc.genome)
         if not tc.features_bed_fpath or not tc.cds_bed_fpath:
             critical('Genome ' + tc.genome + ' is not supported. Supported: ' + ', '.join(GeneAnnotation.SUPPORTED_GENOMES))
     else:
@@ -318,20 +325,18 @@ def process_opts():
     bed_fpath = None
     if opts.bed:
         bed_fpath = verify_file(opts.bed, is_critical=True)
-        info('Using amplicons/capture panel ' + bed_fpath)
+        info('Using target BED file ' + bed_fpath)
     elif tc.features_bed_fpath:
-        info('No BED on input; analysing CDS as target')
+        info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
 
     if opts.fai:
         tc.fai_fpath = opts.fai
     elif tc.genome:
-        tc.fai_fpath = verify_file(join(dirname(fai.__file__), fai.FAI.format(genome=tc.genome)))
-        if not tc.fai_fpath:
-            critical('Genome ' + tc.genome + ' is not supported. Supported: ' + ', '.join(fai.SUPPORTED_GENOMES))
+        tc.fai_fpath = ref.get_fai(tc.genome)
     else:
         err('Cannot analyse BED files without --fai or --genome specified')
 
-    return output_dir, work_dir, bam_by_sample, fastqs_by_sample, bed_fpath
+    return output_dir, work_dir, bam_by_sample, fastqs_by_sample, bed_fpath, opts.prep_bed
 
 
 def proc_fastq(work_dir, sample_name, l_fpath, r_fpath, bwa_prefix, downsample_to, dedup=True):

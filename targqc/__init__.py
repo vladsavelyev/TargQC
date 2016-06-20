@@ -4,7 +4,6 @@ from os.path import join, splitext
 
 targqc_repr              = 'TargQC'
 targqc_name              = 'targqc'
-region_report_baseending = '.regions'
 
 qualimap_name                   = 'qualimap'
 qualimap_report_fname           = 'qualimapReport.html'
@@ -41,12 +40,12 @@ class Sample:
         self.min_af = None
 
         self.targqc_dirpath                  = None
-        self.targetcov_html_fpath            = None
-        self.targetcov_json_fpath            = None
-        self.targetcov_detailed_txt          = None
-        self.targetcov_detailed_tsv          = None
-        self.targetcov_norm_depth_vcf_txt    = None
-        self.targetcov_norm_depth_vcf_tsv    = None
+        self.targqc_html_fpath               = None
+        self.targqc_json_fpath               = None
+        self.targqc_region_txt               = None
+        self.targqc_region_tsv               = None
+        self.targqc_norm_depth_vcf_txt       = None
+        self.targqc_norm_depth_vcf_tsv       = None
 
         self.qualimap_dirpath                = None
         self.qualimap_html_fpath             = None
@@ -63,12 +62,12 @@ class Sample:
 
         if dirpath:
             self.targqc_dirpath = dirpath
-            self.targetcov_html_fpath           = join(self.targqc_dirpath, name + '.' + targqc_name + '.html')
-            self.targetcov_json_fpath           = join(self.targqc_dirpath, name + '.' + targqc_name + '.json')
-            self.targetcov_detailed_txt         = join(self.targqc_dirpath, name + '.' + targqc_name + region_report_baseending + '.txt')
-            self.targetcov_detailed_tsv         = join(self.targqc_dirpath, name + '.' + targqc_name + region_report_baseending + '.tsv')
-            self.targetcov_norm_depth_vcf_txt   = None
-            self.targetcov_norm_depth_vcf_tsv   = None
+            self.targqc_html_fpath           = join(self.targqc_dirpath, 'summary.html')
+            self.targqc_json_fpath           = join(self.targqc_dirpath, 'summary.json')
+            self.targqc_region_txt           = join(self.targqc_dirpath, 'regions.txt')
+            self.targqc_region_tsv           = join(self.targqc_dirpath, 'regions.tsv')
+            self.targqc_norm_depth_vcf_txt   = None
+            self.targqc_norm_depth_vcf_tsv   = None
 
         qualimap_dirpath = qualimap_dirpath or join(self.targqc_dirpath, qualimap_name)
 

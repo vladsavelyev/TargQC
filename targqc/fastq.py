@@ -24,7 +24,7 @@ def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_
     l_out_fpath = join(output_dir, add_suffix(basename(fastq_left_fpath), suffix or 'subset'))
     r_out_fpath = join(output_dir, add_suffix(basename(fastq_right_fpath), suffix or 'subset'))
     if tc.reuse_intermediate and verify_file(l_out_fpath, silent=True) and verify_file(r_out_fpath, silent=True):
-        info(l_out_fpath + ' and ' + r_out_fpath + ' exist, reusing.')
+        debug(l_out_fpath + ' and ' + r_out_fpath + ' exist, reusing.')
         return l_out_fpath, r_out_fpath
 
     info('Processing ' + sample_name)

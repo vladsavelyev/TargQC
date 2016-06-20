@@ -64,7 +64,7 @@ def parse_qualimap_sample_report(report_fpath):
                 value_by_metric['Read ' + metric_infix + ' length'] = value
         else:
             if metric_name not in metric_names:
-                warn('Qualimap metric "' + metric_name + '" is not in allowed metric_names')
+                # warn('Qualimap metric "' + metric_name + '" is not in allowed metric_names')
                 return
 
             num_chars = []
