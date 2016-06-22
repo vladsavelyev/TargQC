@@ -15,7 +15,7 @@ import GeneAnnotation
 from Utils import logger
 from Utils.logger import critical, err, info, warn, debug
 from Utils.call_process import run
-from Utils.bam_bed_utils import index_bam, prepare_beds, extract_gene_names_and_filter_exons, verify_bam, verify_bed
+from Utils.bam_bed_utils import index_bam, extract_gene_names_and_filter_exons, verify_bam, verify_bed
 from Utils.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
 from Utils.proc_args import read_samples, find_bams, find_fastq_pairs
 import Utils.reference_data as ref
@@ -25,7 +25,7 @@ import targqc.config as tc
 from targqc import Sample
 from targqc.cov import make_targqc_reports
 from targqc.fastq import align, downsample
-
+from targqc.prep_bed import prepare_beds
 
 options = [
     (['--bam'], dict(dest='bam', help='path to the BAM file to analyse',)),
@@ -165,11 +165,11 @@ def main(args):
             work_dir, tc.fai_fpath, tc.features_bed_fpath, target_bed, tc.cds_bed_fpath, reuse=tc.reuse_intermediate)
 
         tc.original_target_bed = tc.features_bed_fpath
-        gene_keys_set, gene_keys_list, target_bed, tc.features_bed_fpath = extract_gene_names_and_filter_exons(
+        gene_keys_set, gene_keys_list, genes_not_in_refseq, target_bed, tc.features_bed_fpath = extract_gene_names_and_filter_exons(
             work_dir, target_bed, tc.features_bed_fpath, reuse=tc.reuse_intermediate)
     else:
         info('The BED file is ready, skipping preparing.')
-        gene_keys_set, gene_keys_list, _, _, _ = extract_gene_names_and_filter_exons(
+        gene_keys_set, gene_keys_list, genes_not_in_refseq, _, _ = extract_gene_names_and_filter_exons(
             work_dir, target_bed, tc.features_bed_fpath, reuse=tc.reuse_intermediate)
     info('-' * 70)
 
@@ -180,7 +180,7 @@ def main(args):
 
         info()
         info('Processing ' + sample.name)
-        summary_report, gene_report = proc_one_sample(sample_work_dir, sample, target_bed, gene_keys_list)
+        summary_report, gene_report = proc_one_sample(sample_work_dir, sample, target_bed, gene_keys_list, genes_not_in_refseq)
 
         info('')
         info('*' * 70)
@@ -199,7 +199,7 @@ def main(args):
     info('Summarizing')
 
 
-def proc_one_sample(work_dir, sample, bed_fpath, gene_keys_list):
+def proc_one_sample(work_dir, sample, bed_fpath, gene_keys_list, genes_not_in_refseq):
     if not sample.bam and sample.l_fpath and sample.r_fpath:
         sample.bam = proc_fastq(
             sample.name, verify_file(sample.l_fpath), verify_file(sample.r_fpath),
@@ -210,8 +210,7 @@ def proc_one_sample(work_dir, sample, bed_fpath, gene_keys_list):
     index_bam(sample.bam)
 
     # picard_ins_size_hist(cnf, sample, bam_fpath, output_dir)
-    avg_depth, gene_by_name_and_chrom, reports = make_targqc_reports(
-        work_dir, sample, bed_fpath, gene_keys_list)
+    avg_depth, gene_by_name_and_chrom, reports = make_targqc_reports(work_dir, sample, bed_fpath, gene_keys_list)
 
     # #if cnf.extended:
     # try:
