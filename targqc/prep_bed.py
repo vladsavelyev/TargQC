@@ -47,52 +47,11 @@ def prepare_beds(work_dir, fai_fpath=None, features_bed=None, target_bed=None, s
         target_bed = sort_bed(target_bed, work_dir=work_dir, fai_fpath=fai_fpath, reuse=reuse)
 
         cols = count_bed_cols(target_bed)
-
         if not features_bed:
             warn('Cannot re-annotate BED file without features')
         else:
             info('Annotating target...')
             target_bed = annotate(target_bed, features_bed, add_suffix(target_bed, 'ann'), reuse=reuse)
 
-    def remove_no_anno(l, i):
-        if l.split('\t')[3].strip() == '.': return None
-        else: return l
-
-    if not seq2c_bed and target_bed or seq2c_bed and seq2c_bed == ori_target_bed_path:
-        debug('Seq2C bed: removing regions with no gene annotation...')
-        seq2c_bed = target_bed
-        seq2c_bed = iterate_file(work_dir, seq2c_bed, remove_no_anno, suffix='filt', reuse=reuse)
-
-    elif seq2c_bed:
-        debug()
-        debug('Remove comments in Seq2C bed...')
-        seq2c_bed = remove_comments(work_dir, seq2c_bed, reuse=reuse)
-
-        debug()
-        debug('Sorting Seq2C bed...')
-        seq2c_bed = sort_bed(seq2c_bed, work_dir=work_dir, fai_fpath=fai_fpath, reuse=reuse)
-
-        cols = count_bed_cols(seq2c_bed)
-        if cols < 4:
-            debug()
-            debug('Number columns in SV bed is ' + str(cols) + '. Annotating amplicons with gene names...')
-            seq2c_bed = annotate(seq2c_bed, features_bed, add_suffix(target_bed, 'ann'), reuse=reuse)
-        elif 8 > cols > 4:
-            seq2c_bed = cut(seq2c_bed, 4)
-        elif cols > 8:
-            seq2c_bed = cut(seq2c_bed, 8)
-        debug('Filtering non-annotated entries in seq2c bed')
-        seq2c_bed = iterate_file(work_dir, seq2c_bed, remove_no_anno, suffix='filt', reuse=reuse)
-
-    else:
-        seq2c_bed = verify_bed(cds_bed_fpath)
-
-    # if target_bed:
-    #     info()
-        # info('Merging amplicons...')
-        # target_bed = group_and_merge_regions_by_gene(cnf, target_bed, keep_genes=False)
-
-        # info('Sorting target by (chrom, gene name, start)')
-        # target_bed = sort_bed(target_bed, work_dir=work_dir, fai_fpath=fai_fpath, reuse=reuse)
 
     return features_bed, target_bed, seq2c_bed

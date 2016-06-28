@@ -99,7 +99,7 @@ def align(work_dir, sample_name, l_fpath, r_fpath, sambamba, bwa, seqtk, samblas
     bam_fpath = splitext(sam_fpath)[0] + '.bam'
     sorted_bam_fpath = add_suffix(bam_fpath, 'sorted')
 
-    bwa_cmdline = '{seqtk} mergepe {l_fpath} {r_fpath} | {bwa} mem {bwa_prefix} -'.format(**locals())
+    bwa_cmdline = '{bwa} mem {bwa_prefix} {l_fpath} {r_fpath}'.format(**locals())
     run(bwa_cmdline, output_fpath=sam_fpath)
 
     if dedup:

@@ -9,8 +9,10 @@ qualimap_name                   = 'qualimap'
 qualimap_report_fname           = 'qualimapReport.html'
 qualimap_genome_results_fname   = 'genome_results.txt'
 qualimap_raw_data_dirname       = 'raw_data_qualimapReport'
-qualimap_ishist_fsubpath        = join(qualimap_raw_data_dirname, 'insert_size_histogram.txt')
-qualimap_covhist_fsubpath       = join(qualimap_raw_data_dirname, 'coverage_histogram.txt')
+
+qualimap_ishist_fname           = 'insert_size_histogram.txt'
+qualimap_covhist_fname          = 'coverage_histogram.txt'
+qualimap_gchist_fname           = 'mapped_reads_gc-content_distribution.txt'
 
 picard_name              = 'picard'
 picard_ishist_fname      = 'picard_ishist.txt'
@@ -52,6 +54,7 @@ class Sample:
         self.qualimap_genome_results_fpath   = None
         self.qualimap_ins_size_hist_fpath    = None
         self.qualimap_cov_hist_fpath         = None
+        self.qualimap_gc_hist_fpath          = None
 
         self.fastqc_dirpath                  = None
         self.fastqc_html_fpath               = None
@@ -62,6 +65,7 @@ class Sample:
 
         if dirpath:
             self.targqc_dirpath = dirpath
+            self.targqc_txt_fpath            = join(self.targqc_dirpath, 'summary.txt')
             self.targqc_html_fpath           = join(self.targqc_dirpath, 'summary.html')
             self.targqc_json_fpath           = join(self.targqc_dirpath, 'summary.json')
             self.targqc_region_txt           = join(self.targqc_dirpath, 'regions.txt')
@@ -70,13 +74,15 @@ class Sample:
             self.targqc_norm_depth_vcf_tsv   = None
 
         qualimap_dirpath = qualimap_dirpath or join(self.targqc_dirpath, qualimap_name)
-
         if qualimap_dirpath:
             self.qualimap_dirpath               = qualimap_dirpath
             self.qualimap_html_fpath            = join(self.qualimap_dirpath, qualimap_report_fname)
             self.qualimap_genome_results_fpath  = join(self.qualimap_dirpath, qualimap_report_fname)
-            self.qualimap_ins_size_hist_fpath   = join(self.qualimap_dirpath, qualimap_ishist_fsubpath)
-            self.qualimap_cov_hist_fpath        = join(self.qualimap_dirpath, qualimap_covhist_fsubpath)
+            self.qualimap_raw_dirpath           = join(self.qualimap_dirpath, qualimap_raw_data_dirname)
+
+            self.qualimap_ins_size_hist_fpath   = join(self.qualimap_raw_dirpath, qualimap_ishist_fname)
+            self.qualimap_cov_hist_fpath        = join(self.qualimap_raw_dirpath, qualimap_covhist_fname)
+            self.qualimap_gc_hist_fpath         = join(self.qualimap_raw_dirpath, qualimap_gchist_fname)
 
         self.picard_dirpath                 = join(self.targqc_dirpath, picard_name)
         self.picard_ins_size_hist_txt_fpath = join(self.picard_dirpath, picard_ishist_fname)
