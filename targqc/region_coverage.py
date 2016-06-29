@@ -6,7 +6,7 @@ from os.path import dirname
 
 import targqc.config as tc
 from Utils.Region import Region, GeneInfo
-from Utils.bam_bed_utils import sambamba_depth
+from Utils.sambamba import sambamba_depth
 from Utils.call_process import run
 from Utils.file_utils import intermediate_fname, verify_file, safe_mkdir
 from Utils.logger import info, debug

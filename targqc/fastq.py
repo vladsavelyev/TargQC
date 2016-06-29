@@ -4,7 +4,7 @@ import gzip
 from itertools import izip, product
 from os.path import splitext, dirname, join, basename
 
-from Utils.bam_bed_utils import index_bam
+from Utils.sambamba import index_bam
 from Utils.call_process import run
 from Utils.file_utils import open_gzipsafe, file_transaction, file_exists, intermediate_fname, verify_file, add_suffix, \
     splitext_plus, safe_mkdir, which

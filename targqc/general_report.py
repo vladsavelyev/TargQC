@@ -1,103 +1,93 @@
 # coding=utf-8
 
-import math
 from collections import OrderedDict
 from os.path import join, abspath, realpath, dirname, relpath
 
-import targqc
 import targqc.config as tc
 from targqc.qualimap.report_parser import parse_qualimap_sample_report
 from targqc.qualimap.runner import run_qualimap
 
 from Utils.Region import calc_bases_within_threshs, calc_rate_within_normal, Region, GeneInfo
-from Utils.bam_bed_utils import index_bam, get_padded_bed_file, number_mapped_reads_on_target, calc_region_number, \
-    intersect_bed, calc_sum_of_regions, number_of_mapped_reads, count_bed_cols, \
-    sambamba_depth
-from Utils.call_process import run
+from Utils.bam_bed_utils import get_padded_bed_file, calc_region_number, intersect_bed, calc_sum_of_regions, count_bed_cols
+from Utils.sambamba import index_bam, number_mapped_reads_on_target, number_of_mapped_reads, sambamba_depth
 from Utils.file_utils import intermediate_fname, verify_file, safe_mkdir
 from Utils.logger import critical, info, err, warn, debug
-from Utils.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport, PerRegionSampleReport, \
-    write_tsv_rows, write_txt_rows
+from Utils.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport
 
 
 def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
     sections = [
         ReportSection('reads', 'Reads', [
-            Metric('Reads', short_name='Reads'),
-            Metric('Mapped reads', short_name='Mapped', description='samtools view -c -F 4', ok_threshold='Percentage of mapped reads', bottom=0, multiqc=dict(hidden=True)),
-            Metric('Percentage of mapped reads', short_name='Mapped', unit='%', ok_threshold=0.98, bottom=0),
-            Metric('Properly paired mapped reads percent', short_name='Mapped paired', unit='%', description='Pecent of properly paired mapped reads.', ok_threshold=0.9, bottom=0),
-            Metric('Properly paired reads percent', short_name='Paired', unit='%', description='Pecent of properly paired reads (-f 2).', ok_threshold=0.9, bottom=0),
-            Metric('Duplication rate', short_name='Dup rate', description='Percent of mapped reads (-F 4), marked as duplicates (-f 1024)', quality='Less is better', unit='%'),
-            Metric('Read min length', short_name='Min len', description='Read minimum length', is_hidden=True, multiqc=dict(hidden=True)),
-            Metric('Read max length', short_name='Max len', description='Read maximum length'),
-            Metric('Read mean length', short_name='Avg read len', description='Read average length'),
-            Metric('Sex', short_name='sex', is_hidden=True),
-            Metric('Median insert size', short_name='IS', description='Median insert size'),
-            Metric('Median GC', short_name='GC', description='Median GC-content', unit='%'),
+            Metric('Reads',                                short_name='Reads',        multiqc=dict(order=1, kind='reads', min=0)),
+            Metric('Mapped reads',                         short_name='Mapped',       multiqc=dict(title='Mapped reads', hidden=True, order=2, kind='reads', min=0),  ok_threshold='Percentage of mapped reads', bottom=0, description='samtools view -c -F 4'),
+            Metric('Percentage of mapped reads',           short_name='%',            multiqc=dict(title='Mapped', order=3, kind='reads'),                  unit='%', ok_threshold=0.98, bottom=0),
+            Metric('Properly paired mapped reads percent', short_name='Paired',       multiqc=dict(order=4, kind='reads'),                                  unit='%', ok_threshold=0.9,  bottom=0, description='Pecent of properly paired mapped reads.'),
+            Metric('Duplication rate',                     short_name='Dups',         multiqc=dict(order=5, kind='reads'),                                  unit='%', quality='Less is better',    description='Percent of mapped reads (-F 4), marked as duplicates (-f 1024)'),
+            Metric('Read min length',                      short_name='Min len',      multiqc=dict(title='Read min len', hidden=True, kind='reads', min=0), unit='bp',                             description='Read minimum length', is_hidden=True),
+            Metric('Read mean length',                     short_name='Avg read len', multiqc=dict(title='Read avg len', order=22, kind='reads', min=0),    unit='bp',                             description='Read average length'),
+            Metric('Read max length',                      short_name='Max len',      multiqc=dict(title='Read max len', order=23, kind='reads', min=0),    unit='bp',                             description='Read maximum length'),
+            Metric('Median insert size',                   short_name='IS',           multiqc=dict(title='Med. IS', order=21, kind='reads', min=0),         unit='bp',                             description='Median insert size'),
+            Metric('Median GC',                            short_name='GC',           multiqc=dict(title='Med. GC', order=21, kind='other'),                unit='%',                              description='Med. GC-content', ),
         ]),
     ]
     if not is_wgs:
         sections.extend([
             ReportSection('target_metrics', 'Target coverage', [
-                Metric('Covered bases in target', short_name='Trg covered', multiqc=dict(hidden=True, name='Target covered bases'), description='Target bases covered by at least 1 read', unit='bp'),
-                Metric('Percentage of target covered by at least 1 read', short_name='%', multiqc=dict(name='Target covered'), unit='%'),
-                Metric('Percentage of reads mapped on target', short_name='reads on trg', unit='%', description='Percentage of unique mapped reads overlapping target at least by 1 base'),
-                Metric('Percentage of reads mapped off target', short_name='reads off trg', unit='%', quality='Less is better', description='Percentage of unique mapped reads that don\'t overlap target even by 1 base'),
-                Metric('Percentage of reads mapped on padded target', short_name='reads on trg' + (' %dbp pad' % padding if padding is not None else ' w/ padding'), unit='%', description='Percentage of reads that overlap target at least by 1 base. Should be 1-2% higher.'),
-                Metric('Percentage of usable reads', short_name='Usable reads', unit='%', description='Share of unique reads mapped on target in the total number of original reads (reported in the very first column Reads'),
-                Metric('Read bases mapped on target', short_name='Read bp on trg', unit='bp', multiqc=dict(hidden=True)),
+                Metric('Covered bases in target',                         short_name='Trg covered',                         multiqc=dict(hidden=True, title='Trg cov bases', kind='cov'),   unit='bp',                          description='Target bases covered by at least 1 read'),
+                Metric('Percentage of target covered by at least 1 read', short_name='%',                                   multiqc=dict(title='Trg cov', order=14, kind='cov'),            unit='%'),
+                Metric('Percentage of reads mapped on target',            short_name='Reads on trg',                        multiqc=dict(title='On trg', order=10, kind='trg'),             unit='%',                           description='Percentage of unique mapped reads overlapping target at least by 1 base'),
+                Metric('Percentage of reads mapped off target',           short_name='Reads off trg',                       multiqc=dict(title='Off trg', order=11, kind='trg'),            unit='%', quality='Less is better', description='Percentage of unique mapped reads that don\'t overlap target even by 1 base'),
+                Metric('Percentage of reads mapped on padded target',     short_name='On trg &#177;' + str(padding) + 'bp', multiqc=dict(order=12, kind='trg'), unit='%',                                                       description='Percentage of reads that overlap target at least by 1 base. Should be 1-2% higher.'),
+                Metric('Percentage of usable reads',                      short_name='Usable reads',                        multiqc=dict(order=13, title='Usable', kind='trg'),             unit='%',                           description='Share of unique reads mapped on target in the total number of original reads (reported in the very first column Reads'),
+                Metric('Read bases mapped on target',                     short_name='Read bp on trg',                      multiqc=dict(hidden=True, kind='cov'),                          unit='bp'),
             ]),
         ])
     else:
         sections.extend([
             ReportSection('target_metrics_wgs', 'Genome coverage', [
-                Metric('Covered bases in genome', short_name='Genome covered', multiqc=dict(name='Genome bases covered', hidden=True), description='Genome bases covered by at least 1 read', unit='bp'),
-                Metric('Percentage of genome covered by at least 1 read', short_name='%', multiqc=dict(name='Target covered', hidden=True), unit='%'),
-                Metric('Covered bases in exome', short_name='CDS covered', multiqc=dict(name='CDS bases covered', hidden=True), description='Covered CDS bases. CDS coordinates are taken from RefSeq', unit='bp'),
-                Metric('Percentage of exome covered by at least 1 read', short_name='%', multiqc=dict(name='CDS covered'), description='Percentage of CDS covered by at least 1 read. CDS coordinates are taken from RefSeq', unit='%'),
-                Metric('Percentage of reads mapped on exome', short_name='Reads on CDS', multiqc=dict(name='On CDS'), unit='%', description='Percentage of reads mapped on CDS. CDS coordinates are taken from RefSeq'),
-                Metric('Percentage of reads mapped off exome', short_name='Off CDS', unit='%', quality='Less is better', description='Percentage of reads mapped outside of CDS. CDS coordinates are taken from RefSeq'),
-                Metric('Percentage of usable reads', short_name='Usable reads', unit='%', description='Share of mapped unique reads in all reads (reported in the very first column Reads)'),
+                Metric('Covered bases in genome',                         short_name='Genome covered', multiqc=dict(title='Genome cov bases', hidden=True, kind='cov'),     unit='bp',                          description='Genome bases covered by at least 1 read'),
+                Metric('Percentage of genome covered by at least 1 read', short_name='%',              multiqc=dict(title='Genome cov', hidden=True, order=13, kind='cov'), unit='%'),
+                Metric('Covered bases in exome',                          short_name='CDS covered',    multiqc=dict(title='CDS cov bases', hidden=True, kind='cov'),        unit='bp',                          description='Covered CDS bases. CDS coordinates are taken from RefSeq'),
+                Metric('Percentage of exome covered by at least 1 read',  short_name='%',              multiqc=dict(title='CDS cov', order=14, kind='cov'),                 unit='%',                           description='Percentage of CDS covered by at least 1 read. CDS coordinates are taken from RefSeq'),
+                Metric('Percentage of reads mapped on exome',             short_name='Reads on CDS',   multiqc=dict(title='On CDS', order=10, kind='trg'),                  unit='%',                           description='Percentage of reads mapped on CDS. CDS coordinates are taken from RefSeq'),
+                Metric('Percentage of reads mapped off exome',            short_name='Off CDS',        multiqc=dict(order=11, kind='trg'),                                  unit='%', quality='Less is better', description='Percentage of reads mapped outside of CDS. CDS coordinates are taken from RefSeq'),
+                Metric('Percentage of usable reads',                      short_name='Usable reads',   multiqc=dict(order=12, title='Usable', kind='trg'),                  unit='%',                           description='Share of mapped unique reads in all reads (reported in the very first column Reads)'),
             ]),
         ])
 
     trg_name = 'target' if not is_wgs else 'genome'
-    depth_section = ReportSection('depth_metrics', ('Target' if not is_wgs else 'Genome') + ' coverage depth', [
-        Metric('Median ' + trg_name + ' coverage depth', short_name='Median', multiqc=dict(name='Depth')),
-        Metric('Average ' + trg_name + ' coverage depth', short_name='Avg', multiqc=dict(name='Avg')),
-        Metric('Std. dev. of ' + trg_name + ' coverage depth', short_name='Std dev', quality='Less is better'),
-        # Metric('Minimal ' + trg_name + ' coverage depth', short_name='Min', is_hidden=True),
-        # Metric('Maximum ' + trg_name + ' coverage depth', short_name='Max', is_hidden=True),
-        Metric('Percentage of ' + trg_name + ' within 20% of mean depth', short_name='&#177;20% avg', unit='%')
+    depth_section = ReportSection('section_name', ('Target' if not is_wgs else 'Genome') + ' coverage depth', [
+        Metric('Median ' + trg_name + ' coverage depth',                  short_name='Median',         multiqc=dict(title='Depth', order=6, kind='cov', min=0)),
+        Metric('Average ' + trg_name + ' coverage depth',                 short_name='Avg',            multiqc=dict(title='Avg depth', order=7, kind='cov', min=0)),
+        Metric('Std. dev. of ' + trg_name + ' coverage depth',            short_name='Std dev',        multiqc=dict(order=8, kind='cov', min=0),                                quality='Less is better'),
+        Metric('Percentage of ' + trg_name + ' within 20% of mean depth', short_name='&#177;20% avg',  multiqc=dict(order=9, kind='cov'),                             unit='%')
     ])
     for depth in depth_thresholds:
         name = 'Part of ' + trg_name + ' covered at least by ' + str(depth) + 'x'
-        depth_section.add_metric(Metric(name, short_name=str(depth) + 'x', description=name, unit='%', multiqc=dict(hidden=True)))
+        depth_section.add_metric(Metric(name,                             short_name=str(depth) + 'x', multiqc=dict(hidden=True, kind='cov'),                         unit='%', description=name))
     sections.append(depth_section)
 
     sections.append(
-        ReportSection('qualimap', 'Qualimap stats' + ('' if is_wgs else ' within the target'), [
-            Metric('Mean Mapping Quality',  'Mean MQ',            'Mean mapping quality, inside of regions'),
-            Metric('Mismatches',            'Mismatches',         'Mismatches, inside of regions', quality='Less is better', multiqc=dict(hidden=True)),
-            Metric('Insertions',            'Insertions',         'Insertions, inside of regions', quality='Less is better', multiqc=dict(hidden=True)),
-            Metric('Deletions',             'Deletions',          'Deletions, inside of regions', quality='Less is better', multiqc=dict(hidden=True)),
-            Metric('Homopolymer indels',    'Homopolymer indels', 'Percentage of homopolymer indels, inside of regions', quality='Less is better', multiqc=dict(hidden=True)),
-            Metric('Qualimap',              'Qualimap report',    'Qualimap report', multiqc=dict(hidden=True)),
+        ReportSection('other', 'Other stats' + ('' if is_wgs else ' within the target'), [
+            Metric('Mean Mapping Quality',  short_name='Mean MQ',            multiqc=dict(kind='other', min=0),                         description='Mean mapping quality, inside of regions'),
+            Metric('Mismatches',            short_name='Mismatches',         multiqc=dict(hidden=True, kind='other', min=0),            description='Mismatches, inside of regions',                       quality='Less is better'),
+            Metric('Insertions',            short_name='Insertions',         multiqc=dict(hidden=True, kind='other', min=0),            description='Insertions, inside of regions',                       quality='Less is better'),
+            Metric('Deletions',             short_name='Deletions',          multiqc=dict(hidden=True, kind='other', min=0),            description='Deletions, inside of regions',                        quality='Less is better'),
+            Metric('Homopolymer indels',    short_name='Homopolymer indels', multiqc=dict(hidden=True, kind='other', min=0),            description='Percentage of homopolymer indels, inside of regions', quality='Less is better'),
+            Metric('Qualimap',              short_name='Qualimap report',    multiqc=dict(hidden=True, kind='other'),                   description='Qualimap report'),
+            Metric('Sex',                   short_name='sex',                multiqc=dict(order=20,    kind='other'), is_hidden=True),
         ])
     )
 
     ms = MetricStorage(
         general_section=ReportSection('general_section', '', [
-            Metric('Target', short_name='Target', common=True),
-            Metric('Reference size', short_name='Reference bp', unit='bp', common=True),
-            # Metric('Target ready', short_name='Target ready', common=True),
-            Metric('Regions in target', short_name='Regions in target', common=True),
-            Metric('Bases in target', short_name='Target bp', unit='bp', common=True),
+            Metric('Target',                  short_name='Target',                            common=True),
+            Metric('Reference size',          short_name='Reference bp', unit='bp',           common=True),
+            Metric('Regions in target',       short_name='Regions in target',                 common=True),
+            Metric('Bases in target',         short_name='Target bp', unit='bp',              common=True),
             Metric('Percentage of reference', short_name='Percentage of reference', unit='%', common=True),
-            # Metric('Genes', short_name='Genes', common=True),
-            Metric('Genes in target', short_name='Genes in target', common=True),
-            Metric('Median human GC', short_name='Median human GC content', unit='%', common=True),
+            Metric('Genes in target',         short_name='Genes in target',                   common=True),
+            Metric('Scope',                   short_name='Scope',                             common=True, is_hidden=True),
         ]),
         sections=sections
     )
@@ -437,16 +427,15 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
         total_paired_reads_pecent = 1.0 * (reads_stats['mapped_paired'] or 0) / reads_stats['total'] if reads_stats['total'] else None
         assert total_paired_reads_pecent <= 1.0 or total_paired_reads_pecent is None, str(total_paired_reads_pecent)
         report.add_record('Properly paired mapped reads percent', total_paired_reads_pecent)
-    if reads_stats.get('paired') is not None:
-        total_paired_reads_pecent = 1.0 * (reads_stats['paired'] or 0) / reads_stats['total'] if reads_stats['total'] else None
-        assert total_paired_reads_pecent <= 1.0 or total_paired_reads_pecent is None, str(total_paired_reads_pecent)
-        report.add_record('Properly paired reads percent', total_paired_reads_pecent)
+    # if reads_stats.get('paired') is not None:
+    #     total_paired_reads_pecent = 1.0 * (reads_stats['paired'] or 0) / reads_stats['total'] if reads_stats['total'] else None
+    #     assert total_paired_reads_pecent <= 1.0 or total_paired_reads_pecent is None, str(total_paired_reads_pecent)
+    #     report.add_record('Properly paired reads percent', total_paired_reads_pecent)
     # if dedup_bam_stats:
     # dup_rate = 1 - (1.0 * dedup_bam_stats['mapped'] / bam_stats['mapped']) if bam_stats['mapped'] else None
     report.add_record('Duplication rate', reads_stats['dup_rate'])
     # report.add_record('Dedupped mapped reads', reads_stats['mapped'] - reads_stats[''])
     report.add_record('Median GC', reads_stats['median_gc'])
-    report.add_record('Median human GC', reads_stats['median_human_gc'])
     report.add_record('Median insert size', reads_stats['median_ins_size'])
 
     info('')
@@ -462,10 +451,12 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
         report.add_record('Bases in target', target_info.bases_num)
         report.add_record('Percentage of reference', target_info.fraction)
         report.add_record('Regions in target', target_info.regions_num)
+        report.add_record('Scope', 'targeted')
     else:
         info('* Genome coverage statistics *')
         report.add_record('Target', 'whole genome')
         report.add_record('Reference size', target_info.bases_num)
+        report.add_record('Scope', 'WGS')
 
     report.add_record('Genes in target', target_info.genes_num)
 
