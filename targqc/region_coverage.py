@@ -15,8 +15,6 @@ from Utils.reporting.reporting import ReportSection, Metric, MetricStorage, PerR
 
 
 def make_per_gene_report(work_dir, sample, target_bed, features_bed, gene_by_name_and_chrom, sample_avg_depth):
-    info('-' * 70)
-    info('Detailed exon-level report')
     per_gene_report = None
     if tc.reuse_intermediate and verify_file(sample.targqc_region_tsv, silent=True):
         debug(sample.targqc_region_tsv + ' exists, reusing')
@@ -97,7 +95,6 @@ def get_detailed_metric_storage(depth_threshs):
             for thresh in depth_threshs
         ])]
     )
-
 
 
 def _sambamba_depth_to_regions(sambamba_depth_output_fpath, sample_name, target_type, depth_thresholds):

@@ -538,10 +538,11 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
     report.add_record('Deletions', mm_indels_stats['deletions'])
     report.add_record('Homopolymer indels', mm_indels_stats['homo_indels'])
 
+    info()
+    info('Saving reports...')
     report.save_json(sample.targqc_json_fpath)
     report.save_txt(sample.targqc_txt_fpath)
-    report.save_html(sample.targqc_html_fpath, caption='Target coverage statistics for ' + sample.name, debug=tc.debug)
-    info()
-    info('Saved to ')
-    info('  ' + report.txt_fpath)
+    report.save_html(sample.targqc_html_fpath, caption='Target coverage statistics for ' + sample.name, is_debug=tc.debug)
+    debug()
+    debug('Saved to ' + dirname(report.txt_fpath))
     return report

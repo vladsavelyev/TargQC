@@ -14,7 +14,10 @@ dedup = True
 
 reuse_intermediate = False
 debug = False
-parallel = 'threaded'  # options: threaded, sge
+
+scheduler = None
+queue = None
+resources = []
 threads = 1
 threads_one_sample = 1
 

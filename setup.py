@@ -2,23 +2,22 @@
 
 from setuptools import setup, find_packages
 
-version = '0.1-dev'
+version = '0.1'
 
 print("""-----------------------------------
  Installing TargQC version {}
 -----------------------------------
-
 """.format(version))
 
 setup(
     name='targqc',
     version=version,
     author='Vlad Saveliev',
-    author_email='phil.ewels@scilifelab.se',
-    description='Create aggregate bioinformatics analysis reports across many samples and tools',
+    author_email='vladislav.sav@gmail.com',
+    description='Target coverage evaluation tool',
     long_description=__doc__,
     keywords='bioinformatics',
-    # url='http://',
+    url='https://github.com/vladsaveliev/TargQC',
     download_url='https://github.com/vladsaveliev/TargQC/releases',
     license='GPLv3',
     packages=find_packages(),
@@ -28,7 +27,7 @@ setup(
     install_requires=[
         'pybedtools',
         'pysam',
-        # 'simplejson',
+        'ipython-cluster-helper',
         # 'pyyaml',
         # 'click',
     ],
