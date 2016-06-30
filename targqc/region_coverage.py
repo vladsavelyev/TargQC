@@ -26,19 +26,36 @@ def make_per_gene_report(work_dir, sample, target_bed, features_bed, gene_by_nam
     return per_gene_report
 
 
+def _get_values_from_row(fields, cols):
+    return [fields[col] if col else None for col in cols]
+
+
 def _parse_report(sample, gene_by_name_and_chrom):
     rep = PerRegionSampleReport()
     rep.txt_fpath = sample.targqc_region_txt
     rep.tsv_fpath = sample.targqc_region_tsv
 
     with open(sample.targqc_region_tsv) as f:
+        min_depth_col = None
+        median_depth_col = None
+        avg_depth_col = None
+        std_dev_col = None
+        wn_20_pcnt_col = None
         for l in f:
             rep.rows.append(1)
             fs = l.strip().split('\t')
 
-            if len(fs) < 13 or l.startswith('#'):
+            if l.startswith('#'):
+                if len(fs) > 9:
+                    min_depth_col = fs.index('Min depth') if 'Min depth' in fs else min_depth_col
+                    median_depth_col = fs.index('Median depth') if 'Median depth' in fs else median_depth_col
+                    avg_depth_col = fs.index('Ave depth') if 'Ave depth' in fs else avg_depth_col
+                    std_dev_col = fs.index('Std dev') if 'Std dev' in fs else std_dev_col
+                    wn_20_pcnt_col = fs.index('W/n 20% of median depth') if 'W/n 20% of median depth' in fs else wn_20_pcnt_col
                 continue
-            chrom, start, end, size, gene_name, strand, feature, biotype, transcript_id, min_depth, avg_depth, std_dev, wn20ofmean = fs[:13]
+            chrom, start, end, size, gene_name, strand, feature, biotype, transcript_id = fs[:9]
+            min_depth, median_depth, avg_depth, std_dev, wn20ofmedian = \
+                _get_values_from_row(fs, [min_depth_col, median_depth_col, avg_depth_col, std_dev_col, wn_20_pcnt_col])
 
             if gene_name not in ('.', '', None):
                 region = Region(gene_name=gene_name, transcript_id=transcript_id, exon_num=None,
@@ -47,9 +64,10 @@ def _parse_report(sample, gene_by_name_and_chrom):
                                 end=int(end) if end not in ('.', '', None) else None,
                                 size=int(size) if size not in ('.', '', None) else None,
                                 min_depth=float(min_depth) if min_depth not in ('.', '', None) else None,
+                                median_depth=float(median_depth) if median_depth not in ('.', '', None) else None,
                                 avg_depth=float(avg_depth) if avg_depth not in ('.', '', None) else None,
                                 std_dev=float(std_dev) if std_dev not in ('.', '', None) else None,
-                                rate_within_normal=float(wn20ofmean) if wn20ofmean and wn20ofmean not in ('.', '', None) else None, )
+                                rate_within_normal=float(wn20ofmedian) if wn20ofmedian and wn20ofmedian not in ('.', '', None) else None, )
                 region.sample_name = gene_by_name_and_chrom[(gene_name, chrom)].sample_name
                 depth_thresholds = tc.depth_thresholds
                 rates_within_threshs = OrderedDict((depth, None) for depth in depth_thresholds)
@@ -66,6 +84,7 @@ def _parse_report(sample, gene_by_name_and_chrom):
                     gene_by_name_and_chrom[(gene_name, chrom)].strand = region.strand
                     gene_by_name_and_chrom[(gene_name, chrom)].avg_depth = region.avg_depth
                     gene_by_name_and_chrom[(gene_name, chrom)].min_depth = region.min_depth
+                    gene_by_name_and_chrom[(gene_name, chrom)].median_depth = region.median_depth
                     gene_by_name_and_chrom[(gene_name, chrom)].rates_within_threshs = region.rates_within_threshs
     return rep
 
@@ -88,7 +107,7 @@ def get_detailed_metric_storage(depth_threshs):
             Metric('Min depth'),
             Metric('Ave depth'),
             Metric('Std dev', description='Coverage depth standard deviation'),
-            Metric('W/n 20% of ave depth', description='Percentage of the region that lies within 20% of an avarage depth.', unit='%'),
+            Metric('W/n 20% of median depth', description='Percentage of the region that lies within 20% of an median depth.', unit='%'),
             # Metric('Norm depth', description='Ave region depth devided by median depth of sample'),
         ] + [
             Metric('{}x'.format(thresh), description='Bases covered by at least {} reads'.format(thresh), unit='%')
@@ -100,8 +119,10 @@ def get_detailed_metric_storage(depth_threshs):
 def _sambamba_depth_to_regions(sambamba_depth_output_fpath, sample_name, target_type, depth_thresholds):
     read_count_col = None
     mean_cov_col = None
+    median_cov_col = None
     min_depth_col = None
     std_dev_col = None
+    wn_20_pcnt_col = None
 
     regions = []
     #####################################
@@ -115,8 +136,10 @@ def _sambamba_depth_to_regions(sambamba_depth_output_fpath, sample_name, target_
                 fs = line.split('\t')
                 read_count_col = fs.index('readCount')
                 mean_cov_col = fs.index('meanCoverage')
+                median_cov_col = fs.index('medianCoverage') if 'medianCoverage' in fs else None
                 min_depth_col = fs.index('minDepth') if 'minDepth' in fs else None
                 std_dev_col = fs.index('stdDev') if 'stdDev' in fs else None
+                wn_20_pcnt_col = fs.index('W/n 20% of median depth') if 'W/n 20% of median depth' in fs else None
                 continue
             chrom = fs[0]
             start, end = map(int, fs[1:3])
@@ -125,15 +148,19 @@ def _sambamba_depth_to_regions(sambamba_depth_output_fpath, sample_name, target_
             ave_depth = float(fs[mean_cov_col])
             min_depth = int(fs[min_depth_col]) if min_depth_col is not None else '.'
             std_dev = float(fs[std_dev_col]) if std_dev_col is not None else '.'
-            rates_within_threshs = fs[(std_dev_col or mean_cov_col) + 1:-1]
+            median_depth = int(fs[median_cov_col]) if median_cov_col is not None else '.'
+            rate_within_normal = float(fs[wn_20_pcnt_col]) if wn_20_pcnt_col is not None else '.'
+            last_cov_col = max(mean_cov_col, median_cov_col, std_dev_col, wn_20_pcnt_col)
+            rates_within_threshs = fs[last_cov_col + 1:-1]
 
             extra_fields = tuple(fs[4:read_count_col]) if read_count_col > 4 else ()
 
             region = Region(
                 sample_name=sample_name, chrom=chrom,
                 start=start, end=end, size=region_size,
-                avg_depth=ave_depth,
-                gene_name=gene_name, extra_fields=extra_fields)
+                avg_depth=ave_depth, median_depth=median_depth,
+                gene_name=gene_name, extra_fields=extra_fields,
+                rate_within_normal=rate_within_normal)
             regions.append(region)
 
             region.rates_within_threshs = OrderedDict((depth, float(rate) / 100.0) for (depth, rate) in zip(depth_thresholds, rates_within_threshs))
@@ -332,9 +359,10 @@ def _generate_regional_report_from_bam(work_dir, sample, target_bed, features_be
         r.add_record('Biotype', reg.biotype)
         r.add_record('Transcript', reg.transcript_id)
         r.add_record('Min depth', reg.min_depth)
+        r.add_record('Median depth', reg.median_depth)
         r.add_record('Ave depth', reg.avg_depth)
         r.add_record('Std dev', reg.std_dev)
-        r.add_record('W/n 20% of ave depth', reg.rate_within_normal)
+        r.add_record('W/n 20% of median depth', reg.rate_within_normal)
         for ths in depth_thresholds:
             r.add_record('{}x'.format(ths), reg.rates_within_threshs.get(ths) if reg.rates_within_threshs else None)
 

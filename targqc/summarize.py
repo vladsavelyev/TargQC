@@ -367,7 +367,7 @@ def _save_best_details_for_each_gene(depth_threshs, samples, output_dir):
             reg.add_record('Min depth', select_best(min_depths))
             reg.add_record('Ave depth', select_best(ave_depths))
             reg.add_record('Std dev', select_best(stddevs, max))
-            reg.add_record('W/n 20% of ave depth', select_best(withins))
+            reg.add_record('W/n 20% of median depth', select_best(withins))
             for t in depth_threshs:
                 reg.add_record('{}x'.format(t), select_best(percents_by_threshs[t]))
 

@@ -373,7 +373,7 @@ def make_general_report(work_dir, sample, target_bed, gene_by_name_and_chrom):
 
         depth_stats['wn_20_percent'] = calc_rate_within_normal(
             depth_stats['bases_by_depth'],
-            depth_stats['ave_depth'],
+            depth_stats['median_depth'],
             target_stats['target_size'] if target_bed else target_stats['reference_size'])
 
     if target_stats['target_size']:
