@@ -53,7 +53,7 @@ options = [
     )),
     (['--bwa-prefix'], dict(
         dest='bwa_prefix',
-        help='Path to BWA index prefix to align if input is fastq',
+        help='Path to BWA index prefix to align if input is FastQ',
      )),
     (['--padding'], dict(
         dest='padding',
@@ -65,7 +65,8 @@ options = [
     (['--downsample-to'], dict(
         dest='downsample_to',
         type='int',
-        help='If input is fastq, optionally downsample reads to this number',
+        help='If input is FastQ, select N random read pairs from each input set. '
+             'Default is ' + str(cfg.downsample_to) + '. To turn off (align all reads), set --downsample-to off',
         default=cfg.downsample_to,
      )),
     (['-t', '--nt', '--threads'], dict(
@@ -342,7 +343,10 @@ def process_opts():
             critical('--bwa-prefix is required when running from fastq')
         cfg.bwa_prefix = verify_file(opts.bwa_prefix, is_critical=True)
 
-    cfg.downsample_to = opts.downsample_to
+    if opts.downsample_to == 'off':
+        cfg.downsample_to = None
+    else:
+        cfg.downsample_to = opts.downsample_to
     cfg.padding = opts.padding
     cfg.genome = opts.genome
     cfg.dedup = not opts.no_dedup
