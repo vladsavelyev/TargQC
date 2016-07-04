@@ -29,7 +29,14 @@ from targqc.region_coverage import make_region_reports
 from targqc.summarize import summarize_targqc
 
 options = [
-    (['--bed', '--capture', '--amplicons'], dict(dest='bed', help='BED file with regions to analyse. If not specified, CDS across full genome will be analysed',)),
+    (['--test'], dict(
+        dest='test',
+        help='Quick test of correct installation.'
+    )),
+    (['--bed', '--capture', '--amplicons'], dict(
+        dest='bed',
+        help='BED file with regions to analyse. If not specified, CDS across full genome will be analysed',
+    )),
     (['-o', '--output-dir'], dict(
         dest='output_dir',
         metavar='DIR',

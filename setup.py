@@ -32,22 +32,30 @@ setup(
         ],
         'Utils': [
             'reference_data/fai/*.fai',
-            '*.txt',
-            '*.js',
-            '*.css',
-            '*.png',
-            '*.pxm',
-            '*.json',
-            '*.html',
-            'sambamba_*',
-            '*.sh',
+            'reporting/static/*.js',
+            'reporting/static/*/*.js',
+            'reporting/static/*.css',
+            'reporting/static/*/*.css',
+            'reporting/static/*.json',
+            'reporting/static/*/*.json',
+            'reporting/static/*.png',
+            'reporting/static/*/*.png',
+            'reporting/static/*.pxm',
+            'reporting/static/*/*.pxm',
+            'reporting/*.html',
+            'reporting/*.json',
+            'sambamba/sambamba_*',
+            'tools/*.sh',
         ],
         'targqc': [
             'bedops_*',
-            '*.jar',
-            '*.bed',
-            'qualimap'
-            '*.r'
+            'qualimap/*/qualimap',
+            'qualimap/*/qualimap.jar',
+            'qualimap/*/lib/*.jar',
+            'qualimap/*/scripts/*.jar',
+            'qualimap/*/species/*.jar',
+            'picard/picard/*.jar',
+            'gender/*.bed',
         ],
     },
     include_package_data=True,
@@ -76,6 +84,5 @@ print("""
 --------------------------------
 Usage: {name} *.bam -o targqc_stats [--bed target.bed ...]'
 
-For help in running TargQC, please see the documentation available at https://github.com/vladsaveliev/TargQC
-or run: targqc --help
+For help in running TargQC, please see the documentation available at https://github.com/vladsaveliev/TargQC or run: targqc --help
 """.format(name=name))

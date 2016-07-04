@@ -5,8 +5,8 @@ from os import listdir
 import shutil
 
 from Utils.call_process import run
-from Utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction
-from Utils.logger import info, warn
+from Utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists
+from Utils.logger import info, warn, err, critical
 from Utils.reporting.reporting import write_tsv_rows
 
 import targqc.config as tc
@@ -18,7 +18,12 @@ def get_qualimap_max_mem(bam):
     return mem_m
 
 
-qualimap = abspath(join(dirname(__file__), 'qualimap', 'qualimap'))
+def find_executable():
+    root_dirpath = abspath(join(dirname(__file__)))
+    for dname in listdir(abspath(join(dirname(__file__)))):
+        if isdir(join(root_dirpath, dname)) and dname.startswith('qualimap') and file_exists(join(root_dirpath, dname, 'qualimap')):
+            return join(root_dirpath, dname, 'qualimap')
+    critical('Error: could not find Qualimap executable')
 
 
 def fix_bed_for_qualimap(bed_fpath, qualimap_bed_fpath):
@@ -61,7 +66,7 @@ def run_qualimap(output_dir, bam_fpath, bed_fpath=None, threads=1, reuse_interme
     mem = str(int(mem_m)) + 'M'
     mem_cmdl = '--java-mem-size=' + mem
 
-    cmdline = (qualimap + ' bamqc --skip-duplicated -nt {threads} {mem_cmdl} -nr 5000 '
+    cmdline = (find_executable() + ' bamqc --skip-duplicated -nt {threads} {mem_cmdl} -nr 5000 '
         '-bam {bam_fpath} -outdir {output_dir} {bed_cmd} -c -gd HUMAN').format(**locals())
     report_fpath = join(output_dir, 'qualimapReport.html')
 
@@ -79,7 +84,7 @@ def run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report):
     else:
         # Qualimap2 run for multi-sample plots
         if len([s.qualimap_html_fpath for s in samples if s.qualimap_html_fpath]) > 0:
-            if qualimap is not None and get_qualimap_type(qualimap) == 'full':
+            if find_executable() is not None and get_qualimap_type(find_executable()) == 'full':
                 qualimap_output_dir = join(work_dir, 'qualimap_multi_bamqc')
 
                 _correct_qualimap_genome_results(samples)
@@ -93,7 +98,7 @@ def run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report):
 
                 data_fpath = write_tsv_rows(([], rows), join(qualimap_output_dir, 'qualimap_results_by_sample.tsv'))
                 qualimap_plots_dirpath = join(qualimap_output_dir, 'images_multisampleBamQcReport')
-                cmdline = qualimap + ' multi-bamqc --data {data_fpath} -outdir {qualimap_output_dir}'.format(**locals())
+                cmdline = find_executable() + ' multi-bamqc --data {data_fpath} -outdir {qualimap_output_dir}'.format(**locals())
                 run(cmdline, env_vars=dict(DISPLAY=None),
                     checks=[lambda _1, _2: verify_dir(qualimap_output_dir)], reuse=tc.reuse_intermediate)
 
