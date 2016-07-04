@@ -13,15 +13,21 @@ from cluster_helper.cluster import cluster_view
 import GeneAnnotation
 import Utils.reference_data as ref
 import targqc
-import targqc.config as tc
+import targqc.config as cfg
 from Utils import logger
-from Utils.bam_bed_utils import extract_gene_names_and_filter_exons, verify_bam, verify_bed
+from Utils.bam_bed_utils import verify_bam, verify_bed
 from Utils.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
 from Utils.logger import critical, err, info, warn, debug, is_local
 from Utils.proc_args import read_samples, find_bams, find_fastq_pairs
+from Utils.sambamba import index_bam
 from targqc import Sample
+from targqc.Target import Target
 from targqc.fastq import align, downsample
+from targqc.parallel import ParallelCfg, parallel_view
+
+from targqc.general_report import make_general_reports
 from targqc.prep_bed import prepare_beds
+from targqc.region_coverage import make_region_reports
 from targqc.summarize import summarize_targqc
 
 options = [
@@ -53,26 +59,25 @@ options = [
         dest='padding',
         type='int',
         help='integer indicating the number of bases to extend each target region up and down-stream. '
-             'Default is ' + str(tc.padding),
-        default=tc.padding
+             'Default is ' + str(cfg.padding),
+        default=cfg.padding
      )),
     (['--downsample-to'], dict(
         dest='downsample_to',
         type='int',
         help='If input is fastq, optionally downsample reads to this number',
-        default=tc.downsample_to,
+        default=cfg.downsample_to,
      )),
     (['-t', '--nt', '--threads'], dict(
         dest='threads',
         type='int',
-        help='Number of threads',
-        default=tc.threads
+        help='Number of threads'
      )),
     (['--reuse'], dict(
         dest='reuse_intermediate',
         help='reuse intermediate non-empty files in the work dir from previous run',
         action='store_true',
-        default=tc.reuse_intermediate
+        default=cfg.reuse_intermediate
      )),
     (['-s', '--scheduler'], dict(
         dest='scheduler',
@@ -136,12 +141,12 @@ options = [
         dest='no_dedup',
         action='store_true',
         help=SUPPRESS_HELP,
-        default=not tc.dedup,
+        default=not cfg.dedup,
      )),
     (['--debug'], dict(
         dest='debug',
         action='store_true',
-        default=tc.debug,
+        default=cfg.debug,
         help=SUPPRESS_HELP,
      )),
     (['--work-dir'], dict(dest='work_dir', metavar='DIR', help=SUPPRESS_HELP)),
@@ -151,112 +156,111 @@ options = [
 ]
 
 
-def main(args):
-    output_dir, work_dir, bam_by_sample, fastqs_by_sample, target_bed, prep_bed = process_opts()
-
+def _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir):
     samples = []
     for sname, (l, r) in fastqs_by_sample.items():
-        s = Sample(sname, join(output_dir, sname))
+        s = Sample(sname, join(output_dir, sname), join(work_dir, sname))
         s.l_fpath = l
         s.r_fpath = r
         samples.append(s)
     for sname, bam_fpath in bam_by_sample.items():
-        s = Sample(sname, join(output_dir, sname), bam=bam_fpath)
+        s = Sample(sname, join(output_dir, sname), join(work_dir, sname), bam=bam_fpath)
         samples.append(s)
-
     samples.sort(key=lambda _s: _s.key_to_sort())
+    for s in samples:
+        safe_mkdir(s.work_dir)
+        safe_mkdir(s.dirpath)
+    return samples
 
-    if prep_bed:
-        info()
-        debug('*' * 70)
-        info('Preparing input BED file')
-        tc.features_bed_fpath, target_bed, seq2c_bed = prepare_beds(
-            work_dir, tc.fai_fpath, tc.features_bed_fpath, target_bed, tc.cds_bed_fpath, reuse=tc.reuse_intermediate)
 
-        tc.original_target_bed = tc.features_bed_fpath
-        gene_keys_set, gene_keys_list, genes_not_in_refseq, target_bed, tc.features_bed_fpath = extract_gene_names_and_filter_exons(
-            work_dir, target_bed, tc.features_bed_fpath, reuse=tc.reuse_intermediate)
+# def _prep_beds(prep_bed, work_dir, target_bed):
+#     target = None
+#
+#     if prep_bed:
+#         info()
+#         debug('*' * 70)
+#         info('Preparing input BED file: sort, clean, cut, annotate')
+#         cfg.features_bed_fpath, target_bed, seq2c_bed = prepare_beds(
+#             work_dir, cfg.fai_fpath, cfg.features_bed_fpath, target_bed, cfg.cds_bed_fpath, reuse=cfg.reuse_intermediate)
+#
+#         if target_bed:
+#             target, cfg.features_bed_fpath = extract_gene_names_and_filter_exons(
+#                 work_dir, target_bed, cfg.features_bed_fpath, reuse=cfg.reuse_intermediate)
+#     else:
+#         info('The BED file is ready, skipping preparing.')
+#         if target_bed:
+#             target, _, _ = extract_gene_names_and_filter_exons(
+#                 work_dir, target_bed, cfg.features_bed_fpath, reuse=cfg.reuse_intermediate)
+#     info('*' * 70)
+#     return target
+
+
+def main(args):
+    output_dir, work_dir, bam_by_sample, fastqs_by_sample, target_bed_fpath, prep_bed = process_opts()
+
+    samples = _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir)
+
+    if target_bed_fpath:
+        target = Target(target_bed_fpath)
+        if prep_bed:
+            info()
+            debug('*' * 70)
+            info('Preparing input BED file: sort, clean, cut, annotate')
+            target_bed_fpath, cfg.features_bed_fpath = prepare_beds(
+                    work_dir, cfg.fai_fpath, cfg.features_bed_fpath, target_bed_fpath, cfg.cds_bed_fpath, reuse=cfg.reuse_intermediate)
+            target.bed_fpath = target_bed_fpath
+
+        cfg.features_bed_fpath = \
+            target.extract_gene_names_and_filter_exons(work_dir, cfg.features_bed_fpath, reuse=cfg.reuse_intermediate)
     else:
-        info('The BED file is ready, skipping preparing.')
-        gene_keys_set, gene_keys_list, genes_not_in_refseq, _, _ = extract_gene_names_and_filter_exons(
-            work_dir, target_bed, tc.features_bed_fpath, reuse=tc.reuse_intermediate)
-    info('*' * 70)
+        target = Target(None)
 
-    nodes = min(tc.threads, len(samples))
-    tc.threads_one_sample = max(1, tc.threads/len(samples))
-    if tc.scheduler:
-        info('Running on' + (' test' if is_local() else '') + ' cluster (scheduler' + tc.scheduler + ', queue ' + tc.queue + ') '
-             'using ' + str(nodes) + ' nodes, ' + str(tc.threads_one_sample) + ' thread per each sample')
-        with cluster_view(scheduler=tc.scheduler, queue=tc.queue,
-              num_jobs=nodes, cores_per_job=tc.threads_one_sample,
-              extra_params={'run_local': is_local()}) as view:
-            n = len(samples)
-            # view.map(test_cluster, work_dir)
-            view.map(proc_one_sample, [work_dir]*n, samples, [target_bed]*n, [gene_keys_list]*n, [genes_not_in_refseq]*n)
-    else:
-        info('Running locally, using ' + str(tc.threads) + ' threads')
-        for s in samples:
-            proc_one_sample(work_dir, s, target_bed, gene_keys_list, genes_not_in_refseq)
+    info()
+    start_targqc(work_dir, samples, target)
 
-    if not tc.debug and work_dir and isdir(work_dir):
+    if not cfg.debug and work_dir and isdir(work_dir):
         shutil.rmtree(work_dir)
-
     info()
     info('*' * 70)
     info('Summarizing')
-    summarize_targqc(tc.threads, output_dir, work_dir, samples, bed_fpath=target_bed, features_fpath=tc.features_bed_fpath)
+    summarize_targqc(cfg.parallel_cfg.threads, output_dir, work_dir, samples, bed_fpath=target_bed_fpath, features_fpath=cfg.features_bed_fpath)
 
     # info()
     # info('Summarizing: running MultiQC')
-    # cmd = 'multiqc ' + output_dir + ('' if tc.reuse_intermediate else ' --force') + ' -v ' + ' '.join(s.dirpath for s in samples)
+    # cmd = 'multiqc ' + output_dir + ('' if cfg.reuse_intermediate else ' --force') + ' -v ' + ' '.join(s.dirpath for s in samples)
     # run(cmd)
 
 
-def test_cluster(work_dir):
-    print work_dir
+def start_targqc(work_dir, samples, target):
+    fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
+    if fastq_samples:
+        with parallel_view(len(fastq_samples), cfg.parallel_cfg) as view:
+            proc_fastq(fastq_samples, view, work_dir, cfg.bwa_prefix, cfg.downsample_to, cfg.dedup)
 
-
-def proc_one_sample(work_dir, sample, bed_fpath, gene_keys_list, genes_not_in_refseq):
-    from os.path import join
-    import targqc.config as tc
-    from Utils.Region import build_gene_objects_list
-    from Utils.file_utils import safe_mkdir, verify_file
-    from Utils.logger import info
-    from Utils.sambamba import index_bam
-    from targqc.general_report import make_general_report
-    from targqc.region_coverage import make_per_gene_report
-
-    sample_work_dir = join(work_dir, sample.name)
-    safe_mkdir(sample_work_dir)
+    for s in samples:
+        info(s.name + ': using alignment ' + s.bam)
 
     info()
-    info('-' * 70)
-    info('* Sample ' + sample.name + ' *')
-    info()
+    with parallel_view(len(samples), cfg.parallel_cfg) as view:
+        info('Indexing BAMs...')
+        view.run(index_bam, [[s.bam] for s in samples])
 
-    if not sample.bam and sample.l_fpath and sample.r_fpath:
-        sample.bam = proc_fastq(
-            sample.name, verify_file(sample.l_fpath), verify_file(sample.r_fpath),
-            tc.bwa_prefix, tc.downsample_to, tc.dedup)
-    info('Using alignment ' + sample.bam)
-    index_bam(sample.bam)
+        info('Making general reports...')
+        general_reports = make_general_reports(view, samples, target)
 
-    gene_by_name_and_chrom = build_gene_objects_list(sample.name, tc.features_bed_fpath, gene_keys_list)
+        info()
+        info('Making region-level reports...')
+        per_gene_reports = make_region_reports(view, work_dir, samples, target, cfg.features_bed_fpath)
 
-    info('Making general report for ' + sample.name + ', saving into ' + sample.dirpath)
-    general_report, avg_depth = make_general_report(sample_work_dir, sample, bed_fpath, gene_by_name_and_chrom)
-
-    info()
-    info('Making region-level report...')
-    per_gene_report = make_per_gene_report(sample_work_dir, sample, bed_fpath, tc.features_bed_fpath,
-                                           gene_by_name_and_chrom, avg_depth)
-    info('')
-    info('*' * 70)
-    if general_report.txt_fpath and verify_file(general_report.txt_fpath):
-        info('Summary report: ' + general_report.txt_fpath)
-    if per_gene_report:
-        if per_gene_report.txt_fpath and verify_file(per_gene_report.txt_fpath):
-            info('All regions: ' + per_gene_report.txt_fpath + ' (' + str(len(per_gene_report.rows)) + ' regions)')
+    # for general_report, per_gene_report, sample in zip(general_reports, per_gene_reports, samples):
+    #     info('')
+    #     info('*' * 70)
+    #     if general_report.txt_fpath and verify_file(general_report.txt_fpath):
+    #         info('Summary report: ' + general_report.txt_fpath)
+    #     if per_gene_report:
+    #         path = per_gene_report if isinstance(per_gene_report, basestring) else per_gene_report.txt_fpath
+    #         if path and verify_file(path):
+    #             info('Region-based report: ' + path)
 
 
 def set_up_dirs(output_dir=None, work_dir=None, log_dir=None):
@@ -270,7 +274,7 @@ def set_up_dirs(output_dir=None, work_dir=None, log_dir=None):
         work_dir_name = 'work'
         work_dir = join(output_dir, work_dir_name)
     safe_mkdir(work_dir, 'working directory')
-    tc.work_dir = work_dir
+    cfg.work_dir = work_dir
 
     set_up_log(log_dir or work_dir)
 
@@ -303,16 +307,15 @@ def process_opts():
         parser.add_option(*args, **kwargs)
     opts, args = parser.parse_args()
 
-    tc.debug = logger.is_debug = opts.debug
+    cfg.debug = logger.is_debug = opts.debug
 
     output_dir, work_dir = set_up_dirs(opts.output_dir, opts.work_dir, opts.log_dir)
     debug(' '.join(sys.argv))
     debug()
 
-    tc.threads = opts.threads
-    tc.scheduler = opts.scheduler
-    tc.queue = opts.queue
-    tc.reuse_intermediate = opts.reuse_intermediate
+    cfg.parallel_cfg = ParallelCfg(opts.scheduler, opts.queue, opts.resources, opts.threads)
+
+    cfg.reuse_intermediate = opts.reuse_intermediate
 
     bam_by_sample = dict()
     fastqs_by_sample = dict()
@@ -337,48 +340,52 @@ def process_opts():
     if fastqs_by_sample:
         if not opts.bwa_prefix:
             critical('--bwa-prefix is required when running from fastq')
-        tc.bwa_prefix = verify_file(opts.bwa_prefix, is_critical=True)
+        cfg.bwa_prefix = verify_file(opts.bwa_prefix, is_critical=True)
 
-    tc.downsample_to = opts.downsample_to
-    tc.padding = opts.padding
-    tc.genome = opts.genome
-    tc.dedup = not opts.no_dedup
+    cfg.downsample_to = opts.downsample_to
+    cfg.padding = opts.padding
+    cfg.genome = opts.genome
+    cfg.dedup = not opts.no_dedup
 
     if opts.features:
-        tc.features_bed_fpath = verify_bed(opts.features, is_critical=True)
-        tc.cds_bed_fpath = verify_bed(opts.cds_bed_fpath, is_critical=True)
-    elif tc.genome:
-        tc.features_bed_fpath = GeneAnnotation.get_all_features_canonical(tc.genome)
-        tc.cds_bed_fpath = GeneAnnotation.get_cds(tc.genome)
-        if not tc.features_bed_fpath or not tc.cds_bed_fpath:
-            critical('Genome ' + tc.genome + ' is not supported. Supported: ' + ', '.join(GeneAnnotation.SUPPORTED_GENOMES))
+        cfg.features_bed_fpath = verify_bed(opts.features, is_critical=True)
+        cfg.cds_bed_fpath = verify_bed(opts.cds_bed_fpath, is_critical=True)
+    elif cfg.genome:
+        cfg.features_bed_fpath = GeneAnnotation.get_all_features_canonical(cfg.genome)
+        cfg.cds_bed_fpath = GeneAnnotation.get_cds(cfg.genome)
+        if not cfg.features_bed_fpath or not cfg.cds_bed_fpath:
+            critical('Genome ' + cfg.genome + ' is not supported. Supported: ' + ', '.join(GeneAnnotation.SUPPORTED_GENOMES))
     else:
         warn('Neither --refseq-bed nor --genome is specified, analysing without genomic features.')
     if opts.features_no_genes:
-        tc.features_no_genes_bed = verify_bed(opts.features_no_genes, is_critical=True)
-    tc.original_target_bed = opts.original_target_bed
+        cfg.features_no_genes_bed = verify_bed(opts.features_no_genes, is_critical=True)
+    cfg.original_target_bed = opts.original_target_bed
 
     bed_fpath = None
     if opts.bed:
         bed_fpath = verify_file(opts.bed, is_critical=True)
         info('Using target BED file ' + bed_fpath)
-    elif tc.features_bed_fpath:
+    elif cfg.features_bed_fpath:
         info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
 
     if opts.fai:
-        tc.fai_fpath = opts.fai
-    elif tc.genome:
-        tc.fai_fpath = ref.get_fai(tc.genome)
+        cfg.fai_fpath = opts.fai
+    elif cfg.genome:
+        cfg.fai_fpath = ref.get_fai(cfg.genome)
     else:
         err('Cannot analyse BED files without --fai or --genome specified')
 
     return output_dir, work_dir, bam_by_sample, fastqs_by_sample, bed_fpath, opts.prep_bed
 
 
-def proc_fastq(work_dir, sample_name, l_fpath, r_fpath, bwa_prefix, downsample_to, dedup=True):
+def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, dedup=True):
     if downsample_to:
         info('Downsampling the reads to ' + str(downsample_to))
-        l_fpath, r_fpath = downsample(work_dir, sample_name, work_dir, l_fpath, r_fpath, downsample_to, suffix='subset')
+        fastq_pairs = parall_view.run(downsample,
+            [[s.work_dir, s.name, s.work_dir, s.l_fpath, s.r_fpath, downsample_to, 'subset'] for s in samples])
+        for s, (l_r, r_r) in zip(samples, fastq_pairs):
+            s.l_fpath = l_r
+            s.r_fpath = r_r
 
     sambamba = which('sambamba')
     bwa = which('bwa')
@@ -388,11 +395,15 @@ def proc_fastq(work_dir, sample_name, l_fpath, r_fpath, bwa_prefix, downsample_t
         critical('sambamba, BWA, seqtk and samblaster are required to align BAM')
     info()
     info('Aligning reads to the reference')
-    bam_fpath = align(work_dir, sample_name, l_fpath, r_fpath, sambamba, bwa, seqtk, samblaster, bwa_prefix, dedup)
-    bam_fpath = verify_bam(bam_fpath)
-    if not bam_fpath:
-        critical('Sample ' + sample_name + ' was not aligned successfully.')
-    return bam_fpath
+    bam_fpaths = parall_view.run(align,
+        [[work_dir, s.name, s.l_fpath, s.r_fpath, sambamba, bwa, seqtk, samblaster, bwa_prefix, dedup]
+         for s in samples])
+
+    bam_fpaths = map(verify_bam, bam_fpaths)
+    if len(bam_fpaths) < len(samples):
+        critical('Some samples were not aligned successfully.')
+    for bam, s in zip(bam_fpaths, samples):
+        s.bam = bam
 
 
 if __name__ == '__main__':

@@ -45,8 +45,7 @@ def fix_bed_for_qualimap(bed_fpath, qualimap_bed_fpath):
             out.write('\t'.join(fields) + '\n')
 
 
-def run_qualimap(output_dir, bam_fpath, bed_fpath=None, threads=1):
-    info('Running QualiMap')
+def run_qualimap(output_dir, bam_fpath, bed_fpath=None, threads=1, reuse_intermediate=False):
     safe_mkdir(dirname(output_dir))
     safe_mkdir(output_dir)
 
@@ -67,7 +66,7 @@ def run_qualimap(output_dir, bam_fpath, bed_fpath=None, threads=1):
     report_fpath = join(output_dir, 'qualimapReport.html')
 
     run(cmdline, output_fpath=report_fpath, stdout_to_outputfile=False, env_vars=dict(DISPLAY=None),
-        checks=[lambda _1, _2: verify_file(report_fpath)], reuse=tc.reuse_intermediate)
+        checks=[lambda _1, _2: verify_file(report_fpath)], reuse=reuse_intermediate)
 
 
 def run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report):
@@ -200,7 +199,7 @@ def _correct_qualimap_insert_size_histogram(samples):
                         if line.startswith('## HISTOGRAM'):
                             one_line_to_stop = True
 
-                    with file_transaction(work_dir, s.qualimap_ins_size_hist_fpath) as tx:
+                    with file_transaction(None, s.qualimap_ins_size_hist_fpath) as tx:
                         with open(tx, 'w') as qualimap_f:
                             for line in picard_f:
                                 qualimap_f.write(line)

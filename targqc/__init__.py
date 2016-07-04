@@ -25,7 +25,7 @@ fastqc_report_fname      = 'fastqc_report.html'
 
 
 class Sample:
-    def __init__(self, name, dirpath, bam=None, bed=None, genome=None,
+    def __init__(self, name, dirpath, work_dir, bam=None, bed=None, genome=None,
                  qualimap_dirpath=None, normal_match=None):
         self.name = name
         self.bam = bam
@@ -34,12 +34,14 @@ class Sample:
         self.is_wgs = False
         self.qualimap_bed = None
         self.dirpath = dirpath
+        self.work_dir = work_dir
         self.phenotype = None
         self.gender = None
         self.genome = None
         self.var_dirpath = None
         self.normal_match = normal_match
         self.min_af = None
+        self.avg_depth = None
 
         self.targqc_dirpath                  = None
         self.targqc_html_fpath               = None

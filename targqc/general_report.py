@@ -3,7 +3,7 @@
 from collections import OrderedDict
 from os.path import join, abspath, realpath, dirname, relpath
 
-import targqc.config as tc
+import targqc.config as cfg
 from targqc.qualimap.report_parser import parse_qualimap_sample_report
 from targqc.qualimap.runner import run_qualimap
 
@@ -81,31 +81,18 @@ def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
 
     ms = MetricStorage(
         general_section=ReportSection('general_section', '', [
-            Metric('Target',                  short_name='Target',                            common=True),
-            Metric('Reference size',          short_name='Reference bp', unit='bp',           common=True),
-            Metric('Regions in target',       short_name='Regions in target',                 common=True),
-            Metric('Bases in target',         short_name='Target bp', unit='bp',              common=True),
-            Metric('Percentage of reference', short_name='Percentage of reference', unit='%', common=True),
-            Metric('Genes in target',         short_name='Genes in target',                   common=True),
-            Metric('Scope',                   short_name='Scope',                             common=True, is_hidden=True),
+            Metric('Target',                                     short_name='Target',                            common=True),
+            Metric('Ready target (clean, sorted and annotated)', short_name='Ready target',                      common=True),
+            Metric('Reference size',                             short_name='Reference bp', unit='bp',           common=True),
+            Metric('Regions in target',                          short_name='Regions in target',                 common=True),
+            Metric('Bases in target',                            short_name='Target bp', unit='bp',              common=True),
+            Metric('Percentage of reference',                    short_name='Percentage of reference', unit='%', common=True),
+            Metric('Genes in target',                            short_name='Genes in target',                   common=True),
+            Metric('Scope',                                      short_name='Scope',                             common=True, is_hidden=True),
         ]),
         sections=sections
     )
     return ms
-
-
-class TargetInfo:
-    def __init__(self, fpath=None, bed=None, original_target_bed=None, regions_num=None,
-                 bases_num=None, fraction=None, genes_fpath=None, genes_num=None):
-        self.fpath = realpath(fpath) if fpath else None  # raw source file - to demonstrate where we took one
-        self.bed = bed                                   # processed (sorted, merged...), to do real calculations
-        self.original_target_bed = original_target_bed
-        self.regions_num = regions_num
-        self.bases_num = bases_num
-        self.fraction = fraction
-        self.genes_fpath = realpath(genes_fpath) if genes_fpath else None
-        self.genes_num = genes_num
-        self.type = None  # 'Regional', 'WGS'
 
 
 # def _dedup_and_flag_stat(cnf, bam_fpath):
@@ -268,11 +255,11 @@ def _determine_sex(work_dir, bam_fpath, ave_depth, target_bed=None):
 
     male_genes_bed = None
     for k in chry_key_regions_by_genome:
-        if k in tc.genome:
+        if k in cfg.genome:
             male_genes_bed = chry_key_regions_by_genome.get(k)
             break
     if not male_genes_bed:
-        warn('Warning: no male key regions for ' + tc.genome + ', cannot identify sex')
+        warn('Warning: no male key regions for ' + cfg.genome + ', cannot identify sex')
         return None
 
     male_area_size = calc_sum_of_regions(male_genes_bed)
@@ -299,7 +286,7 @@ def _determine_sex(work_dir, bam_fpath, ave_depth, target_bed=None):
         critical('BAM file is required.')
     index_bam(bam_fpath)
 
-    chry_cov_output_fpath = sambamba_depth(work_dir, male_genes_bed, bam_fpath, [], reuse=tc.reuse_intermediate)
+    chry_cov_output_fpath = sambamba_depth(work_dir, male_genes_bed, bam_fpath, [], reuse=cfg.reuse_intermediate)
     chry_mean_coverage = get_mean_cov(chry_cov_output_fpath)
     info('Y key regions average depth: ' + str(chry_mean_coverage))
     ave_depth = float(ave_depth)
@@ -344,14 +331,11 @@ def get_mean_cov(bedcov_output_fpath):
     return mean_cov
 
 
-def make_general_report(work_dir, sample, target_bed, gene_by_name_and_chrom):
-    target_info = TargetInfo(
-        fpath=target_bed, bed=target_bed, original_target_bed=tc.original_target_bed or target_bed,
-        genes_num=len(gene_by_name_and_chrom) if gene_by_name_and_chrom else None)
-    if target_bed:
-        target_info.regions_num = calc_region_number(target_bed)
-
-    run_qualimap(sample.qualimap_dirpath, sample.bam, target_bed, threads=tc.threads_one_sample)
+def make_general_reports(view, samples, target):
+    info('Running QualiMap...')
+    view.run(run_qualimap,
+        [[s.qualimap_dirpath, s.bam, target.bed_fpath, view.cores_per_job, cfg.reuse_intermediate]
+         for s in samples])
 
     # try:
     #     picard_ins_size_hist(sample, sample.bam)
@@ -360,55 +344,61 @@ def make_general_report(work_dir, sample, target_bed, gene_by_name_and_chrom):
     # else:
     #     os.remove(sample.qualimap_ins_size_hist_fpath)
 
-    depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample, tc.depth_thresholds)
+    summary_reports = []
 
-    reads_stats['gender'] = _determine_sex(work_dir, sample.bam, depth_stats['ave_depth'], target_bed)
-    info()
+    for sample in samples:
+        info('-'*70)
+        info(sample.name)
 
-    if 'bases_by_depth' in depth_stats:
-        depth_stats['bases_within_threshs'], depth_stats['rates_within_threshs'] = calc_bases_within_threshs(
-            depth_stats['bases_by_depth'],
-            target_stats['target_size'] if target_bed else target_stats['reference_size'],
-            tc.depth_thresholds)
+        info('-'*70)
+        info('Parsing QualiMap results...')
+        depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample, cfg.depth_thresholds)
+        sample.avg_depth = depth_stats['ave_depth']
 
-        depth_stats['wn_20_percent'] = calc_rate_within_normal(
-            depth_stats['bases_by_depth'],
-            depth_stats['median_depth'],
-            target_stats['target_size'] if target_bed else target_stats['reference_size'])
+        reads_stats['gender'] = _determine_sex(sample.work_dir, sample.bam, depth_stats['ave_depth'], target.bed_fpath)
+        info()
 
-    if target_stats['target_size']:
-        target_info.bases_num = target_stats['target_size']
-        target_info.fraction  = target_stats['target_fraction']
-    else:
-        target_info.bases_num = target_stats['reference_size']
+        if 'bases_by_depth' in depth_stats:
+            depth_stats['bases_within_threshs'], depth_stats['rates_within_threshs'] = calc_bases_within_threshs(
+                depth_stats['bases_by_depth'],
+                target_stats['target_size'] if target.bed_fpath else target_stats['reference_size'],
+                cfg.depth_thresholds)
 
-    # if sample.dedup_bam:
-    #     bam_fpath = sample.dedup_bam
-    reads_stats['mapped_dedup'] = number_of_mapped_reads(work_dir, sample.bam, dedup=True, reuse=tc.reuse_intermediate)
+            depth_stats['wn_20_percent'] = calc_rate_within_normal(
+                depth_stats['bases_by_depth'],
+                depth_stats['median_depth'],
+                target_stats['target_size'] if target.bed_fpath else target_stats['reference_size'])
 
-    if target_info.bed:
-        reads_stats['mapped_dedup_on_target'] = number_mapped_reads_on_target(
-            work_dir, target_bed, sample.bam, dedup=True, reuse=tc.reuse_intermediate) or 0
+        if target_stats['target_size']:
+            target.bases_num = target_stats['target_size']
+            target.fraction  = target_stats['target_fraction']
+        else:
+            target.bases_num = target_stats['reference_size']
 
-    if target_info.bed:
-        padded_bed = get_padded_bed_file(work_dir, target_info.bed, tc.padding, tc.fai_fpath)
-        reads_stats['mapped_dedup_on_padded_target'] = number_mapped_reads_on_target(
-            work_dir, padded_bed, sample.bam, dedup=True, reuse=tc.reuse_intermediate) or 0
-    elif tc.cds_bed_fpath:
-        info('Using the CDS reference BED ' + tc.cds_bed_fpath + ' to calc "reads on CDS"')
-        reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(
-            work_dir, tc.cds_bed_fpath, sample.bam, dedup=True, reuse=tc.reuse_intermediate) or 0
-    # elif features_no_genes_bed:
-    #     info('Using ensemble ' + features_no_genes_bed + ' to calc reads on exome')
-    #     reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(cnf, features_no_genes_bed, bam_fpath) or 0
+        reads_stats['mapped_dedup'] = number_of_mapped_reads(sample.work_dir, sample.bam, dedup=True, reuse=cfg.reuse_intermediate)
 
-    summary_report = _build_report(work_dir, depth_stats, reads_stats, indels_stats, sample, target_info)
+        if target.bed_fpath:
+            reads_stats['mapped_dedup_on_target'] = number_mapped_reads_on_target(
+                sample.work_dir, target.bed_fpath, sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
 
-    return summary_report, depth_stats['ave_depth']
+            padded_bed = get_padded_bed_file(sample.work_dir, target.bed_fpath, cfg.padding, cfg.fai_fpath)
+            reads_stats['mapped_dedup_on_padded_target'] = number_mapped_reads_on_target(
+                sample.work_dir, padded_bed, sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
+        elif cfg.cds_bed_fpath:
+            info('Using the CDS reference BED ' + cfg.cds_bed_fpath + ' to calc "reads on CDS"')
+            reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(
+                sample.work_dir, cfg.cds_bed_fpath, sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
+        # elif features_no_genes_bed:
+        #     info('Using ensemble ' + features_no_genes_bed + ' to calc reads on exome')
+        #     reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(cnf, features_no_genes_bed, bam_fpath) or 0
+
+        summary_reports.append(_build_report(sample.work_dir, depth_stats, reads_stats, indels_stats, sample, target))
+
+    return summary_reports
 
 
-def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target_info):
-    report = SampleReport(sample, metric_storage=get_header_metric_storage(tc.depth_thresholds, is_wgs=target_info.bed is None, padding=tc.padding))
+def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target):
+    report = SampleReport(sample, metric_storage=get_header_metric_storage(cfg.depth_thresholds, is_wgs=target.bed_fpath is None, padding=cfg.padding))
     report.add_record('Qualimap', value='Qualimap', url=relpath(sample.qualimap_html_fpath, sample.dirpath), silent=True)
     if reads_stats.get('gender') is not None:
         report.add_record('Sex', reads_stats['gender'], silent=True)
@@ -440,38 +430,38 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
 
     info('')
 
-    if target_info.bed:
+    if target.bed_fpath:
         info('* Target coverage statistics *')
-        if target_info.original_target_bed:
-            report.add_record('Target', target_info.original_target_bed)
-            if count_bed_cols(target_info.original_target_bed) == 3:
-                report.add_record('Ready target (sorted and annotated)', target_info.fpath)
+        if target.original_bed_fpath:
+            report.add_record('Target', target.original_bed_fpath)
+            if count_bed_cols(target.original_bed_fpath) == 3:
+                report.add_record('Ready target (clean, sorted and annotated)', target.bed_fpath)
         else:
-            report.add_record('Target', target_info.fpath)
-        report.add_record('Bases in target', target_info.bases_num)
-        report.add_record('Percentage of reference', target_info.fraction)
-        report.add_record('Regions in target', target_info.regions_num)
+            report.add_record('Target', target.bed_fpath)
+        report.add_record('Bases in target', target.bases_num)
+        report.add_record('Percentage of reference', target.fraction)
+        report.add_record('Regions in target', target.regions_num)
         report.add_record('Scope', 'targeted')
     else:
         info('* Genome coverage statistics *')
         report.add_record('Target', 'whole genome')
-        report.add_record('Reference size', target_info.bases_num)
+        report.add_record('Reference size', target.bases_num)
         report.add_record('Scope', 'WGS')
 
-    report.add_record('Genes in target', target_info.genes_num)
+    report.add_record('Genes in target', len(target.gene_keys_list))
 
-    trg_type = 'target' if target_info.bed else 'genome'
+    trg_type = 'target' if target.bed_fpath else 'genome'
 
     if 'bases_within_threshs' in depth_stats:
         bases_within_threshs = depth_stats['bases_within_threshs']
         v_covered_bases_in_targ = bases_within_threshs.items()[0][1]
-        v_percent_covered_bases_in_targ = 1.0 * (v_covered_bases_in_targ or 0) / target_info.bases_num if target_info.bases_num else None
+        v_percent_covered_bases_in_targ = 1.0 * (v_covered_bases_in_targ or 0) / target.bases_num if target.bases_num else None
         assert v_percent_covered_bases_in_targ <= 1.0 or v_percent_covered_bases_in_targ is None, str(v_percent_covered_bases_in_targ)
 
         report.add_record('Covered bases in ' + trg_type, v_covered_bases_in_targ)
         report.add_record('Percentage of ' + trg_type + ' covered by at least 1 read', v_percent_covered_bases_in_targ)
 
-    if target_info.bed:
+    if target.bed_fpath:
         info('Getting number of mapped reads on target...')
         # mapped_reads_on_target = number_mapped_reads_on_target(cnf, target_info.bed, bam_fpath)
         if 'mapped_dedup_on_target' in reads_stats:
@@ -489,7 +479,7 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
             report.add_record('Percentage of usable reads', percent_usable)
             assert percent_usable <= 1.0 or percent_usable is None, str(percent_usable)
 
-        read_bases_on_targ = int(target_info.bases_num * depth_stats['ave_depth'])  # sum of all coverages
+        read_bases_on_targ = int(target.bases_num * depth_stats['ave_depth'])  # sum of all coverages
         report.add_record('Read bases mapped on target', read_bases_on_targ)
 
         if 'mapped_dedup_on_padded_target' in reads_stats:
@@ -523,7 +513,7 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
 
     if 'bases_within_threshs' in depth_stats:
         for depth, bases in depth_stats['bases_within_threshs'].items():
-            fraction_val = 1.0 * (bases or 0) / target_info.bases_num if target_info.bases_num else 0
+            fraction_val = 1.0 * (bases or 0) / target.bases_num if target.bases_num else 0
             if fraction_val > 0:
                 report.add_record('Part of ' + trg_type + ' covered at least by ' + str(depth) + 'x', fraction_val)
             assert fraction_val <= 1.0 or fraction_val is None, str(fraction_val)
@@ -542,7 +532,7 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
     info('Saving reports...')
     report.save_json(sample.targqc_json_fpath)
     report.save_txt(sample.targqc_txt_fpath)
-    report.save_html(sample.targqc_html_fpath, caption='Target coverage statistics for ' + sample.name, is_debug=tc.debug)
+    report.save_html(sample.targqc_html_fpath, caption='Target coverage statistics for ' + sample.name, is_debug=cfg.debug)
     debug()
     debug('Saved to ' + dirname(report.txt_fpath))
     return report

@@ -6,15 +6,12 @@ from collections import OrderedDict, defaultdict
 
 import targqc
 import targqc.config as tc
-from Utils.bam_bed_utils import verify_bed
 from Utils.file_utils import verify_dir, verify_file, adjust_path, symlink_plus, file_transaction, add_suffix
 from Utils.logger import info, err, debug
 from Utils.reporting.reporting import PerRegionSampleReport, BaseReport, Metric, ReportSection, MetricStorage, \
     FullReport
 from targqc.general_report import get_header_metric_storage
-from targqc.prep_bed import prepare_beds
 from targqc.qualimap.runner import run_multisample_qualimap
-from targqc.region_coverage import get_detailed_metric_storage
 
 
 def _make_targetcov_symlinks(samples):
@@ -29,9 +26,9 @@ def _make_targetcov_symlinks(samples):
 
 
 def _make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=None, tag_by_sample=None):
-    header_storage = get_header_metric_storage(tc.depth_thresholds,
-                                               is_wgs=bed_fpath is not None,
-                                               padding=tc.padding)
+    # header_storage = get_header_metric_storage(tc.depth_thresholds,
+    #                                            is_wgs=bed_fpath is not None,
+    #                                            padding=tc.padding)
 
     jsons_by_sample = {s.name: s.targqc_json_fpath for s in samples if verify_file(s.targqc_json_fpath)}
     htmls_by_sample = {s.name: s.targqc_html_fpath for s in samples if verify_file(s.targqc_html_fpath)}
@@ -52,48 +49,54 @@ def _make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=None, tag_b
             else:
                 sample_report.add_record(metric_name='Qualimap', value='Qualimap', url=url, silent=True)
 
-    run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report)
+    if len(samples) > 1:
+        run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report)
 
     fn = splitext(basename(samples[0].targqc_txt_fpath))[0]
-    txt_fpath = targqc_full_report.save_txt(join(output_dir, fn + '.txt'))
     tsv_fpath = targqc_full_report.save_tsv(join(output_dir, fn + '.tsv'))
     html_fpath = targqc_full_report.save_html(join(output_dir, fn + '.html'), 'TargQC', is_debug=tc.debug)
 
-    return txt_fpath, tsv_fpath, html_fpath
+    return tsv_fpath, html_fpath
 
 
 def _combined_regional_reports(work_dir, output_dir, samples):
     if not any(verify_file(s.targqc_region_tsv, silent=True) for s in samples):
         return None, None
 
-    txt_region_rep_fpath = join(output_dir, basename(samples[0].targqc_region_txt))
     tsv_region_rep_fpath = join(output_dir, basename(samples[0].targqc_region_tsv))
-    debug('Combining regional reports, writing to ' + txt_region_rep_fpath + ' and ' + tsv_region_rep_fpath)
-    with file_transaction(work_dir, tsv_region_rep_fpath) as tx_tsv, file_transaction(work_dir, txt_region_rep_fpath) as tx_txt:
-        with open(tx_tsv, 'w') as tsv_out, open(tx_txt, 'w') as txt_out:
-            for sample_i, s in enumerate(samples):
-                with open(s.targqc_region_txt) as txt_in:
-                    for l in txt_in:
-                        if l.startswith('#'):
-                            if not l.startswith('##') and sample_i == 0:
-                                txt_out.write('#Sample' + ' '*(max(len('#Sample'), len(s.name)) - len('#Sample')) + ' ' + l.replace('#Chr', 'Chr '))
-                        else:
-                            txt_out.write(s.name + ' '*(max(len('#Sample'), len(s.name)) - len(s.name)) + ' ' + l)
-                with open(s.targqc_region_tsv) as tsv_in:
-                    for l in tsv_in:
-                        if l.startswith('#'):
-                            if not l.startswith('##') and sample_i == 0:
-                                tsv_out.write('#Sample\t' + l[1:])
-                        else:
-                            tsv_out.write(s.name + '\t' + l)
+    debug('Combining regional reports, writing to ' + tsv_region_rep_fpath)
+    with file_transaction(work_dir, tsv_region_rep_fpath) as tx_tsv:
+        with open(tx_tsv, 'w') as tsv_out:
+            # sample_i = 0
+            # for s in samples:
+            #     if s.targqc_region_txt and verify_file(s.targqc_region_txt):
+            #         with open(s.targqc_region_txt) as txt_in:
+            #             for l in txt_in:
+            #                 if l.startswith('#'):
+            #                     if not l.startswith('##') and sample_i == 0:
+            #                         txt_out.write('#Sample' + ' '*(max(len('#Sample'), len(s.name)) - len('#Sample')) + ' ' + l.replace('#Chr', 'Chr '))
+            #                 else:
+            #                     txt_out.write(s.name + ' '*(max(len('#Sample'), len(s.name)) - len(s.name)) + ' ' + l)
+            #         sample_i += 1
+            sample_i = 0
+            for s in samples:
+                if s.targqc_region_tsv and verify_file(s.targqc_region_tsv):
+                    with open(s.targqc_region_tsv) as tsv_in:
+                        for l in tsv_in:
+                            if l.startswith('#'):
+                                if not l.startswith('##') and sample_i == 0:
+                                    tsv_out.write('#Sample\t' + l[1:])
+                            else:
+                                tsv_out.write(s.name + '\t' + l)
+                    sample_i += 1
 
-    return txt_region_rep_fpath, tsv_region_rep_fpath
+    return tsv_region_rep_fpath
 
 
 def summarize_targqc(summary_threads, output_dir, work_dir, samples, bed_fpath=None, features_fpath=None, tag_by_sample=None):
     info('TargQC coverage statistics for all samples')
 
-    txt_fpath, tsv_fpath, html_fpath = _make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=bed_fpath, tag_by_sample=tag_by_sample)
+    tsv_fpath, html_fpath = _make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=bed_fpath, tag_by_sample=tag_by_sample)
 
     # best_for_regions_fpath = None
     # if any(verify_file(s.targqc_region_tsv, silent=True) for s in samples):
@@ -105,24 +108,23 @@ def summarize_targqc(summary_threads, output_dir, work_dir, samples, bed_fpath=N
     #          output_dir, 'Best', average_coverage, genes, depth_threshs)
     # '''
 
-    txt_region_rep_fpath, tsv_region_rep_fpath = _combined_regional_reports(work_dir, output_dir, samples)
+    tsv_region_rep_fpath = _combined_regional_reports(work_dir, output_dir, samples)
 
     info()
     info('*' * 70)
-    if not html_fpath and not txt_fpath:
+    if not html_fpath and not tsv_fpath:
         info('TargQC summary was not generated, because there were no reports generated for individual samples.')
     else:
         info('TargQC summary saved in: ')
         info('  ' + html_fpath)
-        info('  ' + tsv_fpath + ' (parsable)')
+        info('  ' + tsv_fpath)
 
     info()
-    if not txt_region_rep_fpath and not tsv_region_rep_fpath:
+    if not tsv_region_rep_fpath:
         info('Regional report was not generated, because there were no reports generated for individual samples.')
     else:
         info('Per-region coverage statistics saved into:')
-        info('  ' + txt_region_rep_fpath + ' (human-readable)')
-        info('  ' + tsv_region_rep_fpath + ' (parsable)')
+        info('  ' + tsv_region_rep_fpath)
 
     return html_fpath
 

@@ -15,10 +15,4 @@ dedup = True
 reuse_intermediate = False
 debug = False
 
-scheduler = None
-queue = None
-resources = []
-threads = 1
-threads_one_sample = 1
-
-original_target_bed = None
+parallel_cfg = None
