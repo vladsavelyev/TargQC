@@ -1,13 +1,13 @@
 # Alignment target coverage analysis tool 
 
 ## Input
-- BAM file(s) or FastQ files.
-- BED file (optional)
+- BAM file(s) (or FastQ files).
+- BED file (optional).
 
 ## Output
-- `summary.html` - sample-level coverage statistics and plots.
-- `summary.tsv` - sample-level coverage, parsable version
-- `regions.txt` - region-level coverage statistics.
+- `summary.html` – sample-level coverage statistics and plots.
+- `summary.tsv` – sample-level coverage, parsable version
+- `regions.txt` – region-level coverage statistics.
 
 ## Installation
 ```

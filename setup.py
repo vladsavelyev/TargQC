@@ -15,7 +15,7 @@ print("""-----------------------------------
 setup(
     name='targqc',
     version=version,
-    author='Vlad Saveliev',
+    author='Vlad Saveliev and Alla Mikheenko',
     author_email='vladislav.sav@gmail.com',
     description='Target coverage evaluation tool',
     long_description=(open('README.md').read()),
@@ -24,10 +24,34 @@ setup(
     download_url='https://github.com/vladsaveliev/TargQC/releases',
     license='GPLv3',
     packages=find_packages(),
+    package_data={
+        'GeneAnnotation': [
+            'RefSeq/*.bed'
+        ],
+        'Utils': [
+            '*.fai',
+            '*.txt',
+            '*.js',
+            '*.css',
+            '*.png',
+            '*.pxm',
+            '*.json',
+            '*.html',
+            'sambamba_*',
+            '*.sh',
+        ],
+        'targqc': [
+            'bedops_*',
+            '*.jar',
+            '*.bed',
+            'qualimap'
+            '*.r'
+        ],
+    },
     include_package_data=True,
     zip_safe=False,
     scripts=['scripts/targqc'],
-    install_requires=parse_requirements('requirements.txt', session=PipSession()),
+    install_requires=reqs,
     classifiers=[
         'Environment :: Console',
         'Environment :: Web Environment',
