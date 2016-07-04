@@ -12,8 +12,10 @@ print("""-----------------------------------
 -----------------------------------
 """.format(version))
 
+name = 'targqc'
+
 setup(
-    name='targqc',
+    name=name,
     version=version,
     author='Vlad Saveliev and Alla Mikheenko',
     author_email='vladislav.sav@gmail.com',
@@ -29,7 +31,7 @@ setup(
             'RefSeq/*.bed'
         ],
         'Utils': [
-            '*.fai',
+            'reference_data/fai/*.fai',
             '*.txt',
             '*.js',
             '*.css',
@@ -50,7 +52,7 @@ setup(
     },
     include_package_data=True,
     zip_safe=False,
-    scripts=['scripts/targqc'],
+    scripts=['scripts/' + name],
     install_requires=reqs,
     classifiers=[
         'Environment :: Console',
@@ -72,6 +74,8 @@ print("""
 --------------------------------
  TargQC installation complete!
 --------------------------------
-For help in running TargQC, please see the documentation available
-at https://github.com/vladsaveliev/TargQC or run: targqc --help
-""")
+Usage: {name} *.bam -o targqc_stats [--bed target.bed ...]'
+
+For help in running TargQC, please see the documentation available at https://github.com/vladsaveliev/TargQC
+or run: targqc --help
+""".format(name=name))

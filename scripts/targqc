@@ -8,8 +8,6 @@ import sys
 from optparse import OptionParser, SUPPRESS_HELP
 from os.path import isfile, join, isdir
 
-from cluster_helper.cluster import cluster_view
-
 import GeneAnnotation
 import Utils.reference_data as ref
 import targqc
@@ -31,10 +29,6 @@ from targqc.region_coverage import make_region_reports
 from targqc.summarize import summarize_targqc
 
 options = [
-    (['--bam'], dict(dest='bam', help='path to the BAM file to analyse',)),
-    (['-1'], dict(dest='l_fpath', help='fastq left reads, optional instead of BAM')),
-    (['-2'], dict(dest='r_fpath', help='fastq right reads, optional instead of BAM')),
-    (['--sample', '--name'], dict(dest='sample', help='Sample name (default is part of name of the first parameter prior to the first - or .',)),
     (['--bed', '--capture', '--amplicons'], dict(dest='bed', help='BED file with regions to analyse. If not specified, CDS across full genome will be analysed',)),
     (['-o', '--output-dir'], dict(
         dest='output_dir',
@@ -100,6 +94,10 @@ options = [
 
     ##############
     ## Extended: #
+    (['--bam'], dict(dest='bam', help=SUPPRESS_HELP,)),  # help='path to the BAM file to analyse',)),
+    (['-1'], dict(dest='l_fpath', help=SUPPRESS_HELP,)),  # help='fastq left reads, optional instead of BAM')),
+    (['-2'], dict(dest='r_fpath', help=SUPPRESS_HELP,)),  # help='fastq right reads, optional instead of BAM')),
+    (['--sample', '--name'], dict(dest='sample', help=SUPPRESS_HELP,)),  # help='Sample name (default is part of name of the first parameter prior to the first - or .',)),
     (['--original-bed'], dict(
         dest='original_target_bed',
         help=SUPPRESS_HELP,
@@ -303,7 +301,8 @@ def set_up_log(log_dir):
 
 
 def process_opts():
-    parser = OptionParser()
+    parser = OptionParser(description='Target coverage evaluation tool.')
+    parser.set_usage('Usage: %prog *.bam -o targqc_stats [--bed target.bed ...]')
     for args, kwargs in options:
         parser.add_option(*args, **kwargs)
     opts, args = parser.parse_args()
