@@ -1,18 +1,41 @@
 #!/usr/bin/env python
+import os
+import sys
+from os.path import join, isfile
+
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
 from pip.download import PipSession
 
 install_reqs = parse_requirements("requirements.txt", session=PipSession())
 reqs = [str(ir.req) for ir in install_reqs]
-version = '0.1'
+version = open('VERSION.txt').read().strip()
 
-print("""-----------------------------------
+name = 'targqc'
+
+def _run(_cmd):
+    print('$ ' + _cmd)
+    os.system(_cmd)
+
+if sys.argv[-1] == 'publish':
+    _run('python setup.py sdist upload')
+    _run('python setup.py bdist_wheel upload')
+    sys.exit()
+
+if sys.argv[-1] == 'tag':
+    _run('git tag -a %s -m "Version %s"' % (version, version))
+    _run("git push --tags")
+    sys.exit()
+
+if sys.argv[-1] == 'install':
+    print("""-----------------------------------
  Installing TargQC version {}
 -----------------------------------
 """.format(version))
 
-name = 'targqc'
+sambamba = join('Utils', 'sambamba', 'build', 'sambamba')
+if not isfile(sambamba):
+    _run('cd Utils/sambamba; make sambamba-ldmd2-64; cd ../..')
 
 setup(
     name=name,
@@ -44,7 +67,8 @@ setup(
             'reporting/static/*/*.pxm',
             'reporting/*.html',
             'reporting/*.json',
-            'sambamba/sambamba_*',
+            # 'sambamba/sambamba_*',
+            'sambamba/build/sambamba',
             'tools/*.sh',
         ],
         'targqc': [
@@ -78,7 +102,8 @@ setup(
     ],
 )
 
-print("""
+if sys.argv[-1] == 'install':
+    print("""
 --------------------------------
  TargQC installation complete!
 --------------------------------

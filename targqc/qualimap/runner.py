@@ -6,10 +6,10 @@ import shutil
 
 from Utils.call_process import run
 from Utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists
-from Utils.logger import info, warn, err, critical
+from Utils.logger import info, warn, err, critical, debug
 from Utils.reporting.reporting import write_tsv_rows
 
-import targqc.config as tc
+import targqc.config as cfg
 
 
 def get_qualimap_max_mem(bam):
@@ -51,6 +51,8 @@ def fix_bed_for_qualimap(bed_fpath, qualimap_bed_fpath):
 
 
 def run_qualimap(output_dir, bam_fpath, bed_fpath=None, threads=1, reuse_intermediate=False):
+    info('Analysing ' + bam_fpath)
+
     safe_mkdir(dirname(output_dir))
     safe_mkdir(output_dir)
 
@@ -59,7 +61,7 @@ def run_qualimap(output_dir, bam_fpath, bed_fpath=None, threads=1, reuse_interme
         qualimap_bed_fpath = join(output_dir, 'tmp_qualimap.bed')
         fix_bed_for_qualimap(bed_fpath, qualimap_bed_fpath)
         bed_cmd = ' -gff ' + qualimap_bed_fpath + ' '
-        info('Using amplicons/capture panel ' + qualimap_bed_fpath)
+        debug('Using amplicons/capture panel ' + qualimap_bed_fpath)
 
     mem_cmdl = ''
     mem_m = get_qualimap_max_mem(bam_fpath)
@@ -79,7 +81,7 @@ def run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report):
         2. Adds records to targqc_full_report.plots
     """
     plots_dirpath = join(output_dir, 'plots')
-    if tc.reuse_intermediate and isdir(plots_dirpath) and [f for f in listdir(plots_dirpath) if not f.startswith('.')]:
+    if cfg.reuse_intermediate and isdir(plots_dirpath) and [f for f in listdir(plots_dirpath) if not f.startswith('.')]:
         info('Qualimap miltisample plots exist - ' + plots_dirpath + ', reusing...')
     else:
         # Qualimap2 run for multi-sample plots
@@ -100,7 +102,7 @@ def run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report):
                 qualimap_plots_dirpath = join(qualimap_output_dir, 'images_multisampleBamQcReport')
                 cmdline = find_executable() + ' multi-bamqc --data {data_fpath} -outdir {qualimap_output_dir}'.format(**locals())
                 run(cmdline, env_vars=dict(DISPLAY=None),
-                    checks=[lambda _1, _2: verify_dir(qualimap_output_dir)], reuse=tc.reuse_intermediate)
+                    checks=[lambda _1, _2: verify_dir(qualimap_output_dir)], reuse=cfg.reuse_intermediate)
 
                 if not verify_dir(qualimap_plots_dirpath):
                     warn('Warning: Qualimap for multi-sample analysis failed to finish. TargQC will not contain plots.')
@@ -192,7 +194,7 @@ def _correct_qualimap_insert_size_histogram(samples):
             continue  # no data from both Qualimap v.1 and Qualimap v.2
 
         # if qualimap histogram exits and reuse_intermediate, skip
-        if verify_file(s.qualimap_ins_size_hist_fpath, silent=True) and tc.reuse_intermediate:
+        if verify_file(s.qualimap_ins_size_hist_fpath, silent=True) and cfg.reuse_intermediate:
             pass
         else:
             if verify_file(s.picard_ins_size_hist_txt_fpath):
