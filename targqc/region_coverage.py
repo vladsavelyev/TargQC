@@ -60,8 +60,9 @@ def make_region_reports(view, work_dir, samples, target, features_bed):
         [[s.work_dir, concat_bed_fpath, s.bam, depth_thresholds_by_sample[s.name],
           None, False, s.name, cfg.reuse_intermediate]
          for s in samples])
-    assert len(sambamba_depth_output_fpaths) == len(samples), 'Number of sambamba results = ' + str(len(sambamba_depth_output_fpaths)) + \
-                                                              ' which is less then the number of samples ' + str(len(samples))
+    assert len(sambamba_depth_output_fpaths) == len(samples), \
+        'Number of sambamba results = ' + str(len(sambamba_depth_output_fpaths)) + \
+        ' which is less then the number of samples ' + str(len(samples))
 
     debug()
     debug('Parsing sambamba results and writing results...')

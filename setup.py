@@ -33,12 +33,12 @@ if sys.argv[-1] == 'install':
 -----------------------------------
 """.format(version))
 
-sambamba = join('Utils', 'sambamba', 'build', 'sambamba')
-if not isfile(sambamba):
-    _run('cd Utils/sambamba; make sambamba-ldmd2-64; cd ../..')
-    if not isfile(sambamba):
-        sys.stderr.write('Could not compile sambamba, exiting.')
-        sys.exit(1)
+# sambamba = join('Utils', 'sambamba', 'build', 'sambamba')
+# if not isfile(sambamba):
+#     _run('cd Utils/sambamba; make sambamba-ldmd2-64; cd ../..')
+#     if not isfile(sambamba):
+#         sys.stderr.write('Error: could not compile sambamba, exiting.\n')
+#         sys.exit(1)
 
 setup(
     name=name,
