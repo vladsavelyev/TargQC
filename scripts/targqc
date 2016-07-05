@@ -157,7 +157,7 @@ options = [
      )),
     (['--work-dir'], dict(dest='work_dir', metavar='DIR', help=SUPPRESS_HELP)),
     (['--log-dir'], dict(dest='log_dir', metavar='DIR', help=SUPPRESS_HELP)),
-    # (['--project-name'], dict(dest='project_name', help=SUPPRESS_HELP)),
+    (['--project-name'], dict(dest='project_name', help=SUPPRESS_HELP)),
     (['--email'], dict(dest='email', help=SUPPRESS_HELP)),
 ]
 
@@ -320,7 +320,8 @@ def process_opts():
     debug(' '.join(sys.argv))
     debug()
 
-    cfg.parallel_cfg = ParallelCfg(opts.scheduler, opts.queue, opts.resources, opts.threads)
+    tag = ('targqc_' + opts.project_name) if opts.project_name else 'targqc'
+    cfg.parallel_cfg = ParallelCfg(opts.scheduler, opts.queue, opts.resources, opts.threads, tag)
 
     cfg.reuse_intermediate = opts.reuse_intermediate
 

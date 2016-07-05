@@ -13,12 +13,16 @@ class ParallelCfg:
                  scheduler=None,
                  queue=None,
                  resources=None,
-                 threads=None):
+                 threads=None,
+                 tag='targqc'):
         self.scheduler = scheduler
         self.queue = queue
         self.threads = threads or 1
         self.extra_params = dict(r.split('=') for r in resources) if resources else dict()
-        self.extra_params['run_local'] = is_local()
+        if 'run_local' not in self.extra_params:
+            self.extra_params['run_local'] = is_local()
+        if 'tag' not in self.extra_params:
+            self.extra_params['tag'] = tag
 
     def num_jobs(self, n_samples):
         return min(self.threads, n_samples)
