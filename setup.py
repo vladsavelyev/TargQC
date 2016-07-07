@@ -54,7 +54,8 @@ setup(
     packages=find_packages(),
     package_data={
         'GeneAnnotation': [
-            'RefSeq/*.bed'
+            'RefSeq/*.bed',
+            'RefSeq/*.bed.gz',
         ],
         'Utils': [
             'reference_data/fai/*.fai',

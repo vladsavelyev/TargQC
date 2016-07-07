@@ -93,7 +93,7 @@ def _combined_regional_reports(work_dir, output_dir, samples):
     return tsv_region_rep_fpath
 
 
-def summarize_targqc(summary_threads, output_dir, work_dir, samples, bed_fpath=None, features_fpath=None, tag_by_sample=None):
+def summarize_targqc(summary_threads, output_dir, work_dir, samples, bed_fpath=None, tag_by_sample=None):
     info('TargQC coverage statistics for all samples')
 
     tsv_fpath, html_fpath = _make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=bed_fpath, tag_by_sample=tag_by_sample)

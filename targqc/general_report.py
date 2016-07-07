@@ -1,5 +1,5 @@
 # coding=utf-8
-
+import os
 from collections import OrderedDict
 from os.path import join, abspath, realpath, dirname, relpath
 
@@ -7,17 +7,19 @@ import targqc.config as cfg
 from targqc.qualimap.report_parser import parse_qualimap_sample_report
 from targqc.qualimap.runner import run_qualimap
 
-from Utils.Region import calc_bases_within_threshs, calc_rate_within_normal, Region, GeneInfo
-from Utils.bam_bed_utils import get_padded_bed_file, calc_region_number, intersect_bed, calc_sum_of_regions, count_bed_cols
+from Utils.bed_utils import get_padded_bed_file, intersect_bed, calc_sum_of_regions, count_bed_cols,\
+    calc_bases_within_threshs, calc_rate_within_normal, Region, GeneInfo
 from Utils.sambamba import index_bam, number_mapped_reads_on_target, number_of_mapped_reads, sambamba_depth
 from Utils.file_utils import intermediate_fname, verify_file, safe_mkdir
 from Utils.logger import critical, info, err, warn, debug
 from Utils.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport
 
 
+
 def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
     sections = [
         ReportSection('reads', 'Reads', [
+            Metric('Original reads',                       short_name='Orig reads',   multiqc=dict(order=1, kind='reads', min=0)),
             Metric('Reads',                                short_name='Reads',        multiqc=dict(order=1, kind='reads', min=0)),
             Metric('Mapped reads',                         short_name='Mapped',       multiqc=dict(title='Mapped reads', hidden=True, order=2, kind='reads', min=0),  ok_threshold='Percentage of mapped reads', bottom=0, description='samtools view -c -F 4'),
             Metric('Percentage of mapped reads',           short_name='%',            multiqc=dict(title='Mapped', order=3, kind='reads'),                  unit='%', ok_threshold=0.98, bottom=0),
@@ -35,7 +37,7 @@ def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
             ReportSection('target_metrics', 'Target coverage', [
                 Metric('Covered bases in target',                         short_name='Trg covered',                         multiqc=dict(hidden=True, title='Trg cov bases', kind='cov'),   unit='bp',                          description='Target bases covered by at least 1 read'),
                 Metric('Percentage of target covered by at least 1 read', short_name='%',                                   multiqc=dict(title='Trg cov', order=14, kind='cov'),            unit='%'),
-                Metric('Percentage of reads mapped on target',            short_name='Reads on trg',                        multiqc=dict(title='On trg', order=10, kind='trg'),             unit='%',                           description='Percentage of unique mapped reads overlapping target at least by 1 base'),
+                Metric('Percentage of reads mapped on target',            short_name='Reads on trg',                        multiqc=dict(hidden=True, title='On trg', order=10, kind='trg'),             unit='%',                           description='Percentage of unique mapped reads overlapping target at least by 1 base'),
                 Metric('Percentage of reads mapped off target',           short_name='Reads off trg',                       multiqc=dict(title='Off trg', order=11, kind='trg'),            unit='%', quality='Less is better', description='Percentage of unique mapped reads that don\'t overlap target even by 1 base'),
                 Metric('Percentage of reads mapped on padded target',     short_name='On trg &#177;' + str(padding) + 'bp', multiqc=dict(order=12, kind='trg'), unit='%',                                                       description='Percentage of reads that overlap target at least by 1 base. Should be 1-2% higher.'),
                 Metric('Percentage of usable reads',                      short_name='Usable reads',                        multiqc=dict(order=13, title='Usable', kind='trg'),             unit='%',                           description='Share of unique reads mapped on target in the total number of original reads (reported in the very first column Reads'),
@@ -59,6 +61,7 @@ def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
     depth_section = ReportSection('section_name', ('Target' if not is_wgs else 'Genome') + ' coverage depth', [
         Metric('Median ' + trg_name + ' coverage depth',                  short_name='Median',         multiqc=dict(title='Depth', order=6, kind='cov', min=0)),
         Metric('Average ' + trg_name + ' coverage depth',                 short_name='Avg',            multiqc=dict(title='Avg depth', order=7, kind='cov', min=0)),
+        Metric('Estimated ' + trg_name + ' full coverage depth',          short_name='Est full avg',   multiqc=dict(title='Est avg depth', order=7, kind='cov', min=0), description='Estimated average coverage of full dataset. Calculated as (the total number of raw reads * downsampled mapped reads fraction / total downsampled mapped reads) * downsampled average coverage'),
         Metric('Std. dev. of ' + trg_name + ' coverage depth',            short_name='Std dev',        multiqc=dict(order=8, kind='cov', min=0),                                quality='Less is better'),
         Metric('Percentage of ' + trg_name + ' within 20% of mean depth', short_name='&#177;20% avg',  multiqc=dict(order=9, kind='cov'),                             unit='%')
     ])
@@ -331,10 +334,10 @@ def get_mean_cov(bedcov_output_fpath):
     return mean_cov
 
 
-def make_general_reports(view, samples, target):
+def make_general_reports(view, samples, target, num_reads_by_sample=None):
     info('Running QualiMap...')
     view.run(run_qualimap,
-        [[s.qualimap_dirpath, s.bam, target.bed_fpath, view.cores_per_job, cfg.reuse_intermediate]
+        [[s.work_dir, s.qualimap_dirpath, s.bam, target.bed_fpath, view.cores_per_job, cfg.reuse_intermediate]
          for s in samples])
 
     # try:
@@ -355,6 +358,8 @@ def make_general_reports(view, samples, target):
         depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample, cfg.depth_thresholds)
         sample.avg_depth = depth_stats['ave_depth']
 
+        if sample.name in num_reads_by_sample:
+            reads_stats['original_num_reads'] = num_reads_by_sample[sample.name]
         reads_stats['gender'] = _determine_sex(sample.work_dir, sample.bam, depth_stats['ave_depth'], target.bed_fpath)
         info()
 
@@ -384,10 +389,10 @@ def make_general_reports(view, samples, target):
             padded_bed = get_padded_bed_file(sample.work_dir, target.bed_fpath, cfg.padding, cfg.fai_fpath)
             reads_stats['mapped_dedup_on_padded_target'] = number_mapped_reads_on_target(
                 sample.work_dir, padded_bed, sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
-        elif cfg.cds_bed_fpath:
-            info('Using the CDS reference BED ' + cfg.cds_bed_fpath + ' to calc "reads on CDS"')
+        elif cfg.cds_bed:
+            info('Using the CDS reference BED to calc "reads on CDS"')
             reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(
-                sample.work_dir, cfg.cds_bed_fpath, sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
+                sample.work_dir, cfg.cds_bed.saveas(), sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
         # elif features_no_genes_bed:
         #     info('Using ensemble ' + features_no_genes_bed + ' to calc reads on exome')
         #     reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(cnf, features_no_genes_bed, bam_fpath) or 0
@@ -503,13 +508,18 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
 
     info('')
     report.add_record('Average ' + trg_type + ' coverage depth', depth_stats['ave_depth'])
+    if 'original_num_reads' in reads_stats:
+        report.add_record('Original reads', reads_stats['original_num_reads'])
+        times_downsampled = 1.0 * reads_stats['original_num_reads'] / reads_stats['total']
+        est_full_cov = times_downsampled * depth_stats['ave_depth']
+        report.add_record('Estimated ' + trg_type + ' full coverage depth', est_full_cov)
     report.add_record('Median ' + trg_type + ' coverage depth', depth_stats['median_depth'])
     report.add_record('Std. dev. of ' + trg_type + ' coverage depth', depth_stats['stddev_depth'])
     # report.add_record('Minimal ' + trg_type + ' coverage depth', depth_stats['min_depth'])
     # report.add_record('Maximum ' + trg_type + ' coverage depth', depth_stats['max_depth'])
     if 'wn_20_percent' in depth_stats:
         report.add_record('Percentage of ' + trg_type + ' within 20% of mean depth', depth_stats['wn_20_percent'])
-        assert depth_stats['wn_20_percent'] <= 1.0 or depth_stats['wn_20_percent'] is None, str( depth_stats['wn_20_percent'])
+        assert depth_stats['wn_20_percent'] <= 1.0 or depth_stats['wn_20_percent'] is None, str(depth_stats['wn_20_percent'])
 
     if 'bases_within_threshs' in depth_stats:
         for depth, bases in depth_stats['bases_within_threshs'].items():
@@ -536,3 +546,28 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
     debug()
     debug('Saved to ' + dirname(report.txt_fpath))
     return report
+
+
+def get_total_reads_number_from_fastqc(sample, fastqc_dirpath):
+    fastqc_txt_fpaths = find_fastqc_txt(sample, fastqc_dirpath)
+    if not fastqc_txt_fpaths:
+        return
+    num_reads = 0
+    for fpath in fastqc_txt_fpaths:
+        with open(fpath) as f_in:
+            for line in f_in:
+                if 'total sequences' in line.lower():
+                    num_reads += int(line.strip().split('\t')[-1])
+                    break
+    return num_reads
+
+
+def find_fastqc_txt(sample_name, fastqc_dirpath):
+    l_fastqc_dirpath = join(fastqc_dirpath, sample_name + '_R1_fastqc')
+    r_fastqc_dirpath = join(fastqc_dirpath, sample_name + '_R2_fastqc')
+    fastqc_txt_fpaths = [join(l_fastqc_dirpath, 'fastqc_data.txt'), join(r_fastqc_dirpath, 'fastqc_data.txt')]
+    if all(os.path.isfile(fpath) for fpath in fastqc_txt_fpaths):
+        return fastqc_txt_fpaths
+    else:
+        return None
+

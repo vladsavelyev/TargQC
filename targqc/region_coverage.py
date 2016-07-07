@@ -3,7 +3,9 @@
 from collections import defaultdict
 from os.path import isfile, join
 
-from Utils.bam_bed_utils import count_bed_cols
+from pybedtools import BedTool
+
+from Utils.bed_utils import count_bed_cols
 from Utils.sambamba import sambamba_depth
 from Utils.call_process import run
 from Utils.file_utils import intermediate_fname, verify_file, file_transaction
@@ -22,7 +24,7 @@ class BedCols:
     TRANSCRIPT = 8
 
 
-def make_region_reports(view, work_dir, samples, target, features_bed):
+def make_region_reports(view, work_dir, samples, target, features_bed_fpath):
     info('Calculating coverage statistics for CDS and exon regions from RefSeq...')
 
     if cfg.reuse_intermediate and all(
@@ -36,14 +38,16 @@ def make_region_reports(view, work_dir, samples, target, features_bed):
 
     debug()
     debug('Filtering features BED to have only CDS and Exon features')
-    exons_and_cds_features = intermediate_fname(work_dir, features_bed, 'nogenes')
-    run('egrep -w "Exon|CDS" ' + features_bed, output_fpath=exons_and_cds_features, reuse=cfg.reuse_intermediate)
+    exons_and_cds_bed = BedTool(features_bed_fpath)\
+        .filter(lambda r: r.fields[6] in ['Exon', 'CDS'])\
+        .saveas(join(work_dir, 'cds_and_exons.bed'))
 
     if target.bed_fpath:
         debug()
         debug('Writing extra columns to match features and target col numbers')
-        features_cols = count_bed_cols(exons_and_cds_features)
+        features_cols = exons_and_cds_bed.field_count()
         target_with_extra_cols_fpath = intermediate_fname(work_dir, target.bed_fpath, 'extra')
+        concat_bed_fpath = join(work_dir, 'target_plus_refseq.bed')
         with file_transaction(work_dir, target_with_extra_cols_fpath) as tx:
             with open(target.bed_fpath) as inp, open(tx, 'w') as out:
                 for l in inp:
@@ -55,13 +59,13 @@ def make_region_reports(view, work_dir, samples, target, features_bed):
 
         debug()
         debug('Concatenating features and target')
-        concat_bed_fpath = join(work_dir, 'target_plus_refseq.bed')
         with file_transaction(work_dir, concat_bed_fpath) as tx:
-            cmdl = bedops.get_executable() + ' --everything ' + target_with_extra_cols_fpath + ' ' + exons_and_cds_features
+            cmdl = bedops.get_executable() + ' --everything ' + target_with_extra_cols_fpath + ' ' \
+                   + exons_and_cds_bed.fn
             run(cmdl, tx, reuse=cfg.reuse_intermediate)
             debug('Saved to ' + concat_bed_fpath)
     else:
-        concat_bed_fpath = exons_and_cds_features
+        concat_bed_fpath = exons_and_cds_bed.fn
 
     debug()
     debug('Running sambamba...')

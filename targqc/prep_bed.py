@@ -1,20 +1,22 @@
+import os
+
 import pybedtools
 
 from GeneAnnotation.annotate_bed import annotate
-from Utils.bam_bed_utils import remove_comments, sort_bed, count_bed_cols, cut, verify_bed
+from Utils.bed_utils import remove_comments, sort_bed, count_bed_cols, cut, verify_bed
 from Utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction
 from Utils.logger import debug, info, warn
 
 
-def prepare_beds(work_dir, fai_fpath=None, features_bed=None, target_bed_fpath=None, cds_bed_fpath=None, reuse=False):
-    if features_bed is None and target_bed_fpath is None:
+def prepare_beds(work_dir, fai_fpath=None, features_bed_fpath=None, target_bed_fpath=None, cds_bed_fpath=None, reuse=False):
+    if features_bed_fpath is None and target_bed_fpath is None:
         warn('No input target BED, and no features BED in the system config specified. Not making detailed per-gene reports.')
 
     if target_bed_fpath:
         target_bed_fpath = verify_bed(target_bed_fpath, is_critical=True)
 
-    if features_bed:
-        features_bed = verify_bed(features_bed, is_critical=True)
+    if features_bed_fpath is not None:
+        features_bed_fpath = verify_bed(features_bed_fpath, is_critical=True)
 
     # # Features
     # features_no_genes_bed = None
@@ -52,9 +54,9 @@ def prepare_beds(work_dir, fai_fpath=None, features_bed=None, target_bed_fpath=N
         debug()
         info('Annotating target...')
         ann_target_bed_fpath = add_suffix(sort_target_bed_fpath, 'ann')
-        annotate(sort_target_bed_fpath, features_bed, ann_target_bed_fpath, reuse=reuse)
+        annotate(sort_target_bed_fpath, features_bed_fpath, ann_target_bed_fpath, reuse=reuse)
         debug('Saved to ' + ann_target_bed_fpath)
 
         target_bed_fpath = ann_target_bed_fpath
 
-    return target_bed_fpath, features_bed
+    return target_bed_fpath, features_bed_fpath

@@ -1,11 +1,15 @@
+import os
 import subprocess
 from distutils.version import LooseVersion
-from os.path import getsize, dirname, join, abspath, relpath, isdir, exists
+from os.path import getsize, dirname, join, abspath, relpath, isdir, exists, splitext, basename
 from os import listdir
 import shutil
 
+from pybedtools import BedTool
+
+from Utils.bed_utils import merge_overlaps
 from Utils.call_process import run
-from Utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists
+from Utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname
 from Utils.logger import info, warn, err, critical, debug
 from Utils.reporting.reporting import write_tsv_rows
 
@@ -24,6 +28,55 @@ def find_executable():
         if isdir(join(root_dirpath, dname)) and dname.startswith('qualimap') and file_exists(join(root_dirpath, dname, 'qualimap')):
             return join(root_dirpath, dname, 'qualimap')
     critical('Error: could not find Qualimap executable')
+
+
+def run_qualimap(work_dir, output_dir, bam_fpath, bed_fpath=None, threads=1, reuse_intermediate=False):
+    info('Analysing ' + bam_fpath)
+
+    safe_mkdir(dirname(output_dir))
+    safe_mkdir(output_dir)
+
+    mem_cmdl = ''
+    mem_m = get_qualimap_max_mem(bam_fpath)
+    mem = str(int(mem_m)) + 'M'
+    mem_cmdl = '--java-mem-size=' + mem
+
+    cmdline = (find_executable() + ' bamqc --skip-duplicated -nt {threads} {mem_cmdl} -nr 5000 '
+        '-bam {bam_fpath} -outdir {output_dir} -c ')
+
+    if bed_fpath:
+        merged_bed3_fpath = merge_overlaps(work_dir, bed_fpath)
+        bed_fpath = _bed3_to_bed6(work_dir, merged_bed3_fpath)
+        cmdline += '-gff {bed_fpath} '
+        debug('Using amplicons/capture panel ' + bed_fpath)
+
+    if cfg.genome.startswith('hg') or cfg.genome.startswith('GRCh'):
+        cmdline += ' -gd HUMAN'
+    if cfg.genome.startswith('mm'):
+        cmdline += ' -gd MOUSE'
+
+    cmdline = cmdline.format(**locals())
+    report_fpath = join(output_dir, 'qualimapReport.html')
+    run(cmdline, output_fpath=report_fpath, stdout_to_outputfile=False, env_vars=dict(DISPLAY=None),
+        checks=[lambda _1, _2: verify_file(report_fpath)], reuse=reuse_intermediate)
+
+
+def _bed3_to_bed6(work_dir, bed_fpath):
+    """Convert bed to required bed6 inputs.
+    """
+    bed6_fpath = intermediate_fname(work_dir, bed_fpath, 'bed6')
+    if os.path.isfile(bed6_fpath) and verify_file(bed6_fpath, cmp_date_fpath=bed_fpath):
+        return bed6_fpath
+
+    debug('Converting bed to required bed6 Qualimap input')
+    with file_transaction(work_dir, bed6_fpath) as tx:
+        with open(tx, 'w') as out:
+            for i, region in enumerate(list(x) for x in BedTool(bed_fpath)):
+                region = [x for x in list(region) if x]
+                fillers = [str(i), "1.0", "+"]
+                full = region + fillers[:6 - len(region)]
+                out.write("\t".join(full) + "\n")
+    return bed6_fpath
 
 
 def fix_bed_for_qualimap(bed_fpath, qualimap_bed_fpath):
@@ -48,32 +101,6 @@ def fix_bed_for_qualimap(bed_fpath, qualimap_bed_fpath):
                 fields.append('+')
 
             out.write('\t'.join(fields) + '\n')
-
-
-def run_qualimap(output_dir, bam_fpath, bed_fpath=None, threads=1, reuse_intermediate=False):
-    info('Analysing ' + bam_fpath)
-
-    safe_mkdir(dirname(output_dir))
-    safe_mkdir(output_dir)
-
-    bed_cmd = ''
-    if bed_fpath:
-        qualimap_bed_fpath = join(output_dir, 'tmp_qualimap.bed')
-        fix_bed_for_qualimap(bed_fpath, qualimap_bed_fpath)
-        bed_cmd = ' -gff ' + qualimap_bed_fpath + ' '
-        debug('Using amplicons/capture panel ' + qualimap_bed_fpath)
-
-    mem_cmdl = ''
-    mem_m = get_qualimap_max_mem(bam_fpath)
-    mem = str(int(mem_m)) + 'M'
-    mem_cmdl = '--java-mem-size=' + mem
-
-    cmdline = (find_executable() + ' bamqc --skip-duplicated -nt {threads} {mem_cmdl} -nr 5000 '
-        '-bam {bam_fpath} -outdir {output_dir} {bed_cmd} -c -gd HUMAN').format(**locals())
-    report_fpath = join(output_dir, 'qualimapReport.html')
-
-    run(cmdline, output_fpath=report_fpath, stdout_to_outputfile=False, env_vars=dict(DISPLAY=None),
-        checks=[lambda _1, _2: verify_file(report_fpath)], reuse=reuse_intermediate)
 
 
 def run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report):

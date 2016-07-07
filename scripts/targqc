@@ -8,19 +8,23 @@ import sys
 from optparse import OptionParser, SUPPRESS_HELP
 from os.path import isfile, join, isdir
 
+from pybedtools import BedTool
+
 import GeneAnnotation
 import Utils.reference_data as ref
 import targqc
 import targqc.config as cfg
 from Utils import logger
-from Utils.bam_bed_utils import verify_bam, verify_bed
+from Utils.bed_utils import verify_bed
+from Utils.bam_utils import verify_bam
 from Utils.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
 from Utils.logger import critical, err, info, warn, debug, is_local
 from Utils.proc_args import read_samples, find_bams, find_fastq_pairs
 from Utils.sambamba import index_bam
+from Utils import sambamba
 from targqc import Sample
 from targqc.Target import Target
-from targqc.fastq import align, downsample
+from targqc.fastq import align, downsample, count_records_in_fastq
 from targqc.parallel import ParallelCfg, parallel_view
 
 from targqc.general_report import make_general_reports
@@ -63,12 +67,12 @@ options = [
              'Default is ' + str(cfg.padding),
         default=cfg.padding
      )),
-    (['--downsample-to'], dict(
-        dest='downsample_to',
+    (['--downsample-pairs-num', '--downsample-to'], dict(
+        dest='downsample_pairs_num',
         type='int',
         help='If input is FastQ, select N random read pairs from each input set. '
-             'Default is ' + str(cfg.downsample_to) + '. To turn off (align all reads), set --downsample-to off',
-        default=cfg.downsample_to,
+             'Default is ' + str(cfg.downsample_pairs_num) + '. To turn off (align all reads), set --downsample-pairs-num off',
+        default=cfg.downsample_pairs_num,
      )),
     (['-t', '--nt', '--threads'], dict(
         dest='threads',
@@ -212,8 +216,9 @@ def main(args):
             info()
             debug('*' * 70)
             info('Preparing input BED file: sort, clean, cut, annotate')
+
             target_bed_fpath, cfg.features_bed_fpath = prepare_beds(
-                    work_dir, cfg.fai_fpath, cfg.features_bed_fpath, target_bed_fpath, cfg.cds_bed_fpath, reuse=cfg.reuse_intermediate)
+                    work_dir, cfg.fai_fpath, cfg.features_bed_fpath, target_bed_fpath, cfg.cds_bed, reuse=cfg.reuse_intermediate)
             target.bed_fpath = target_bed_fpath
 
         cfg.features_bed_fpath = \
@@ -229,7 +234,7 @@ def main(args):
     info()
     info('*' * 70)
     info('Summarizing')
-    summarize_targqc(cfg.parallel_cfg.threads, output_dir, work_dir, samples, bed_fpath=target_bed_fpath, features_fpath=cfg.features_bed_fpath)
+    summarize_targqc(cfg.parallel_cfg.threads, output_dir, work_dir, samples, bed_fpath=target_bed_fpath)
 
     # info()
     # info('Summarizing: running MultiQC')
@@ -239,9 +244,11 @@ def main(args):
 
 def start_targqc(work_dir, samples, target):
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
+    num_reads_by_sample = dict()
     if fastq_samples:
         with parallel_view(len(fastq_samples), cfg.parallel_cfg) as view:
-            proc_fastq(fastq_samples, view, work_dir, cfg.bwa_prefix, cfg.downsample_to, cfg.dedup)
+            num_reads_by_sample = proc_fastq(fastq_samples, view, work_dir, cfg.bwa_prefix,
+                                             cfg.downsample_pairs_num, cfg.dedup)
 
     for s in samples:
         info(s.name + ': using alignment ' + s.bam)
@@ -252,11 +259,11 @@ def start_targqc(work_dir, samples, target):
         view.run(index_bam, [[s.bam] for s in samples])
 
         info('Making general reports...')
-        general_reports = make_general_reports(view, samples, target)
+        make_general_reports(view, samples, target, num_reads_by_sample)
 
         info()
         info('Making region-level reports...')
-        per_gene_reports = make_region_reports(view, work_dir, samples, target, cfg.features_bed_fpath)
+        make_region_reports(view, work_dir, samples, target, cfg.features_bed_fpath)
 
     # for general_report, per_gene_report, sample in zip(general_reports, per_gene_reports, samples):
     #     info('')
@@ -350,33 +357,35 @@ def process_opts():
             critical('--bwa-prefix is required when running from fastq')
         cfg.bwa_prefix = verify_file(opts.bwa_prefix, is_critical=True)
 
-    if opts.downsample_to == 'off':
-        cfg.downsample_to = None
+    if opts.downsample_pairs_num == 'off':
+        cfg.downsample_pairs_num = None
     else:
-        cfg.downsample_to = opts.downsample_to
+        cfg.downsample_pairs_num = opts.downsample_pairs_num
     cfg.padding = opts.padding
     cfg.genome = opts.genome
     cfg.dedup = not opts.no_dedup
 
     if opts.features:
         cfg.features_bed_fpath = verify_bed(opts.features, is_critical=True)
-        cfg.cds_bed_fpath = verify_bed(opts.cds_bed_fpath, is_critical=True)
     elif cfg.genome:
         cfg.features_bed_fpath = GeneAnnotation.get_all_features_canonical(cfg.genome)
-        cfg.cds_bed_fpath = GeneAnnotation.get_cds(cfg.genome)
-        if not cfg.features_bed_fpath or not cfg.cds_bed_fpath:
+        if cfg.features_bed_fpath is None:
             critical('Genome ' + cfg.genome + ' is not supported. Supported: ' + ', '.join(GeneAnnotation.SUPPORTED_GENOMES))
     else:
         warn('Neither --refseq-bed nor --genome is specified, analysing without genomic features.')
-    if opts.features_no_genes:
-        cfg.features_no_genes_bed = verify_bed(opts.features_no_genes, is_critical=True)
+
+    if opts.cds_bed_fpath:
+        cfg.cds_bed = BedTool(verify_bed(opts.cds_bed_fpath, is_critical=True))
+    elif cfg.genome:
+        cfg.cds_bed = GeneAnnotation.get_cds(cfg.genome)
+
     cfg.original_target_bed = opts.original_target_bed
 
     bed_fpath = None
     if opts.bed:
-        bed_fpath = verify_file(opts.bed, is_critical=True)
+        bed_fpath = verify_bed(opts.bed, is_critical=True)
         info('Using target BED file ' + bed_fpath)
-    elif cfg.features_bed_fpath:
+    elif cfg.features_bed_fpath is not None:
         info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
 
     if opts.fai:
@@ -389,25 +398,51 @@ def process_opts():
     return output_dir, work_dir, bam_by_sample, fastqs_by_sample, bed_fpath, opts.prep_bed
 
 
-def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, dedup=True):
-    if downsample_to:
-        info('Downsampling the reads to ' + str(downsample_to))
+def count_reads(s_name, work_dir, fastq_fpath, reuse=False):
+    read_counts_fpath = join(work_dir, 'original_read_count.txt')
+    if reuse and isfile(read_counts_fpath) and verify_file(read_counts_fpath, cmp_date_fpath=fastq_fpath):
+        with open(read_counts_fpath) as f:
+            return int(f.read().strip())
+    else:
+        info('Counting read numbers in ' + s_name + ', writing to ' + read_counts_fpath)
+        pairs_number = count_records_in_fastq(fastq_fpath)
+        read_number = pairs_number * 2
+        with open(read_counts_fpath, 'w') as out:
+            out.write(str(read_number))
+        return read_number
+
+
+def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num, dedup=True):
+    num_reads_by_sample = dict()
+    if downsample_pairs_num:
+        info('Counting read numbers')
+        read_counts = parall_view.run(count_reads, [[s.name, s.work_dir, s.l_fpath, cfg.reuse_intermediate] for s in samples])
+        for s, read_count in zip(samples, read_counts):
+            num_reads_by_sample[s.name] = read_count
+
+        info('Downsampling the reads to ' + str(downsample_pairs_num))
         fastq_pairs = parall_view.run(downsample,
-            [[s.work_dir, s.name, s.work_dir, s.l_fpath, s.r_fpath, downsample_to, 'subset'] for s in samples])
+            [[s.work_dir, s.name, s.work_dir, s.l_fpath, s.r_fpath, downsample_pairs_num, 'subset']
+             for s in samples])
         for s, (l_r, r_r) in zip(samples, fastq_pairs):
             s.l_fpath = l_r
             s.r_fpath = r_r
 
-    sambamba = which('sambamba')
     bwa = which('bwa')
-    seqtk = which('seqtk')
     samblaster = which('samblaster')
-    if not (sambamba and bwa and seqtk and samblaster):
-        critical('sambamba, BWA, seqtk and samblaster are required to align BAM')
+    samtools = which('samtools')
+    sb = sambamba.get_executable()
+    if not (bwa and samblaster and samtools and sb):
+        if not bwa:         err('Error: bwa is required for alignment')
+        if not samblaster:  err('Error: samblaster is required for deduplication')
+        if not samtools:    err('Error: samtools is required for alignment')
+        if not sb:          err('Error: sambamba is required')
+        critical()
     info()
     info('Aligning reads to the reference')
     bam_fpaths = parall_view.run(align,
-        [[work_dir, s.name, s.l_fpath, s.r_fpath, sambamba, bwa, seqtk, samblaster, bwa_prefix, dedup]
+        [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samblaster, samtools, sb, bwa_prefix, dedup,
+            parall_view.cores_per_job]
          for s in samples])
 
     bam_fpaths = map(verify_bam, bam_fpaths)
@@ -415,6 +450,8 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, dedup=
         critical('Some samples were not aligned successfully.')
     for bam, s in zip(bam_fpaths, samples):
         s.bam = bam
+
+    return num_reads_by_sample
 
 
 if __name__ == '__main__':
