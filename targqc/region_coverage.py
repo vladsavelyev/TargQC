@@ -13,6 +13,15 @@ import targqc.config as cfg
 from targqc import bedops
 
 
+class BedCols:
+    GENE = 3
+    EXON = 4
+    STRAND = 5
+    FEATURE = 6
+    BIOTYPE = 7
+    TRANSCRIPT = 8
+
+
 def make_region_reports(view, work_dir, samples, target, features_bed):
     info('Calculating coverage statistics for CDS and exon regions from RefSeq...')
 
@@ -39,8 +48,8 @@ def make_region_reports(view, work_dir, samples, target, features_bed):
             with open(target.bed_fpath) as inp, open(tx, 'w') as out:
                 for l in inp:
                     fs = l.strip('\n').split('\t')
-                    fs.append('Target')
                     fs.extend(['.'] * (features_cols - len(fs)))
+                    fs[BedCols.FEATURE] = 'Target'
                     out.write('\t'.join(fs) + '\n')
         debug('Saved to ' + target_with_extra_cols_fpath)
 
@@ -126,12 +135,12 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                 chrom = fs[0]
                 start, end = int(fs[1]), int(fs[2])
                 region_size = end - start
-                gene_name = fs[3] if read_count_col != 3 else None
-                exon = fs[4]
-                strand = fs[5]
-                feature = fs[6]
-                biotype = fs[7]
-                transcript = fs[8]
+                gene_name = fs[BedCols.GENE] if read_count_col != BedCols.GENE else None
+                exon = fs[BedCols.EXON]
+                strand = fs[BedCols.STRAND]
+                feature = fs[BedCols.FEATURE]
+                biotype = fs[BedCols.BIOTYPE]
+                transcript = fs[BedCols.TRANSCRIPT]
                 avg_depth = float(fs[mean_cov_col])
                 min_depth = int(fs[min_depth_col]) if min_depth_col is not None else '.'
                 std_dev = float(fs[std_dev_col]) if std_dev_col is not None else '.'
