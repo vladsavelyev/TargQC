@@ -229,8 +229,6 @@ def main(args):
     info()
     start_targqc(work_dir, samples, target)
 
-    if not cfg.debug and work_dir and isdir(work_dir):
-        shutil.rmtree(work_dir)
     info()
     info('*' * 70)
     info('Summarizing')
@@ -240,6 +238,9 @@ def main(args):
     # info('Summarizing: running MultiQC')
     # cmd = 'multiqc ' + output_dir + ('' if cfg.reuse_intermediate else ' --force') + ' -v ' + ' '.join(s.dirpath for s in samples)
     # run(cmd)
+
+    if not cfg.debug and work_dir and isdir(work_dir):
+        shutil.rmtree(work_dir)
 
 
 def start_targqc(work_dir, samples, target):

@@ -2,6 +2,8 @@ pip
 numpy
 pandas
 pybedtools
+joblib
+jsontemplate
 ipython<5.0.0,>=4.0.0
 ipython-cluster-helper
 PyMonad
