@@ -6,6 +6,7 @@ from GeneAnnotation.annotate_bed import annotate
 from Utils.bed_utils import remove_comments, sort_bed, count_bed_cols, cut, verify_bed
 from Utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction
 from Utils.logger import debug, info, warn
+from targqc import config as cfg
 
 
 def prepare_beds(work_dir, fai_fpath=None, features_bed_fpath=None, target_bed_fpath=None, cds_bed_fpath=None, reuse=False):
@@ -54,7 +55,7 @@ def prepare_beds(work_dir, fai_fpath=None, features_bed_fpath=None, target_bed_f
         debug()
         info('Annotating target...')
         ann_target_bed_fpath = add_suffix(sort_target_bed_fpath, 'ann')
-        annotate(sort_target_bed_fpath, features_bed_fpath, ann_target_bed_fpath, reuse=reuse)
+        annotate(sort_target_bed_fpath, features_bed_fpath, ann_target_bed_fpath, reuse=reuse, genome=cfg.genome)
         debug('Saved to ' + ann_target_bed_fpath)
 
         target_bed_fpath = ann_target_bed_fpath

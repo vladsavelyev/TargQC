@@ -4,6 +4,7 @@ from GeneAnnotation.annotate_bed import annotate
 from Utils.bed_utils import filter_bed_with_gene_set, get_gene_keys_from_bed, calc_region_number
 from Utils.file_utils import add_suffix
 from Utils.logger import debug, warn, critical
+from targqc import config as cfg
 
 
 class Target:
@@ -46,7 +47,7 @@ class Target:
         if not genes_in_refseq:
             debug()
             warn('No gene symbols from the target BED file was found in the RefSeq features. Re-annotating target...')
-            self.bed_fpath = annotate(self.bed_fpath, features_bed_fpath, add_suffix(self.bed_fpath, 'ann'), reuse=reuse)
+            self.bed_fpath = annotate(self.bed_fpath, features_bed_fpath, add_suffix(self.bed_fpath, 'ann'), reuse=reuse, genome=cfg.genome)
             #info('Merging regions within genes...')
             #target_bed = group_and_merge_regions_by_gene(cnf, target_bed, keep_genes=False)
             # debug('Sorting amplicons_bed by (chrom, gene_name, start)')
