@@ -71,7 +71,7 @@ setup(
             'reporting/static/*/*.pxm',
             'reporting/*.html',
             'reporting/*.json',
-            # 'sambamba/sambamba_*',
+            'sambamba_binaries/sambamba_*',
             'sambamba/build/sambamba',
             'tools/*.sh',
         ],

@@ -399,6 +399,11 @@ def process_opts():
 
 
 def count_reads(s_name, work_dir, fastq_fpath, reuse=False):
+    from os.path import join, isfile
+    from targqc.fastq import count_records_in_fastq
+    from Utils.file_utils import verify_file
+    from Utils.logger import info
+
     read_counts_fpath = join(work_dir, 'original_read_count.txt')
     if reuse and isfile(read_counts_fpath) and verify_file(read_counts_fpath, cmp_date_fpath=fastq_fpath):
         with open(read_counts_fpath) as f:
@@ -420,7 +425,7 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num,
         for s, read_count in zip(samples, read_counts):
             num_reads_by_sample[s.name] = read_count
 
-        info('Downsampling the reads to ' + str(downsample_pairs_num))
+        info('Downsampling the reads to ' + str(int(downsample_pairs_num)))
         fastq_pairs = parall_view.run(downsample,
             [[s.work_dir, s.name, s.work_dir, s.l_fpath, s.r_fpath, downsample_pairs_num, 'subset']
              for s in samples])

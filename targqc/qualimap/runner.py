@@ -30,7 +30,8 @@ def find_executable():
     critical('Error: could not find Qualimap executable')
 
 
-def run_qualimap(work_dir, output_dir, bam_fpath, bed_fpath=None, threads=1, reuse_intermediate=False):
+def run_qualimap(work_dir, output_dir, bam_fpath, genome, bed_fpath=None,
+                 threads=1, reuse_intermediate=False):
     info('Analysing ' + bam_fpath)
 
     safe_mkdir(dirname(output_dir))
@@ -50,9 +51,9 @@ def run_qualimap(work_dir, output_dir, bam_fpath, bed_fpath=None, threads=1, reu
         cmdline += '-gff {bed_fpath} '
         debug('Using amplicons/capture panel ' + bed_fpath)
 
-    if cfg.genome.startswith('hg') or cfg.genome.startswith('GRCh'):
+    if genome.startswith('hg') or genome.startswith('GRCh'):
         cmdline += ' -gd HUMAN'
-    if cfg.genome.startswith('mm'):
+    if genome.startswith('mm'):
         cmdline += ' -gd MOUSE'
 
     cmdline = cmdline.format(**locals())

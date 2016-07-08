@@ -15,7 +15,6 @@ from Utils.logger import critical, info, err, warn, debug
 from Utils.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport
 
 
-
 def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
     sections = [
         ReportSection('reads', 'Reads', [
@@ -337,7 +336,8 @@ def get_mean_cov(bedcov_output_fpath):
 def make_general_reports(view, samples, target, num_reads_by_sample=None):
     info('Running QualiMap...')
     view.run(run_qualimap,
-        [[s.work_dir, s.qualimap_dirpath, s.bam, target.bed_fpath, view.cores_per_job, cfg.reuse_intermediate]
+        [[s.work_dir, s.qualimap_dirpath, s.bam, cfg.genome, target.bed_fpath,
+          view.cores_per_job, cfg.reuse_intermediate]
          for s in samples])
 
     # try:
