@@ -4,6 +4,7 @@ from collections import OrderedDict
 from os.path import join, abspath, realpath, dirname, relpath
 
 import targqc.config as cfg
+from Utils import reference_data
 from targqc.qualimap.report_parser import parse_qualimap_sample_report
 from targqc.qualimap.runner import run_qualimap
 
@@ -360,8 +361,11 @@ def make_general_reports(view, samples, target, num_reads_by_sample=None):
 
         if sample.name in num_reads_by_sample:
             reads_stats['original_num_reads'] = num_reads_by_sample[sample.name]
-        reads_stats['gender'] = _determine_sex(sample.work_dir, sample.bam, depth_stats['ave_depth'], target.bed_fpath)
-        info()
+
+        chrom_lengths = reference_data.get_chrom_lengths(cfg.genome)
+        if 'Y' in chrom_lengths or 'chrY' in chrom_lengths:
+            reads_stats['gender'] = _determine_sex(sample.work_dir, sample.bam, depth_stats['ave_depth'], target.bed_fpath)
+            info()
 
         if 'bases_by_depth' in depth_stats:
             depth_stats['bases_within_threshs'], depth_stats['rates_within_threshs'] = calc_bases_within_threshs(
@@ -389,10 +393,10 @@ def make_general_reports(view, samples, target, num_reads_by_sample=None):
             padded_bed = get_padded_bed_file(sample.work_dir, target.bed_fpath, cfg.padding, cfg.fai_fpath)
             reads_stats['mapped_dedup_on_padded_target'] = number_mapped_reads_on_target(
                 sample.work_dir, padded_bed, sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
-        elif cfg.cds_bed:
+        elif cfg.cds_bed_fpath:
             info('Using the CDS reference BED to calc "reads on CDS"')
             reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(
-                sample.work_dir, cfg.cds_bed.saveas(), sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
+                sample.work_dir, cfg.cds_bed_fpath, sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
         # elif features_no_genes_bed:
         #     info('Using ensemble ' + features_no_genes_bed + ' to calc reads on exome')
         #     reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(cnf, features_no_genes_bed, bam_fpath) or 0
@@ -447,13 +451,12 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
         report.add_record('Percentage of reference', target.fraction)
         report.add_record('Regions in target', target.regions_num)
         report.add_record('Scope', 'targeted')
+        report.add_record('Genes in target', len(target.gene_keys_list))
     else:
         info('* Genome coverage statistics *')
         report.add_record('Target', 'whole genome')
         report.add_record('Reference size', target.bases_num)
         report.add_record('Scope', 'WGS')
-
-    report.add_record('Genes in target', len(target.gene_keys_list))
 
     trg_type = 'target' if target.bed_fpath else 'genome'
 
