@@ -15,15 +15,6 @@ import targqc.config as cfg
 from targqc import bedops
 
 
-class BedCols:
-    GENE = 3
-    EXON = 4
-    STRAND = 5
-    FEATURE = 6
-    BIOTYPE = 7
-    TRANSCRIPT = 8
-
-
 def make_region_reports(view, work_dir, samples, target, features_bed_fpath):
     info('Calculating coverage statistics for CDS and exon regions from RefSeq...')
 

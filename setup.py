@@ -76,7 +76,7 @@ setup(
             'tools/*.sh',
         ],
         'targqc': [
-            'bedops_*',
+            'bedops/bedops_*',
             'qualimap/*/qualimap',
             'qualimap/*/qualimap.jar',
             'qualimap/*/lib/*.jar',

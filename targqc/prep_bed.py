@@ -36,7 +36,7 @@ def prepare_beds(work_dir, fai_fpath=None, features_bed_fpath=None, target_bed_f
 
     if target_bed_fpath:
         debug()
-        debug('Cleaning target...')
+        info('Cleaning target BED file...')
         clean_target_bed_fpath = intermediate_fname(work_dir, target_bed_fpath, 'clean')
         target_bed = pybedtools.BedTool(target_bed_fpath)
         target_bed = target_bed.filter(lambda x: x.chrom and
@@ -48,12 +48,12 @@ def prepare_beds(work_dir, fai_fpath=None, features_bed_fpath=None, target_bed_f
         debug('Saved to ' + clean_target_bed_fpath)
 
         debug()
-        debug('Sorting target...')
+        info('Sorting target BED file...')
         sort_target_bed_fpath = sort_bed(clean_target_bed_fpath, work_dir=work_dir, fai_fpath=fai_fpath, reuse=reuse)
         debug('Saved to ' + sort_target_bed_fpath)
 
         debug()
-        info('Annotating target...')
+        info('Annotating target BED file...')
         ann_target_bed_fpath = add_suffix(sort_target_bed_fpath, 'ann')
         annotate(sort_target_bed_fpath, features_bed_fpath, ann_target_bed_fpath, reuse=reuse, genome=cfg.genome)
         debug('Saved to ' + ann_target_bed_fpath)

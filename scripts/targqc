@@ -215,8 +215,6 @@ def main(args):
         if prep_bed:
             info()
             debug('*' * 70)
-            info('Preparing input BED file: sort, clean, cut, annotate')
-
             target_bed_fpath, cfg.features_bed_fpath = prepare_beds(
                     work_dir, cfg.fai_fpath, cfg.features_bed_fpath, target_bed_fpath, cfg.cds_bed_fpath, reuse=cfg.reuse_intermediate)
             target.bed_fpath = target_bed_fpath
