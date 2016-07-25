@@ -5,6 +5,10 @@ from os.path import isfile, join
 
 from pybedtools import BedTool
 
+import GeneAnnotation as ga
+from GeneAnnotation import BedCols
+from GeneAnnotation.annotate_bed import tx_sort_key, get_sort_key
+from Utils import reference_data
 from Utils.bed_utils import count_bed_cols
 from Utils.sambamba import sambamba_depth
 from Utils.call_process import run
@@ -12,10 +16,11 @@ from Utils.file_utils import intermediate_fname, verify_file, file_transaction
 from Utils.logger import info, debug
 
 import targqc.config as cfg
+from Utils.utils import OrderedDefaultDict
 from targqc import bedops
 
 
-def make_region_reports(view, work_dir, samples, target, features_bed_fpath):
+def make_region_reports(view, work_dir, samples, target):
     info('Calculating coverage statistics for CDS and exon regions from RefSeq...')
 
     if cfg.reuse_intermediate and all(
@@ -27,41 +32,43 @@ def make_region_reports(view, work_dir, samples, target, features_bed_fpath):
     depth_thresholds_by_sample = {s.name: sorted(cfg.depth_thresholds + [max(1, int(s.avg_depth / 2))])
                                   for s in samples}
 
-    debug()
-    debug('Filtering features BED to have only CDS and Exon features')
-    exons_and_cds_bed = BedTool(features_bed_fpath)\
-        .filter(lambda r: r.fields[6] in ['Exon', 'CDS'])\
-        .saveas(join(work_dir, 'cds_and_exons.bed'))
+    # debug()
+    # debug('Filtering features BED to have only CDS and Exon features')
+    # exons_and_cds_bed = BedTool(features_bed_fpath)\
+    #     .filter(lambda r: r.fields[6] in ['Exon', 'CDS'])\
+    #     .saveas(join(work_dir, 'cds_and_exons.bed'))
 
-    if target.bed_fpath:
-        debug()
-        debug('Writing extra columns to match features and target col numbers')
-        features_cols = exons_and_cds_bed.field_count()
-        target_with_extra_cols_fpath = intermediate_fname(work_dir, target.bed_fpath, 'extra')
-        concat_bed_fpath = join(work_dir, 'target_plus_refseq.bed')
-        with file_transaction(work_dir, target_with_extra_cols_fpath) as tx:
-            with open(target.bed_fpath) as inp, open(tx, 'w') as out:
-                for l in inp:
-                    fs = l.strip('\n').split('\t')
-                    fs.extend(['.'] * (features_cols - len(fs)))
-                    fs[BedCols.FEATURE] = 'Target'
-                    out.write('\t'.join(fs) + '\n')
-        debug('Saved to ' + target_with_extra_cols_fpath)
+    # if target.bed:
+    #     debug()
+    #     debug('Writing extra columns to match features and target col numbers')
+    #     features_cols = exons_and_cds_bed.field_count()
+    #     target_with_extra_cols_fpath = intermediate_fname(work_dir, target.bed_fpath, 'extra')
+    #     concat_bed_fpath = join(work_dir, 'target_plus_refseq.bed')
+    #     with file_transaction(work_dir, target_with_extra_cols_fpath) as tx:
+    #         with open(target.bed_fpath) as inp, open(tx, 'w') as out:
+    #             for l in inp:
+    #                 fs = l.strip('\n').split('\t')
+    #                 fs.extend(['.'] * (features_cols - len(fs)))
+    #                 fs[BedCols.FEATURE] = 'Target'
+    #                 out.write('\t'.join(fs) + '\n')
+    #     debug('Saved to ' + target_with_extra_cols_fpath)
+    #
+    #     debug()
+    #     debug('Concatenating features and target')
+    #     with file_transaction(work_dir, concat_bed_fpath) as tx:
+    #         cmdl = bedops.get_executable() + ' --everything ' + target_with_extra_cols_fpath + ' ' \
+    #                + exons_and_cds_bed.fn
+    #         run(cmdl, tx, reuse=cfg.reuse_intermediate)
+    #         debug('Saved to ' + concat_bed_fpath)
+    # else:
+    #     concat_bed_fpath = exons_and_cds_bed.fn
 
-        debug()
-        debug('Concatenating features and target')
-        with file_transaction(work_dir, concat_bed_fpath) as tx:
-            cmdl = bedops.get_executable() + ' --everything ' + target_with_extra_cols_fpath + ' ' \
-                   + exons_and_cds_bed.fn
-            run(cmdl, tx, reuse=cfg.reuse_intermediate)
-            debug('Saved to ' + concat_bed_fpath)
-    else:
-        concat_bed_fpath = exons_and_cds_bed.fn
+    bed_fpath = target.bed_fpath or target.wgs_bed_fpath
 
     debug()
     debug('Running sambamba...')
     sambamba_depth_output_fpaths = view.run(sambamba_depth,
-        [[s.work_dir, concat_bed_fpath, s.bam, depth_thresholds_by_sample[s.name],
+        [[s.work_dir, bed_fpath, s.bam, depth_thresholds_by_sample[s.name],
           None, False, s.name, cfg.reuse_intermediate]
          for s in samples])
     assert len(sambamba_depth_output_fpaths) == len(samples), \
@@ -135,7 +142,7 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                 strand = fs[BedCols.STRAND]
                 feature = fs[BedCols.FEATURE]
                 biotype = fs[BedCols.BIOTYPE]
-                transcript = fs[BedCols.TRANSCRIPT]
+                transcript = fs[BedCols.ENSEMBL_ID]
                 avg_depth = float(fs[mean_cov_col])
                 min_depth = int(fs[min_depth_col]) if min_depth_col is not None else '.'
                 std_dev = float(fs[std_dev_col]) if std_dev_col is not None else '.'

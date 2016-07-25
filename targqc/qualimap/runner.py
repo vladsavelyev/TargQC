@@ -43,41 +43,21 @@ def run_qualimap(work_dir, output_dir, bam_fpath, genome, bed_fpath=None,
     mem_cmdl = '--java-mem-size=' + mem
 
     cmdline = (find_executable() + ' bamqc --skip-duplicated -nt {threads} {mem_cmdl} -nr 5000 '
-        '-bam {bam_fpath} -outdir {output_dir} -c ')
-
-    if bed_fpath:
-        merged_bed3_fpath = merge_overlaps(work_dir, bed_fpath)
-        bed_fpath = _bed3_to_bed6(work_dir, merged_bed3_fpath)
-        cmdline += '-gff {bed_fpath} '
-        debug('Using amplicons/capture panel ' + bed_fpath)
+        '-bam {bam_fpath} -outdir {output_dir} -c')
 
     if genome.startswith('hg') or genome.startswith('GRCh'):
         cmdline += ' -gd HUMAN'
     if genome.startswith('mm'):
         cmdline += ' -gd MOUSE'
 
+    if bed_fpath:
+        cmdline += ' -gff {bed_fpath}'
+        debug('Using amplicons/capture panel ' + bed_fpath)
+
     cmdline = cmdline.format(**locals())
     report_fpath = join(output_dir, 'qualimapReport.html')
     run(cmdline, output_fpath=report_fpath, stdout_to_outputfile=False, env_vars=dict(DISPLAY=None),
         checks=[lambda _1, _2: verify_file(report_fpath)], reuse=reuse_intermediate)
-
-
-def _bed3_to_bed6(work_dir, bed_fpath):
-    """Convert bed to required bed6 inputs.
-    """
-    bed6_fpath = intermediate_fname(work_dir, bed_fpath, 'bed6')
-    if os.path.isfile(bed6_fpath) and verify_file(bed6_fpath, cmp_date_fpath=bed_fpath):
-        return bed6_fpath
-
-    debug('Converting bed to required bed6 Qualimap input')
-    with file_transaction(work_dir, bed6_fpath) as tx:
-        with open(tx, 'w') as out:
-            for i, region in enumerate(list(x) for x in BedTool(bed_fpath)):
-                region = [x for x in list(region) if x]
-                fillers = [str(i), "1.0", "+"]
-                full = region + fillers[:6 - len(region)]
-                out.write("\t".join(full) + "\n")
-    return bed6_fpath
 
 
 def fix_bed_for_qualimap(bed_fpath, qualimap_bed_fpath):

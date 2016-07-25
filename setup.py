@@ -54,8 +54,11 @@ setup(
     packages=find_packages(),
     package_data={
         'GeneAnnotation': [
-            'RefSeq/*.bed',
-            'RefSeq/*.bed.gz',
+            'Ensembl/biomart.tsv',
+            'Ensembl/hg19/ensembl.bed.gz',
+            'Ensembl/hg19/ensembl.bed.gz.tbi',
+            'Ensembl/hg38/ensembl.bed.gz',
+            'Ensembl/hg38/ensembl.bed.gz.tbi',
         ],
         'Utils': [
             'reference_data/fai/*.fai',

@@ -28,7 +28,6 @@ from targqc.fastq import align, downsample, count_records_in_fastq
 from targqc.parallel import ParallelCfg, parallel_view
 
 from targqc.general_report import make_general_reports
-from targqc.prep_bed import prepare_beds
 from targqc.region_coverage import make_region_reports
 from targqc.summarize import summarize_targqc
 
@@ -46,11 +45,6 @@ options = [
         metavar='DIR',
         help='Output directory (or directory name in case of bcbio final dir)',
         default=os.getcwd(),
-     )),
-    (['--refseq-bed', '--exons', '--exome', '--features'], dict(
-        dest='features',
-        help='BED file with real CDS/Exon/Gene/Transcript regions with annotations, to override '
-             'GeneAnnotation/RefSeq/RefSeq_CDS_miRNA.all_features.{genome}.canon.bed',
      )),
     (['-g', '--genome'], dict(
         dest='genome',
@@ -113,18 +107,6 @@ options = [
         dest='original_target_bed',
         help=SUPPRESS_HELP,
      )),
-    (['--original-exons', '--original-features'], dict(
-        dest='original_features_bed',
-        help=SUPPRESS_HELP,  # original features genes bed file path (just for reporting)
-     )),
-    (['--features-no-genes', '--exons-no-genes'], dict(
-        dest='features_no_genes',
-        help=SUPPRESS_HELP,  # a BED file with real CDS/Exon regions with annotations, w/o Gene/Transcript records; provided if --no-prep-bed set
-     )),
-    (['--cds'], dict(
-        dest='cds_bed_fpath',
-        help=SUPPRESS_HELP,  # a BED file with real CDS regions in case if no --bed input provided, and if --no-prep-bed set
-     )),
     (['--fai'], dict(
         dest='fai',
         help=SUPPRESS_HELP,  # Path to FAI file - to sort BAM and BED files, and to get chromosome lengths for proper padding BED files; optional
@@ -137,9 +119,9 @@ options = [
     #  ),
     (['--no-prep-bed'], dict(
         dest='prep_bed',
-        help=SUPPRESS_HELP,
+        action='store_false',
         default=True,
-        action='store_false'
+        help=SUPPRESS_HELP,
      )),
     (['-e', '--extended'], dict(
         dest='extended',
@@ -150,8 +132,8 @@ options = [
     (['--no-dedup'], dict(
         dest='no_dedup',
         action='store_true',
-        help=SUPPRESS_HELP,
         default=not cfg.dedup,
+        help=SUPPRESS_HELP,
      )),
     (['--debug'], dict(
         dest='debug',
@@ -206,23 +188,11 @@ def _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir):
 
 
 def main(args):
-    output_dir, work_dir, bam_by_sample, fastqs_by_sample, target_bed_fpath, prep_bed = process_opts()
+    output_dir, work_dir, bam_by_sample, fastqs_by_sample, target_bed_fpath = process_opts()
 
     samples = _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir)
 
-    if target_bed_fpath:
-        target = Target(target_bed_fpath)
-        if prep_bed:
-            info()
-            debug('*' * 70)
-            target_bed_fpath, cfg.features_bed_fpath = prepare_beds(
-                    work_dir, cfg.fai_fpath, cfg.features_bed_fpath, target_bed_fpath, cfg.cds_bed_fpath, reuse=cfg.reuse_intermediate)
-            target.bed_fpath = target_bed_fpath
-
-        cfg.features_bed_fpath = \
-            target.extract_gene_names_and_filter_exons(work_dir, cfg.features_bed_fpath, reuse=cfg.reuse_intermediate)
-    else:
-        target = Target(None)
+    target = Target(work_dir, cfg.fai_fpath, cfg.reuse_intermediate, target_bed_fpath)
 
     info()
     start_targqc(work_dir, samples, target)
@@ -262,7 +232,7 @@ def start_targqc(work_dir, samples, target):
 
         info()
         info('Making region-level reports...')
-        make_region_reports(view, work_dir, samples, target, cfg.features_bed_fpath)
+        make_region_reports(view, work_dir, samples, target)
 
     # for general_report, per_gene_report, sample in zip(general_reports, per_gene_reports, samples):
     #     info('')
@@ -364,27 +334,13 @@ def process_opts():
     cfg.genome = opts.genome
     cfg.dedup = not opts.no_dedup
 
-    if opts.features:
-        cfg.features_bed_fpath = verify_bed(opts.features, is_critical=True)
-    elif cfg.genome:
-        cfg.features_bed_fpath = GeneAnnotation.get_all_features_canonical(cfg.genome)
-        if cfg.features_bed_fpath is None:
-            critical('Genome ' + cfg.genome + ' is not supported. Supported: ' + ', '.join(GeneAnnotation.SUPPORTED_GENOMES))
-    else:
-        warn('Neither --refseq-bed nor --genome is specified, analysing without genomic features.')
-
-    if opts.cds_bed_fpath:
-        cfg.cds_bed_fpath = verify_bed(opts.cds_bed_fpath, is_critical=True)
-    elif cfg.genome:
-        cfg.cds_bed_fpath = GeneAnnotation.get_cds(cfg.genome)
-
     cfg.original_target_bed = opts.original_target_bed
 
     bed_fpath = None
     if opts.bed:
         bed_fpath = verify_bed(opts.bed, is_critical=True)
         info('Using target BED file ' + bed_fpath)
-    elif cfg.features_bed_fpath is not None:
+    else:
         info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
 
     if opts.fai:
@@ -394,7 +350,7 @@ def process_opts():
     else:
         err('Cannot analyse BED files without --fai or --genome specified')
 
-    return output_dir, work_dir, bam_by_sample, fastqs_by_sample, bed_fpath, opts.prep_bed
+    return output_dir, work_dir, bam_by_sample, fastqs_by_sample, bed_fpath
 
 
 def count_reads(s_name, work_dir, fastq_fpath, reuse=False):
