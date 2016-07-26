@@ -33,8 +33,9 @@ def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_
 
     info('Processing ' + sample_name)
     N_pairs = int(N_pairs)
-    info(sample_name + ': getting number of reads in fastq...')
-    num_read_pairs = num_read_pairs or count_records_in_fastq(fastq_left_fpath)
+    if num_read_pairs is None:
+        info(sample_name + ': counting number of reads in fastq...')
+        num_read_pairs = count_records_in_fastq(fastq_left_fpath)
     if num_read_pairs > LIMIT:
         info(sample_name + ' the number of reads is higher than ' + str(LIMIT) +
              ', sampling from only first ' + str(LIMIT))

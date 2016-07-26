@@ -131,12 +131,13 @@ class Target:
 
         r_by_tx_by_gene = OrderedDefaultDict(lambda: defaultdict(list))
         all_features = ga.get_all_features(cfg.genome, high_confidence=True)
+        all_features = all_features.saveas('/Users/vlad/vagrant/Pre_Alignment_Suite/tmp.bed')
 
         info('Select best transcript to report')
         for r in all_features:
             if r[ga.BedCols.FEATURE] != 'gene':
                 gene = r[ga.BedCols.HUGO]
-                tx = r[3 + ga.BedCols.ENSEMBL_ID]
+                tx = r[ga.BedCols.ENSEMBL_ID]
                 r_by_tx_by_gene[gene][tx].append(r)
 
         with file_transaction(work_dir, self.wgs_bed_fpath) as tx:
