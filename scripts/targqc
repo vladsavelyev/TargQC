@@ -220,7 +220,8 @@ def start_targqc(work_dir, samples, target):
                                              cfg.downsample_pairs_num, cfg.dedup)
 
     for s in samples:
-        info(s.name + ': using alignment ' + s.bam)
+        if s.bam:
+            info(s.name + ': using alignment ' + s.bam)
 
     info()
     with parallel_view(len(samples), cfg.parallel_cfg) as view:
