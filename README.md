@@ -16,6 +16,12 @@ cd TargQC
 python setup.py install
 ```
 
+If you are not an administator in your system, create a virtual environment first:
+```
+virtualenv venv
+source venv/bin/activate
+```
+
 ## Usage
 ```
 targqc *.bam --bed target.bed -g hg19 -o targqc_results
@@ -44,3 +50,9 @@ targqc *.bam --bed target.bed -g hg19 -o targqc_results -t 3 -s sge -q queue -r 
 If the number of samples is higher than the requested number of jobs, the processes within job will be additionally parallelized using threads, so the full number of occupied cores will equal the number of requested threads (-t)
 
 Other supported schedulers: Platform LSF ("lsf"), Sun Grid Engine ("sge"), Torque ("torque"), SLURM ("slurm") (see details at https://github.com/roryk/ipython-cluster-helper)
+
+## For HPC users
+```
+module load python
+export PATH=/group/ngs/src/TargQC/venv/bin:$PATH
+```
