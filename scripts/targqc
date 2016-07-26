@@ -323,8 +323,8 @@ def process_opts():
         fastqs_by_sample, bam_by_sample = read_samples(args)
 
     if fastqs_by_sample:
-        # if not opts.bwa_prefix:
-        #     critical('--bwa-prefix is required when running from fastq')
+        if not opts.bwa_prefix:
+            critical('--bwa-prefix is required when running from fastq')
         cfg.bwa_prefix = adjust_path(opts.bwa_prefix)
 
     if opts.downsample_pairs_num == 'off':
