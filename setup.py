@@ -5,13 +5,15 @@ from os.path import join, isfile
 
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
+from sys import platform as sys_platform
+import platform
 
 try:
     from pip.download import PipSession
 except ImportError:  # newer setuptools
-    install_reqs = parse_requirements("requirements.txt")
+    install_reqs = parse_requirements('requirements.txt')
 else:
-    install_reqs = parse_requirements("requirements.txt", session=PipSession())
+    install_reqs = parse_requirements('requirements.txt', session=PipSession())
 
 reqs = [str(ir.req) for ir in install_reqs]
 version = open('VERSION.txt').read().strip()
@@ -44,6 +46,22 @@ if sys.argv[-1] == 'install':
 #     if not isfile(sambamba):
 #         sys.stderr.write('Error: could not compile sambamba, exiting.\n')
 #         sys.exit(1)
+
+def sambamba_executable():
+    if 'darwin' in sys_platform:
+        path = join('Utils', 'sambamba_binaries', 'sambamba_osx')
+    elif 'redhat' in platform.dist():
+        path = join('Utils', 'sambamba_binaries', 'sambamba_centos.gz')
+    else:
+        path = join('Utils', 'sambamba_binaries', 'sambamba_lnx')
+    if isfile(path):
+        return path
+
+sambamba_exec = sambamba_executable()
+print('sambamba executable: ' + sambamba_exec)
+if sambamba_exec.endswith('.gz'):
+    print('gunzipping sambamba ' + sambamba_exec)
+    os.system('gunzip ' + sambamba_exec)
 
 setup(
     name=name,
@@ -79,8 +97,7 @@ setup(
             'reporting/static/*/*.pxm',
             'reporting/*.html',
             'reporting/*.json',
-            'sambamba_binaries/sambamba_*',
-            'sambamba/build/sambamba',
+            os.path.relpath(sambamba_exec, 'Utils').replace('.gz', ''),
             'tools/*.sh',
         ],
         'targqc': [
