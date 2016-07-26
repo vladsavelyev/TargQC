@@ -48,20 +48,21 @@ if sys.argv[-1] == 'install':
 #         sys.exit(1)
 
 def sambamba_executable():
+    sambamba_dirpath = join('Utils', 'sambamba_binaries')
     if 'darwin' in sys_platform:
-        path = join('Utils', 'sambamba_binaries', 'sambamba_osx')
+        path = join(sambamba_dirpath, 'sambamba_osx')
     elif 'redhat' in platform.dist():
-        path = join('Utils', 'sambamba_binaries', 'sambamba_centos.gz')
+        path = join(sambamba_dirpath, 'sambamba_centos')
     else:
-        path = join('Utils', 'sambamba_binaries', 'sambamba_lnx')
+        path = join(sambamba_dirpath, 'sambamba_lnx')
     if isfile(path):
         return path
-
-sambamba_exec = sambamba_executable()
-print('sambamba executable: ' + sambamba_exec)
-if sambamba_exec.endswith('.gz'):
-    print('gunzipping sambamba ' + sambamba_exec)
-    os.system('gunzip ' + sambamba_exec)
+    elif isfile(path + '.gz'):
+        print('gunzipping sambamba ' + path + '.gz')
+        os.system('gunzip ' + path + '.gz')
+        return path
+    else:
+        sys.stderr.write('Error: could not find sambamba ' + path + '(.gz)')
 
 setup(
     name=name,
@@ -97,7 +98,7 @@ setup(
             'reporting/static/*/*.pxm',
             'reporting/*.html',
             'reporting/*.json',
-            os.path.relpath(sambamba_exec, 'Utils').replace('.gz', ''),
+            os.path.relpath(sambamba_executable(), 'Utils'),
             'tools/*.sh',
         ],
         'targqc': [
