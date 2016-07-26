@@ -94,17 +94,17 @@ def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_
     return l_out_fpath, r_out_fpath
 
 
-def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samblaster, samtools, sambabma, bwa_prefix, dedup=True, threads=1):
+def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, sambabma, bwa_prefix, dedup=True, threads=1):
     info('Aligning reads')
     bam_fpath = join(work_dir, sample_name + '_downsampled.bam')
     tmp_dirpath = join(work_dir, 'sambamba_tmp_dir')
     safe_mkdir(tmp_dirpath)
 
     bwa_cmdline = ('{bwa} mem -t {threads} -v 2 {bwa_prefix} {l_fpath} {r_fpath} | ' +
-                   ('{samblaster} | ' if dedup else '') +
-                   '{samtools} view --threads {threads} -b -S -u - | '
-                   '{sambabma} sort -t {threads} --tmpdir {tmp_dirpath} '
-                        '-o {bam_fpath} /dev/stdin').format(**locals())
+                  ('{sambamba} markdup -t {threads} | ' if dedup else '') +
+                   '{samtools} view    -t {threads} -b -S -u - | '
+                   '{sambabma} sort    -t {threads} --tmpdir {tmp_dirpath} '
+                   '-o {bam_fpath} /dev/stdin').format(**locals())
     run(bwa_cmdline, output_fpath=bam_fpath, stdout_to_outputfile=False, reuse=cfg.reuse_intermediate)
     sambamba.index_bam(bam_fpath)
 

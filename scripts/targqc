@@ -390,19 +390,17 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num,
             s.r_fpath = r_r
 
     bwa = which('bwa')
-    samblaster = which('samblaster')
     samtools = which('samtools')
     sb = sambamba.get_executable()
-    if not (bwa and samblaster and samtools and sb):
+    if not (bwa and samtools and sb):
         if not bwa:         err('Error: bwa is required for alignment')
-        if not samblaster:  err('Error: samblaster is required for deduplication')
         if not samtools:    err('Error: samtools is required for alignment')
         if not sb:          err('Error: sambamba is required')
         critical()
     info()
     info('Aligning reads to the reference')
     bam_fpaths = parall_view.run(align,
-        [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samblaster, samtools, sb, bwa_prefix, dedup,
+        [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, sb, bwa_prefix, dedup,
             parall_view.cores_per_job]
          for s in samples])
 
