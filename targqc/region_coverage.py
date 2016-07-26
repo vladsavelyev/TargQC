@@ -101,8 +101,11 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
 
     debug('Reading coverage statistics and writing regions to ' + output_fpath)
 
+    def write_line(f, fields):
+        f.write('\t'.join(fields) + '\n')
+
     with file_transaction(None, output_fpath) as tx:
-        with open(sambamba_depth_output_fpath) as sambabma_depth_file, open(output_fpath, 'w') as out:
+        with open(sambamba_depth_output_fpath) as sambabma_depth_file, open(tx, 'w') as out:
             total_regions_count = 0
             for line in sambabma_depth_file:
                 fs = line.strip('\n').split('\t')
@@ -115,8 +118,8 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                     std_dev_col = fs.index('stdDev') if 'stdDev' in fs else None
                     wn_20_pcnt_col = fs.index('percentWithin20PercentOfMedian') if 'percentWithin20PercentOfMedian' in fs else None
 
-                    out.write('#' + '\t'.join([
-                        'Chr',
+                    write_line(out, [
+                        '#Chr',
                         'Start',
                         'End',
                         'Size',
@@ -126,23 +129,27 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                         'Feature',
                         'Biotype',
                         'Transcript',
+                        'Tx overlap',
+                        'Exome overlap',
                         'Min depth',
                         'Avg depth',
                         'Median depth',
                         'Std dev',
                         'W/n 20% of median',
-                    ] + ['{}x'.format(ths) for ths in depth_thresholds]) + '\n')
+                    ] + ['{}x'.format(ths) for ths in depth_thresholds])
                     continue
 
                 chrom = fs[0]
                 start, end = int(fs[1]), int(fs[2])
                 region_size = end - start
-                gene_name = fs[BedCols.GENE] if read_count_col != BedCols.GENE else None
+                gene_name = fs[BedCols.GENE] if read_count_col != BedCols.GENE else '.'
                 exon = fs[BedCols.EXON]
                 strand = fs[BedCols.STRAND]
                 feature = fs[BedCols.FEATURE]
                 biotype = fs[BedCols.BIOTYPE]
                 transcript = fs[BedCols.ENSEMBL_ID]
+                transcript_overlap = fs[BedCols.TX_OVERLAP_PERCENTAGE]
+                exome_overlap = fs[BedCols.EXON_OVERLAPS_PERCENTAGE]
                 avg_depth = float(fs[mean_cov_col])
                 min_depth = int(fs[min_depth_col]) if min_depth_col is not None else '.'
                 std_dev = float(fs[std_dev_col]) if std_dev_col is not None else '.'
@@ -151,7 +158,7 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                 last_cov_col = max(mean_cov_col, median_cov_col, std_dev_col, wn_20_pcnt_col)
                 rates_within_threshs = fs[last_cov_col + 1:-1]
 
-                out.write('\t'.join(map(str, [
+                write_line(out, map(str, [
                         chrom,
                         start,
                         end,
@@ -162,13 +169,14 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                         feature,
                         biotype,
                         transcript,
+                        ((transcript_overlap + '%') if transcript_overlap else '.'),
+                        ((exome_overlap + '%') if exome_overlap else '.'),
                         min_depth,
                         avg_depth,
                         median_depth,
                         std_dev,
                         rate_within_normal,
                     ] + rates_within_threshs))
-                    + '\n')
 
                 total_regions_count += 1
                 if total_regions_count > 0 and total_regions_count % 10000 == 0:

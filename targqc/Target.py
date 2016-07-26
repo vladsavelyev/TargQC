@@ -77,7 +77,7 @@ class Target:
             self.bed = BedTool(ann_target_bed_fpath).remove_invalid()
             with file_transaction(work_dir, self.bed_fpath) as tx:
                 self.bed.saveas(tx)
-            self.bed = BedTool(self.bed_fpath)
+        self.bed = BedTool(self.bed_fpath)
 
         gene_key_set, gene_key_list = get_gene_keys_from_bed(bed_fpath)
         self.gene_keys_set = gene_key_set

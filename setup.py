@@ -5,9 +5,14 @@ from os.path import join, isfile
 
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
-# from pip.download import PipSession
 
-install_reqs = parse_requirements("requirements.txt")#, session=PipSession())
+try:
+    from pip.download import PipSession
+except ImportError:  # newer setuptools
+    install_reqs = parse_requirements("requirements.txt")
+else:
+    install_reqs = parse_requirements("requirements.txt", session=PipSession())
+
 reqs = [str(ir.req) for ir in install_reqs]
 version = open('VERSION.txt').read().strip()
 
