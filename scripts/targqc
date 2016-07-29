@@ -1,34 +1,26 @@
 #!/usr/bin/env python
-# noinspection PyUnresolvedReferences
 
-import datetime
 import os
 import shutil
 import sys
 from optparse import OptionParser, SUPPRESS_HELP
 from os.path import isfile, join, isdir
 
-from pybedtools import BedTool
-
-import GeneAnnotation
 import Utils.reference_data as ref
-import targqc
-import targqc.config as cfg
 from Utils import logger
 from Utils.bed_utils import verify_bed
 from Utils.bam_utils import verify_bam
 from Utils.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
 from Utils.logger import critical, err, info, warn, debug, is_local
-from Utils.proc_args import read_samples, find_bams, find_fastq_pairs
+from Utils.proc_args import read_samples, find_bams, find_fastq_pairs, set_up_dirs
 from Utils.sambamba import index_bam
 from Utils import sambamba
+from Utils.parallel import ParallelCfg, parallel_view
+
+import targqc
+import targqc.config as cfg
 from targqc import Sample
 from targqc.Target import Target
-from targqc.fastq import align, downsample, count_records_in_fastq
-from targqc.parallel import ParallelCfg, parallel_view
-
-from targqc.general_report import make_general_reports
-from targqc.region_coverage import make_region_reports
 from targqc.summarize import summarize_targqc
 
 options = [
@@ -103,10 +95,6 @@ options = [
     (['-1'], dict(dest='l_fpath', help=SUPPRESS_HELP,)),  # help='fastq left reads, optional instead of BAM')),
     (['-2'], dict(dest='r_fpath', help=SUPPRESS_HELP,)),  # help='fastq right reads, optional instead of BAM')),
     (['--sample', '--name'], dict(dest='sample', help=SUPPRESS_HELP,)),  # help='Sample name (default is part of name of the first parameter prior to the first - or .',)),
-    (['--original-bed'], dict(
-        dest='original_target_bed',
-        help=SUPPRESS_HELP,
-     )),
     (['--fai'], dict(
         dest='fai',
         help=SUPPRESS_HELP,  # Path to FAI file - to sort BAM and BED files, and to get chromosome lengths for proper padding BED files; optional
@@ -117,12 +105,6 @@ options = [
     #     action='store_true',
     #     default=True)
     #  ),
-    (['--no-prep-bed'], dict(
-        dest='prep_bed',
-        action='store_false',
-        default=True,
-        help=SUPPRESS_HELP,
-     )),
     (['-e', '--extended'], dict(
         dest='extended',
         action='store_true',
@@ -138,7 +120,7 @@ options = [
     (['--debug'], dict(
         dest='debug',
         action='store_true',
-        default=cfg.debug,
+        default=cfg.is_debug,
         help=SUPPRESS_HELP,
      )),
     (['--work-dir'], dict(dest='work_dir', metavar='DIR', help=SUPPRESS_HELP)),
@@ -188,14 +170,27 @@ def _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir):
 
 
 def main(args):
-    output_dir, work_dir, bam_by_sample, fastqs_by_sample, target_bed_fpath = process_opts()
+    parser = OptionParser(description='Target coverage evaluation tool.')
+    parser.set_usage('Usage: %prog *.bam -o targqc_stats [--bed target.bed ...]')
+    for args, kwargs in options:
+        parser.add_option(*args, **kwargs)
+    opts, args = parser.parse_args()
+
+    output_dir, work_dir = set_up_dirs(targqc.targqc_name, opts.output_dir, opts.work_dir, opts.log_dir)
+    debug(' '.join(sys.argv))
+    debug()
+
+    set_config(opts)
+    bwa_prefix = adjust_path(opts.bwa_prefix)
+    bam_by_sample, fastqs_by_sample, target_bed_fpath = get_inputs(opts, args)
 
     samples = _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir)
 
-    target = Target(work_dir, cfg.fai_fpath, cfg.reuse_intermediate, target_bed_fpath)
+    fai_fpath = opts.fai or ref.get_fai(cfg.genome)
+    target = Target(work_dir, fai_fpath, cfg.reuse_intermediate, target_bed_fpath)
 
     info()
-    start_targqc(work_dir, samples, target)
+    targqc.start_targqc(work_dir, samples, target, bwa_prefix=bwa_prefix)
 
     info()
     info('*' * 70)
@@ -207,101 +202,25 @@ def main(args):
     # cmd = 'multiqc ' + output_dir + ('' if cfg.reuse_intermediate else ' --force') + ' -v ' + ' '.join(s.dirpath for s in samples)
     # run(cmd)
 
-    if not cfg.debug and work_dir and isdir(work_dir):
+    if not cfg.is_debug and work_dir and isdir(work_dir):
         shutil.rmtree(work_dir)
 
 
-def start_targqc(work_dir, samples, target):
-    fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
-    num_reads_by_sample = dict()
-    if fastq_samples:
-        with parallel_view(len(fastq_samples), cfg.parallel_cfg) as view:
-            num_reads_by_sample = proc_fastq(fastq_samples, view, work_dir, cfg.bwa_prefix,
-                                             cfg.downsample_pairs_num, cfg.dedup)
-
-    for s in samples:
-        if s.bam:
-            info(s.name + ': using alignment ' + s.bam)
-
-    info()
-    with parallel_view(len(samples), cfg.parallel_cfg) as view:
-        info('Indexing BAMs...')
-        view.run(index_bam, [[s.bam] for s in samples])
-
-        info('Making general reports...')
-        make_general_reports(view, samples, target, num_reads_by_sample)
-
-        info()
-        info('Making region-level reports...')
-        make_region_reports(view, work_dir, samples, target)
-
-    # for general_report, per_gene_report, sample in zip(general_reports, per_gene_reports, samples):
-    #     info('')
-    #     info('*' * 70)
-    #     if general_report.txt_fpath and verify_file(general_report.txt_fpath):
-    #         info('Summary report: ' + general_report.txt_fpath)
-    #     if per_gene_report:
-    #         path = per_gene_report if isinstance(per_gene_report, basestring) else per_gene_report.txt_fpath
-    #         if path and verify_file(path):
-    #             info('Region-based report: ' + path)
-
-
-def set_up_dirs(output_dir=None, work_dir=None, log_dir=None):
-    """ Creates output_dir, work_dir; sets up log
-    """
-    output_dir = adjust_path(output_dir or join(os.getcwd(), targqc.targqc_name))
-    safe_mkdir(output_dir, 'output_dir')
-    debug('Saving results into ' + output_dir)
-
-    if not work_dir:
-        work_dir_name = 'work'
-        work_dir = join(output_dir, work_dir_name)
-    safe_mkdir(work_dir, 'working directory')
-    cfg.work_dir = work_dir
-
-    set_up_log(log_dir or work_dir)
-
-    return output_dir, work_dir
-
-
-def set_up_log(log_dir):
-    log_fname = targqc.targqc_name + '.log'
-    log_fpath = join(log_dir, log_fname)
-
-    if file_exists(log_fpath):
-        timestamp = datetime.datetime.fromtimestamp(os.stat(log_fpath).st_mtime)
-        mv_log_fpath = log_fpath + '.' + timestamp.strftime("%Y-%m-%d_%H-%M-%S")
-        try:
-            if isfile(mv_log_fpath):
-                os.remove(mv_log_fpath)
-            if not isfile(mv_log_fpath):
-                os.rename(log_fpath, mv_log_fpath)
-        except OSError:
-            pass
-
-    logger.log_fpath = log_fpath
-    debug('Logging to ' + log_fpath)
-    debug()
-
-
-def process_opts():
-    parser = OptionParser(description='Target coverage evaluation tool.')
-    parser.set_usage('Usage: %prog *.bam -o targqc_stats [--bed target.bed ...]')
-    for args, kwargs in options:
-        parser.add_option(*args, **kwargs)
-    opts, args = parser.parse_args()
-
-    cfg.debug = logger.is_debug = opts.debug
-
-    output_dir, work_dir = set_up_dirs(opts.output_dir, opts.work_dir, opts.log_dir)
-    debug(' '.join(sys.argv))
-    debug()
-
+def set_config(opts):
+    cfg.is_debug = logger.is_debug = opts.debug
     tag = ('targqc_' + opts.project_name) if opts.project_name else 'targqc'
     cfg.parallel_cfg = ParallelCfg(opts.scheduler, opts.queue, opts.resources, opts.threads, tag)
-
     cfg.reuse_intermediate = opts.reuse_intermediate
+    if opts.downsample_pairs_num == 'off':
+        cfg.downsample_pairs_num = None
+    else:
+        cfg.downsample_pairs_num = opts.downsample_pairs_num
+    cfg.padding = opts.padding
+    cfg.genome = opts.genome
+    cfg.dedup = not opts.no_dedup
 
+
+def get_inputs(opts, args):
     bam_by_sample = dict()
     fastqs_by_sample = dict()
 
@@ -322,98 +241,14 @@ def process_opts():
     else:
         fastqs_by_sample, bam_by_sample = read_samples(args)
 
-    if fastqs_by_sample:
-        if not opts.bwa_prefix:
-            critical('--bwa-prefix is required when running from fastq')
-        cfg.bwa_prefix = adjust_path(opts.bwa_prefix)
-
-    if opts.downsample_pairs_num == 'off':
-        cfg.downsample_pairs_num = None
-    else:
-        cfg.downsample_pairs_num = opts.downsample_pairs_num
-    cfg.padding = opts.padding
-    cfg.genome = opts.genome
-    cfg.dedup = not opts.no_dedup
-
-    cfg.original_target_bed = opts.original_target_bed
-
     bed_fpath = None
     if opts.bed:
         bed_fpath = verify_bed(opts.bed, is_critical=True)
-        info('Using target BED file ' + bed_fpath)
-    else:
-        info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
 
-    if opts.fai:
-        cfg.fai_fpath = opts.fai
-    elif cfg.genome:
-        cfg.fai_fpath = ref.get_fai(cfg.genome)
-    else:
-        err('Cannot analyse BED files without --fai or --genome specified')
-
-    return output_dir, work_dir, bam_by_sample, fastqs_by_sample, bed_fpath
-
-
-def count_reads(s_name, work_dir, fastq_fpath, reuse=False):
-    from os.path import join, isfile
-    from targqc.fastq import count_records_in_fastq
-    from Utils.file_utils import verify_file
-    from Utils.logger import info
-
-    read_counts_fpath = join(work_dir, 'original_read_count.txt')
-    if reuse and isfile(read_counts_fpath) and verify_file(read_counts_fpath, cmp_date_fpath=fastq_fpath):
-        with open(read_counts_fpath) as f:
-            return int(f.read().strip())
-    else:
-        info('Counting read numbers in ' + s_name + ', writing to ' + read_counts_fpath)
-        pairs_number = count_records_in_fastq(fastq_fpath)
-        read_number = pairs_number * 2
-        with open(read_counts_fpath, 'w') as out:
-            out.write(str(read_number))
-        return read_number
-
-
-def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num, dedup=True):
-    num_reads_by_sample = dict()
-    if downsample_pairs_num:
-        info('Counting read numbers')
-        read_counts = parall_view.run(count_reads, [[s.name, s.work_dir, s.l_fpath, cfg.reuse_intermediate] for s in samples])
-        for s, read_count in zip(samples, read_counts):
-            num_reads_by_sample[s.name] = read_count
-
-        info('Downsampling the reads to ' + str(int(downsample_pairs_num)))
-        fastq_pairs = parall_view.run(downsample,
-            [[s.work_dir, s.name, s.work_dir, s.l_fpath, s.r_fpath, downsample_pairs_num, 'subset']
-             for s in samples])
-        for s, (l_r, r_r) in zip(samples, fastq_pairs):
-            s.l_fpath = l_r
-            s.r_fpath = r_r
-
-    bwa = which('bwa')
-    samtools = which('samtools')
-    sb = sambamba.get_executable()
-    if not (bwa and samtools and sb):
-        if not bwa:         err('Error: bwa is required for alignment')
-        if not samtools:    err('Error: samtools is required for alignment')
-        if not sb:          err('Error: sambamba is required')
-        critical()
-    info()
-    info('Aligning reads to the reference')
-    bam_fpaths = parall_view.run(align,
-        [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, sb, bwa_prefix, dedup,
-            parall_view.cores_per_job]
-         for s in samples])
-
-    bam_fpaths = map(verify_bam, bam_fpaths)
-    if len(bam_fpaths) < len(samples):
-        critical('Some samples were not aligned successfully.')
-    for bam, s in zip(bam_fpaths, samples):
-        s.bam = bam
-
-    return num_reads_by_sample
+    return bam_by_sample, fastqs_by_sample, bed_fpath
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    main(sys.argv[1:])
 
 

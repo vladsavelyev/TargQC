@@ -13,7 +13,7 @@ from targqc import config as cfg
 
 
 class Target:
-    def __init__(self, work_dir, fai_fpath, reuse, bed_fpath=None):
+    def __init__(self, work_dir, fai_fpath, reuse, bed_fpath=None, genome=None):
         self.bed = None
         self.original_bed_fpath = None
         self.bed_fpath = None
@@ -28,13 +28,15 @@ class Target:
         self.fraction = None
 
         if bed_fpath:
+            info('Using target BED file ' + bed_fpath)
             self.is_wgs = False
             verify_bed(bed_fpath, is_critical=True)
             self.original_bed_fpath = bed_fpath
-            self._make_target_bed(bed_fpath, work_dir, fai_fpath, reuse)
+            self._make_target_bed(bed_fpath, work_dir, fai_fpath, reuse, genome=genome)
         else:
+            info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
             self.is_wgs = True
-            self._make_wgs_regions_file(work_dir)
+            self._make_wgs_regions_file(work_dir, genome=genome)
 
     def get_capture_bed(self):
         if not self.is_wgs:
@@ -42,7 +44,7 @@ class Target:
         else:
             return None
 
-    def _make_target_bed(self, bed_fpath, work_dir, fai_fpath=None, reuse=False):
+    def _make_target_bed(self, bed_fpath, work_dir, fai_fpath=None, reuse=False, genome=None):
         debug()
         info('Cleaning target BED file...')
         clean_target_bed_fpath = intermediate_fname(work_dir, bed_fpath, 'clean')
@@ -65,8 +67,8 @@ class Target:
         debug()
         info('Annotating target BED file and collecting overlapping genome features...')
         ann_target_bed_fpath = add_suffix(sort_target_bed_fpath, 'ann')
-        annotate(sort_target_bed_fpath, ann_target_bed_fpath, reuse=reuse, genome=cfg.genome,
-                 work_dir=work_dir, is_debug=cfg.debug, extended=True, output_features=True)
+        annotate(sort_target_bed_fpath, ann_target_bed_fpath, reuse=reuse, genome=genome or cfg.genome,
+                 work_dir=work_dir, is_debug=cfg.is_debug, extended=True, output_features=True)
         # TODO prepare BEDs: annotate with --report-features, then use that whole BED to find coverage, but only "cature" for summary reports
         debug('Saved to ' + ann_target_bed_fpath)
 
@@ -121,16 +123,16 @@ class Target:
                     out.write("\t".join(full) + "\n")
         return self.qualimap_bed_fpath
 
-    def _make_wgs_regions_file(self, work_dir):
+    def _make_wgs_regions_file(self, work_dir, genome=None):
         self.wgs_bed_fpath = join(work_dir, 'targqc_features_to_report.bed')
         if isfile(self.wgs_bed_fpath) and cfg.reuse_intermediate and verify_file(self.wgs_bed_fpath):
             debug(self.wgs_bed_fpath + ' exists, reusing')
             return self.wgs_bed_fpath
 
-        chr_order = reference_data.get_chrom_order(cfg.genome)
+        chr_order = reference_data.get_chrom_order(genome or cfg.genome)
 
         r_by_tx_by_gene = OrderedDefaultDict(lambda: defaultdict(list))
-        all_features = ga.get_all_features(cfg.genome, high_confidence=True)
+        all_features = ga.get_all_features(genome or cfg.genome, high_confidence=True)
         all_features = all_features.saveas('/Users/vlad/vagrant/Pre_Alignment_Suite/tmp.bed')
 
         info('Select best transcript to report')

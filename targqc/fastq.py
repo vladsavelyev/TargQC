@@ -2,15 +2,74 @@ import os
 import random
 import gzip
 from itertools import izip, product
-from os.path import splitext, dirname, join, basename
+from os.path import splitext, dirname, join, basename, isfile
 
 from Utils import sambamba
+from Utils.bam_utils import verify_bam
 from Utils.call_process import run
 from Utils.file_utils import open_gzipsafe, file_transaction, file_exists, intermediate_fname, verify_file, add_suffix, \
     splitext_plus, safe_mkdir, which
-from Utils.logger import critical, debug, info, warn
+from Utils.logger import critical, debug, info, warn, err
 
 import targqc.config as cfg
+
+
+def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num, dedup=True):
+    num_reads_by_sample = dict()
+    if downsample_pairs_num:
+        info('Counting read numbers')
+        read_counts = parall_view.run(count_reads, [[s.name, s.work_dir, s.l_fpath, cfg.reuse_intermediate] for s in samples])
+        for s, read_count in zip(samples, read_counts):
+            num_reads_by_sample[s.name] = read_count
+
+        info('Downsampling the reads to ' + str(int(downsample_pairs_num)))
+        fastq_pairs = parall_view.run(downsample,
+            [[s.work_dir, s.name, s.work_dir, s.l_fpath, s.r_fpath, downsample_pairs_num, 'subset']
+             for s in samples])
+        for s, (l_r, r_r) in zip(samples, fastq_pairs):
+            s.l_fpath = l_r
+            s.r_fpath = r_r
+
+    bwa = which('bwa')
+    samtools = which('samtools')
+    sb = sambamba.get_executable()
+    if not (bwa and samtools and sb):
+        if not bwa:         err('Error: bwa is required for alignment')
+        if not samtools:    err('Error: samtools is required for alignment')
+        if not sb:          err('Error: sambamba is required')
+        critical()
+    info()
+    info('Aligning reads to the reference')
+    bam_fpaths = parall_view.run(align,
+        [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, sb, bwa_prefix, dedup,
+            parall_view.cores_per_job]
+         for s in samples])
+
+    bam_fpaths = map(verify_bam, bam_fpaths)
+    if len(bam_fpaths) < len(samples):
+        critical('Some samples were not aligned successfully.')
+    for bam, s in zip(bam_fpaths, samples):
+        s.bam = bam
+
+    return num_reads_by_sample
+
+
+def count_reads(s_name, work_dir, fastq_fpath, reuse=False):
+    from os.path import join, isfile
+    from Utils.file_utils import verify_file
+    from Utils.logger import info
+
+    read_counts_fpath = join(work_dir, 'original_read_count.txt')
+    if reuse and isfile(read_counts_fpath) and verify_file(read_counts_fpath, cmp_date_fpath=fastq_fpath):
+        with open(read_counts_fpath) as f:
+            return int(f.read().strip())
+    else:
+        info('Counting read numbers in ' + s_name + ', writing to ' + read_counts_fpath)
+        pairs_number = count_records_in_fastq(fastq_fpath)
+        read_number = pairs_number * 2
+        with open(read_counts_fpath, 'w') as out:
+            out.write(str(read_number))
+        return read_number
 
 
 def count_records_in_fastq(fastq_fpath):
@@ -94,18 +153,28 @@ def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_
     return l_out_fpath, r_out_fpath
 
 
-def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, sambabma, bwa_prefix, dedup=True, threads=1):
+def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, smb, bwa_prefix, dedup=True, threads=1):
     info('Aligning reads')
     bam_fpath = join(work_dir, sample_name + '_downsampled.bam')
+    if isfile(bam_fpath) and verify_bam(bam_fpath) and cfg.reuse_intermediate:
+        debug(bam_fpath + ' exists, reusing')
+        return bam_fpath
+
     tmp_dirpath = join(work_dir, 'sambamba_tmp_dir')
     safe_mkdir(tmp_dirpath)
 
     bwa_cmdline = ('{bwa} mem -t {threads} -v 2 {bwa_prefix} {l_fpath} {r_fpath} | ' +
-                  ('{sambamba} markdup -t {threads} | ' if dedup else '') +
-                   '{samtools} view    -t {threads} -b -S -u - | '
-                   '{sambabma} sort    -t {threads} --tmpdir {tmp_dirpath} '
-                   '-o {bam_fpath} /dev/stdin').format(**locals())
+                   '{smb} view /dev/stdin -t {threads} -f bam -S -o - | ' +
+                   '{smb} sort /dev/stdin -t {threads} --tmpdir {tmp_dirpath} -o {bam_fpath}').format(**locals())
     run(bwa_cmdline, output_fpath=bam_fpath, stdout_to_outputfile=False, reuse=cfg.reuse_intermediate)
+
+    if dedup:
+        dedup_bam_fpath = add_suffix(bam_fpath, 'dedup')
+        dedup_cmdl = '{smb} markdup -t {threads} {bam_fpath} {dedup_bam_fpath}'.format(**locals())
+        run(dedup_cmdl, output_fpath=dedup_bam_fpath, stdout_to_outputfile=False)
+        verify_bam(dedup_bam_fpath)
+        os.rename(dedup_bam_fpath, bam_fpath)
+
     sambamba.index_bam(bam_fpath)
 
 # samtools view -b -S -u - |

@@ -547,7 +547,7 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
     info('Saving reports...')
     report.save_json(sample.targqc_json_fpath)
     report.save_txt(sample.targqc_txt_fpath)
-    report.save_html(sample.targqc_html_fpath, caption='Target coverage statistics for ' + sample.name, is_debug=cfg.debug)
+    report.save_html(sample.targqc_html_fpath, caption='Target coverage statistics for ' + sample.name, is_debug=cfg.is_debug)
     debug()
     debug('Saved to ' + dirname(report.txt_fpath))
     return report
