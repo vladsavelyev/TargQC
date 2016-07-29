@@ -114,7 +114,7 @@ setup(
     },
     include_package_data=True,
     zip_safe=False,
-    scripts=['scripts/' + name],
+    scripts=['scripts/' + name, 'GeneAnnotation/annotate_bed.py'],
     install_requires=reqs,
     classifiers=[
         'Environment :: Console',
