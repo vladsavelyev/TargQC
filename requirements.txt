@@ -4,7 +4,7 @@ pandas
 pybedtools
 joblib
 jsontemplate
-ipython<5.0.0,>=4.0.0
+ipython
 ipython-cluster-helper
 PyMonad
 gffutils

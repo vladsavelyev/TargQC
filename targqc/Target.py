@@ -87,9 +87,9 @@ class Target:
         self.regions_num = self.get_capture_bed().count()
 
         self._make_qualimap_bed(work_dir)
-        self._make_padded_bed(work_dir)
+        self._make_padded_bed(work_dir, fai_fpath)
 
-    def _make_padded_bed(self, work_dir):
+    def _make_padded_bed(self, work_dir, fai_fpath):
         if self.is_wgs:
             return None
 
@@ -98,7 +98,7 @@ class Target:
             debug('Padded BED file ' + self.padded_bed_fpath + ' is ready, reusing')
             return BedTool(self.padded_bed_fpath)
 
-        padded_bed = self.bed.slop(b=cfg.padding, g=cfg.fai_fpath).sort().merge()
+        padded_bed = self.bed.slop(b=cfg.padding, g=fai_fpath).sort().merge()
         with file_transaction(work_dir, self.padded_bed_fpath) as tx:
             padded_bed.saveas(tx)
         return BedTool(self.padded_bed_fpath)
