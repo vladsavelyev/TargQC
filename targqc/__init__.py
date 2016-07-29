@@ -43,7 +43,7 @@ def start_targqc(work_dir, samples, target,
                  reuse=None,
                  is_debug=None,
                  ):
-    cfg.parallel_cfg = parallel_cfg if parallel_cfg else cfg.parallel_cfg
+    cfg.parallel_cfg = parallel_cfg if parallel_cfg is not None else cfg.parallel_cfg
     cfg.genome = genome if genome is not None else cfg.genome
     cfg.depth_thresholds = depth_thresholds if depth_thresholds is not None else cfg.depth_thresholds
     cfg.downsample_pairs_num = downsample_pairs_num if downsample_pairs_num is not None else cfg.downsample_pairs_num
@@ -57,7 +57,7 @@ def start_targqc(work_dir, samples, target,
     if fastq_samples:
         if not bwa_prefix:
             critical('--bwa-prefix is required when running from fastq')
-        with parallel_view(len(fastq_samples), parallel_cfg) as view:
+        with parallel_view(len(fastq_samples), cfg.parallel_cfg) as view:
             num_reads_by_sample = proc_fastq(fastq_samples, view, work_dir, bwa_prefix,
                                              downsample_pairs_num, dedup)
 

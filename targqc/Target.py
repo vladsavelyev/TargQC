@@ -67,8 +67,8 @@ class Target:
         debug()
         info('Annotating target BED file and collecting overlapping genome features...')
         ann_target_bed_fpath = add_suffix(sort_target_bed_fpath, 'ann')
-        annotate(sort_target_bed_fpath, ann_target_bed_fpath, reuse=reuse, genome=genome or cfg.genome,
-                 work_dir=work_dir, is_debug=cfg.is_debug, extended=True, output_features=True)
+        annotate(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir, reuse=reuse, genome=genome or cfg.genome,
+                 is_debug=cfg.is_debug, extended=True, output_features=True)
         # TODO prepare BEDs: annotate with --report-features, then use that whole BED to find coverage, but only "cature" for summary reports
         debug('Saved to ' + ann_target_bed_fpath)
 
