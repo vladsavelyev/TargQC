@@ -33,7 +33,7 @@ fastqc_report_fname      = 'fastqc_report.html'
 
 
 def start_targqc(work_dir, samples, target,
-                 parallel_cfg=cfg.parallel_cfg,
+                 parallel_cfg=None,
                  bwa_prefix=None,
                  genome=None,
                  depth_thresholds=None,
