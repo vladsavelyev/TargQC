@@ -133,7 +133,6 @@ class Target:
 
         r_by_tx_by_gene = OrderedDefaultDict(lambda: defaultdict(list))
         all_features = ga.get_all_features(genome or cfg.genome, high_confidence=True)
-        all_features = all_features.saveas('/Users/vlad/vagrant/Pre_Alignment_Suite/tmp.bed')
 
         info('Select best transcript to report')
         for r in all_features:
