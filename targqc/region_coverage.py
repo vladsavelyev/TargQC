@@ -12,7 +12,7 @@ from Utils import reference_data
 from Utils.bed_utils import count_bed_cols
 from Utils.sambamba import sambamba_depth
 from Utils.call_process import run
-from Utils.file_utils import intermediate_fname, verify_file, file_transaction, safe_mkdir
+from Utils.file_utils import intermediate_fname, verify_file, file_transaction
 from Utils.logger import info, debug
 
 import targqc.config as cfg
@@ -67,7 +67,7 @@ def make_region_reports(view, work_dir, samples, target):
 
     debug()
     debug('Running sambamba...')
-    sambamba_depth_output_fpaths = view.run(sambamba_depth, safe_mkdir(join(work_dir, 'sambamba_depth')),
+    sambamba_depth_output_fpaths = view.run(sambamba_depth,
         [[s.work_dir, bed_fpath, s.bam, depth_thresholds_by_sample[s.name],
           None, False, s.name, cfg.reuse_intermediate]
          for s in samples])
@@ -77,7 +77,7 @@ def make_region_reports(view, work_dir, samples, target):
 
     debug()
     debug('Parsing sambamba results and writing results...')
-    view.run(_proc_sambamba_depth, safe_mkdir(join(work_dir, 'proc_sambamba_depth')),
+    view.run(_proc_sambamba_depth,
         [[sambamba_output_fpath, s.targqc_region_tsv, s.name, depth_thresholds_by_sample[s.name]]
          for sambamba_output_fpath, s in zip(sambamba_depth_output_fpaths, samples)])
 
