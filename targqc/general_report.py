@@ -338,9 +338,9 @@ def get_mean_cov(bedcov_output_fpath):
     return mean_cov
 
 
-def make_general_reports(view, samples, target, num_reads_by_sample=None):
+def make_general_reports(view, work_dir, samples, target, num_reads_by_sample=None):
     info('Running QualiMap...')
-    view.run(run_qualimap,
+    view.run(run_qualimap, safe_mkdir(join(work_dir, 'qualimap')),
         [[s.work_dir, s.qualimap_dirpath, s.bam, cfg.genome, target.qualimap_bed_fpath,
           view.cores_per_job, cfg.reuse_intermediate]
          for s in samples])

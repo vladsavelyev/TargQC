@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from os.path import join, splitext
 
+from Utils.file_utils import safe_mkdir
 from Utils.sambamba import index_bam
 from Utils.parallel import parallel_view
 from Utils.logger import info, critical
@@ -68,10 +69,10 @@ def start_targqc(work_dir, samples, target,
     info()
     with parallel_view(len(samples), cfg.parallel_cfg) as view:
         info('Indexing BAMs...')
-        view.run(index_bam, [[s.bam] for s in samples])
+        view.run(index_bam, safe_mkdir(join(work_dir, 'index_bam')), [[s.bam] for s in samples])
 
         info('Making general reports...')
-        make_general_reports(view, samples, target, num_reads_by_sample)
+        make_general_reports(view, work_dir, samples, target, num_reads_by_sample)
 
         info()
         info('Making region-level reports...')
