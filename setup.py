@@ -34,6 +34,12 @@ if sys.argv[-1] == 'tag':
     _run("git push --tags")
     sys.exit()
 
+if sys.argv[-1] == 'up':
+    _run('cd Utils; git up; cd ..')
+    _run('cd GeneAnnotation; git up; cd ..')
+    _run('git up')
+    sys.exit()
+
 if sys.argv[-1] == 'install':
     print("""-----------------------------------
  Installing TargQC version {}
