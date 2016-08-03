@@ -99,7 +99,7 @@ def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_
              ', sampling from only first ' + str(LIMIT))
         num_read_pairs = LIMIT
     info(sample_name + ': ' + str(num_read_pairs) + ' reads')
-    if num_read_pairs < N_pairs:
+    if num_read_pairs <= N_pairs:
         info(sample_name + ': and it is less than ' + str(N_pairs) + ', so no downsampling.')
         return fastq_left_fpath, fastq_right_fpath
     else:
@@ -135,9 +135,8 @@ def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_
                 if sub2:
                     sub2.write(fh2.readline())
             written_records += 1
-            rec_no += 1
             if written_records % 10000 == 0:
-                info(sample_name + ': written ' + str(written_records) + ', rec_no ' + str(rec_no))
+                info(sample_name + ': written ' + str(written_records) + ', rec_no ' + str(rec_no + 1))
             if rec_no > num_read_pairs:
                 info(sample_name + ' reached the limit of ' + str(num_read_pairs), ' read lines, stopping.')
                 break
