@@ -58,7 +58,7 @@ def start_targqc(work_dir, samples, target,
     if fastq_samples:
         if not bwa_prefix:
             critical('--bwa-prefix is required when running from fastq')
-        with parallel_view(len(fastq_samples), cfg.parallel_cfg) as view:
+        with parallel_view(len(fastq_samples), cfg.parallel_cfg, join(work_dir, 'sge_fastq')) as view:
             num_reads_by_sample = proc_fastq(fastq_samples, view, work_dir, bwa_prefix,
                                              downsample_pairs_num, dedup)
 
@@ -67,12 +67,12 @@ def start_targqc(work_dir, samples, target,
             info(s.name + ': using alignment ' + s.bam)
 
     info()
-    with parallel_view(len(samples), cfg.parallel_cfg) as view:
+    with parallel_view(len(samples), cfg.parallel_cfg, join(work_dir, 'sge_bam')) as view:
         info('Indexing BAMs...')
         view.run(index_bam, safe_mkdir(join(work_dir, 'index_bam')), [[s.bam] for s in samples])
 
         info('Making general reports...')
-        make_general_reports(view, work_dir, samples, target, num_reads_by_sample)
+        make_general_reports(view, samples, target, num_reads_by_sample)
 
         info()
         info('Making region-level reports...')
