@@ -9,7 +9,6 @@ from Utils.logger import info, critical
 from targqc.fastq import proc_fastq
 from targqc.region_coverage import make_region_reports
 from targqc.general_report import make_general_reports
-import targqc.config as cfg
 
 targqc_repr              = 'TargQC'
 targqc_name              = 'targqc'
@@ -34,31 +33,23 @@ fastqc_report_fname      = 'fastqc_report.html'
 
 
 def start_targqc(work_dir, samples, target,
-                 parallel_cfg=None,
-                 bwa_prefix=None,
-                 genome=None,
-                 depth_thresholds=None,
-                 downsample_pairs_num=None,
-                 padding=None,
-                 dedup=None,
-                 reuse=None,
-                 is_debug=None,
+                 parallel_cfg,
+                 bwa_prefix,
+                 genome,
+                 depth_thresholds,
+                 downsample_pairs_num,
+                 padding,
+                 dedup,
+                 reuse,
+                 is_debug,
                  ):
-    cfg.parallel_cfg = parallel_cfg if parallel_cfg is not None else cfg.parallel_cfg
-    cfg.genome = genome if genome is not None else cfg.genome
-    cfg.depth_thresholds = depth_thresholds if depth_thresholds is not None else cfg.depth_thresholds
-    cfg.downsample_pairs_num = downsample_pairs_num if downsample_pairs_num is not None else cfg.downsample_pairs_num
-    cfg.padding = padding if padding is not None else cfg.padding
-    cfg.dedup = dedup if dedup is not None else cfg.dedup
-    cfg.reuse_intermediate = reuse if reuse is not None else cfg.reuse_intermediate
-    cfg.is_debug = is_debug if is_debug is not None else cfg.is_debug
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
     num_reads_by_sample = dict()
     if fastq_samples:
         if not bwa_prefix:
             critical('--bwa-prefix is required when running from fastq')
-        with parallel_view(len(fastq_samples), cfg.parallel_cfg, join(work_dir, 'sge_fastq')) as view:
+        with parallel_view(len(fastq_samples), parallel_cfg, join(work_dir, 'sge_fastq')) as view:
             num_reads_by_sample = proc_fastq(fastq_samples, view, work_dir, bwa_prefix,
                                              downsample_pairs_num, dedup)
 
@@ -67,16 +58,17 @@ def start_targqc(work_dir, samples, target,
             info(s.name + ': using alignment ' + s.bam)
 
     info()
-    with parallel_view(len(samples), cfg.parallel_cfg, join(work_dir, 'sge_bam')) as view:
+    with parallel_view(len(samples), parallel_cfg, join(work_dir, 'sge_bam')) as view:
         info('Indexing BAMs...')
-        view.run(index_bam, safe_mkdir(join(work_dir, 'index_bam')), [[s.bam] for s in samples])
+        view.run(index_bam, [[s.bam] for s in samples])
 
         info('Making general reports...')
-        make_general_reports(view, samples, target, num_reads_by_sample)
+        make_general_reports(view, samples, target, genome, depth_thresholds, padding, num_reads_by_sample,
+                             reuse=reuse, is_debug=is_debug)
 
         info()
         info('Making region-level reports...')
-        make_region_reports(view, work_dir, samples, target)
+        make_region_reports(view, work_dir, samples, target, genome, depth_thresholds, reuse=reuse)
 
     # for general_report, per_gene_report, sample in zip(general_reports, per_gene_reports, samples):
     #     info('')

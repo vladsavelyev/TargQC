@@ -11,14 +11,12 @@ from Utils.file_utils import open_gzipsafe, file_transaction, file_exists, inter
     splitext_plus, safe_mkdir, which
 from Utils.logger import critical, debug, info, warn, err
 
-import targqc.config as cfg
 
-
-def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num, dedup=True):
+def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num, dedup=True, reuse_intermediate=False):
     num_reads_by_sample = dict()
     if downsample_pairs_num:
         info('Counting read numbers')
-        read_counts = parall_view.run(count_reads, [[s.name, s.work_dir, s.l_fpath, cfg.reuse_intermediate] for s in samples])
+        read_counts = parall_view.run(count_reads, [[s.name, s.work_dir, s.l_fpath, reuse_intermediate] for s in samples])
         for s, read_count in zip(samples, read_counts):
             num_reads_by_sample[s.name] = read_count
 
@@ -29,6 +27,8 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num,
         for s, (l_r, r_r) in zip(samples, fastq_pairs):
             s.l_fpath = l_r
             s.r_fpath = r_r
+    else:
+        info('Skipping downsampling')
 
     bwa = which('bwa')
     samtools = which('samtools')
@@ -41,8 +41,7 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num,
     info()
     info('Aligning reads to the reference')
     bam_fpaths = parall_view.run(align,
-        [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, sb, bwa_prefix, dedup,
-            parall_view.cores_per_job]
+        [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, sb, bwa_prefix, dedup, parall_view.cores_per_job, reuse_intermediate]
          for s in samples])
 
     bam_fpaths = map(verify_bam, bam_fpaths)
@@ -77,7 +76,7 @@ def count_records_in_fastq(fastq_fpath):
 
 
 def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_fpath, N_pairs,
-               suffix=None, num_read_pairs=None):
+               suffix=None, num_read_pairs=None, reuse=False):
     """ get N random headers from a fastq file without reading the
     whole thing into memory
     modified from: http://www.biostars.org/p/6544/
@@ -86,7 +85,7 @@ def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_
 
     l_out_fpath = join(output_dir, add_suffix(basename(fastq_left_fpath), suffix or 'subset'))
     r_out_fpath = join(output_dir, add_suffix(basename(fastq_right_fpath), suffix or 'subset'))
-    if cfg.reuse_intermediate and verify_file(l_out_fpath, silent=True) and verify_file(r_out_fpath, silent=True):
+    if reuse and verify_file(l_out_fpath, silent=True) and verify_file(r_out_fpath, silent=True):
         debug(l_out_fpath + ' and ' + r_out_fpath + ' exist, reusing.')
         return l_out_fpath, r_out_fpath
 
@@ -153,10 +152,10 @@ def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_
     return l_out_fpath, r_out_fpath
 
 
-def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, smb, bwa_prefix, dedup=True, threads=1):
+def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, smb, bwa_prefix, dedup=True, threads=1, reuse=False):
     info('Running bwa to align reads...')
     bam_fpath = join(work_dir, sample_name + '_downsampled.bam')
-    if isfile(bam_fpath) and verify_bam(bam_fpath) and cfg.reuse_intermediate:
+    if isfile(bam_fpath) and verify_bam(bam_fpath) and reuse:
         debug(bam_fpath + ' exists, reusing')
         return bam_fpath
 
@@ -166,7 +165,7 @@ def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, smb, bwa_prefi
     bwa_cmdline = ('{bwa} mem -t {threads} -v 2 {bwa_prefix} {l_fpath} {r_fpath} | ' +
                    '{smb} view /dev/stdin -t {threads} -f bam -S -o - | ' +
                    '{smb} sort /dev/stdin -t {threads} --tmpdir {tmp_dirpath} -o {bam_fpath}').format(**locals())
-    run(bwa_cmdline, output_fpath=bam_fpath, stdout_to_outputfile=False, reuse=cfg.reuse_intermediate)
+    run(bwa_cmdline, output_fpath=bam_fpath, stdout_to_outputfile=False, reuse=reuse)
 
     if dedup:
         dedup_bam_fpath = add_suffix(bam_fpath, 'dedup')
@@ -206,18 +205,18 @@ def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, smb, bwa_prefi
 LIMIT = 500*1000*1000
 
 
-def markdup_sam(in_sam_fpath, samblaster=None):
-    """Perform non-stream based deduplication of SAM input files using samblaster.
-    """
-    if not samblaster:
-        samblaster = 'samblaster'
-        if which(samblaster) is None:
-            warn('No samblaster, can\'t mark duplicates.')
-            return None
-
-    out_sam_fpath = add_suffix(in_sam_fpath, 'markdup')
-    cmdline = '{samblaster} -i {in_sam_fpath} -o {out_sam_fpath}'.format(**locals())
-    run(cmdline, output_fpath=out_sam_fpath, stdout_to_outputfile=False, reuse=cfg.reuse_intermediate)
-    return out_sam_fpath
+# def markdup_sam(in_sam_fpath, samblaster=None, reuse=False):
+#     """Perform non-stream based deduplication of SAM input files using samblaster.
+#     """
+#     if not samblaster:
+#         samblaster = 'samblaster'
+#         if which(samblaster) is None:
+#             warn('No samblaster, can\'t mark duplicates.')
+#             return None
+#
+#     out_sam_fpath = add_suffix(in_sam_fpath, 'markdup')
+#     cmdline = '{samblaster} -i {in_sam_fpath} -o {out_sam_fpath}'.format(**locals())
+#     run(cmdline, output_fpath=out_sam_fpath, stdout_to_outputfile=False, reuse=reuse)
+#     return out_sam_fpath
 
 

@@ -6,7 +6,6 @@ from os.path import join, abspath, realpath, dirname, relpath
 from pybedtools import BedTool
 
 import GeneAnnotation
-import targqc.config as cfg
 from Utils import reference_data
 from targqc.Target import Target
 from targqc.qualimap.report_parser import parse_qualimap_sample_report
@@ -338,11 +337,12 @@ def get_mean_cov(bedcov_output_fpath):
     return mean_cov
 
 
-def make_general_reports(view, samples, target, num_reads_by_sample=None):
+def make_general_reports(view, samples, target, genome, depth_thresholds, bed_padding,
+                         num_reads_by_sample=None, reuse=False, is_debug=False):
     info('Running QualiMap...')
     view.run(run_qualimap,
-        [[s.work_dir, s.qualimap_dirpath, s.bam, cfg.genome, target.qualimap_bed_fpath,
-          view.cores_per_job, cfg.reuse_intermediate]
+        [[s.work_dir, s.qualimap_dirpath, s.bam, genome, target.qualimap_bed_fpath,
+          view.cores_per_job, reuse]
          for s in samples])
 
     # try:
@@ -360,13 +360,13 @@ def make_general_reports(view, samples, target, num_reads_by_sample=None):
 
         info('-'*70)
         info('Parsing QualiMap results...')
-        depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample, cfg.depth_thresholds)
+        depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample, depth_thresholds)
         sample.avg_depth = depth_stats['ave_depth']
 
         if sample.name in num_reads_by_sample:
             reads_stats['original_num_reads'] = num_reads_by_sample[sample.name]
 
-        chrom_lengths = reference_data.get_chrom_lengths(cfg.genome)
+        chrom_lengths = reference_data.get_chrom_lengths(genome)
         if 'Y' in chrom_lengths or 'chrY' in chrom_lengths:
             reads_stats['gender'] = _determine_sex(sample.work_dir, sample.bam, depth_stats['ave_depth'], target.get_capture_bed())
             info()
@@ -375,7 +375,7 @@ def make_general_reports(view, samples, target, num_reads_by_sample=None):
             depth_stats['bases_within_threshs'], depth_stats['rates_within_threshs'] = calc_bases_within_threshs(
                 depth_stats['bases_by_depth'],
                 target_stats['target_size'] if not target.is_wgs else target_stats['reference_size'],
-                cfg.depth_thresholds)
+                depth_thresholds)
 
             depth_stats['wn_20_percent'] = calc_rate_within_normal(
                 depth_stats['bases_by_depth'],
@@ -388,28 +388,30 @@ def make_general_reports(view, samples, target, num_reads_by_sample=None):
         else:
             target.bases_num = target_stats['reference_size']
 
-        reads_stats['mapped_dedup'] = number_of_mapped_reads(sample.work_dir, sample.bam, dedup=True, reuse=cfg.reuse_intermediate)
+        reads_stats['mapped_dedup'] = number_of_mapped_reads(sample.work_dir, sample.bam, dedup=True, reuse=reuse)
 
         if not target.is_wgs:
             reads_stats['mapped_dedup_on_target'] = number_mapped_reads_on_target(
-                sample.work_dir, target.bed.cut(range(3)).saveas().fn, sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
+                sample.work_dir, target.bed.cut(range(3)).saveas().fn, sample.bam, dedup=True, reuse=reuse) or 0
 
             reads_stats['mapped_dedup_on_padded_target'] = number_mapped_reads_on_target(
-                sample.work_dir, target.padded_bed_fpath, sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
+                sample.work_dir, target.padded_bed_fpath, sample.bam, dedup=True, reuse=reuse) or 0
 
         else:
-            cds_bed = GeneAnnotation.get_merged_cds(cfg.genome)
+            cds_bed = GeneAnnotation.get_merged_cds(genome)
             info('Using the CDS reference BED to calc "reads on CDS"')
             reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(
-                sample.work_dir, cds_bed, sample.bam, dedup=True, reuse=cfg.reuse_intermediate) or 0
+                sample.work_dir, cds_bed, sample.bam, dedup=True, reuse=reuse) or 0
 
-        summary_reports.append(_build_report(sample.work_dir, depth_stats, reads_stats, indels_stats, sample, target))
+        r = _build_report(sample.work_dir, depth_stats, reads_stats, indels_stats, sample, target,
+                          depth_thresholds, bed_padding, is_debug=is_debug)
+        summary_reports.append(r)
 
     return summary_reports
 
 
-def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target):
-    report = SampleReport(sample, metric_storage=get_header_metric_storage(cfg.depth_thresholds, is_wgs=target.bed_fpath is None, padding=cfg.padding))
+def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target, depth_thresholds, bed_padding, is_debug=False):
+    report = SampleReport(sample, metric_storage=get_header_metric_storage(depth_thresholds, is_wgs=target.bed_fpath is None, padding=bed_padding))
     report.add_record('Qualimap', value='Qualimap', url=relpath(sample.qualimap_html_fpath, sample.dirpath), silent=True)
     if reads_stats.get('gender') is not None:
         report.add_record('Sex', reads_stats['gender'], silent=True)
@@ -547,7 +549,7 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
     info('Saving reports...')
     report.save_json(sample.targqc_json_fpath)
     report.save_txt(sample.targqc_txt_fpath)
-    report.save_html(sample.targqc_html_fpath, caption='Target coverage statistics for ' + sample.name, is_debug=cfg.is_debug)
+    report.save_html(sample.targqc_html_fpath, caption='Target coverage statistics for ' + sample.name, is_debug=is_debug)
     debug()
     debug('Saved to ' + dirname(report.txt_fpath))
     return report

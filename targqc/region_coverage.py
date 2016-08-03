@@ -15,21 +15,19 @@ from Utils.call_process import run
 from Utils.file_utils import intermediate_fname, verify_file, file_transaction
 from Utils.logger import info, debug
 
-import targqc.config as cfg
 from Utils.utils import OrderedDefaultDict
-from targqc import bedops
 
 
-def make_region_reports(view, work_dir, samples, target):
+def make_region_reports(view, work_dir, samples, target, genome, depth_thresholds, reuse=False):
     info('Calculating coverage statistics for CDS and exon regions from RefSeq...')
 
-    if cfg.reuse_intermediate and all(
+    if reuse and all(
             isfile(s.targqc_region_tsv) and verify_file(s.targqc_region_tsv)
             for s in samples):
         debug('All reports exist, reusing')
         return [s.targqc_region_tsv for s in samples]
 
-    depth_thresholds_by_sample = {s.name: sorted(cfg.depth_thresholds + [max(1, int(s.avg_depth / 2))])
+    depth_thresholds_by_sample = {s.name: sorted(depth_thresholds + [max(1, int(s.avg_depth / 2))])
                                   for s in samples}
 
     # debug()
@@ -69,7 +67,7 @@ def make_region_reports(view, work_dir, samples, target):
     debug('Running sambamba...')
     sambamba_depth_output_fpaths = view.run(sambamba_depth,
         [[s.work_dir, bed_fpath, s.bam, depth_thresholds_by_sample[s.name],
-          None, False, s.name, cfg.reuse_intermediate]
+          None, False, s.name, reuse]
          for s in samples])
     assert len(sambamba_depth_output_fpaths) == len(samples), \
         'Number of sambamba results = ' + str(len(sambamba_depth_output_fpaths)) + \
