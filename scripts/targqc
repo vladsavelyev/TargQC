@@ -193,7 +193,8 @@ def main(args):
     tag = ('targqc_' + opts.project_name) if opts.project_name else 'targqc'
     parallel_cfg = ParallelCfg(opts.scheduler, opts.queue, opts.resources, opts.threads, tag)
     padding = opts.padding
-    depth_thresholds = opts.depth_thresholds,
+    depth_thresholds = opts.depth_thresholds
+    debug('Depth thresholds: ' + str(depth_thresholds))
     genome = opts.genome
     dedup = not opts.no_dedup
     if opts.downsample_pairs_num == 'off':
