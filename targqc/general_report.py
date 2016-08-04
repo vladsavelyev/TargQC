@@ -66,7 +66,7 @@ def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
         Metric('Average ' + trg_name + ' coverage depth',                 short_name='Avg',            multiqc=dict(title='Avg depth', order=7, kind='cov', min=0)),
         Metric('Estimated ' + trg_name + ' full coverage depth',          short_name='Est full avg',   multiqc=dict(title='Est avg depth', order=7, kind='cov', min=0), description='Estimated average coverage of full dataset. Calculated as (the total number of raw reads * downsampled mapped reads fraction / total downsampled mapped reads) * downsampled average coverage'),
         Metric('Std. dev. of ' + trg_name + ' coverage depth',            short_name='Std dev',        multiqc=dict(order=8, kind='cov', min=0),                                quality='Less is better'),
-        Metric('Percentage of ' + trg_name + ' within 20% of mean depth', short_name='&#177;20% avg',  multiqc=dict(order=9, kind='cov'),                             unit='%')
+        Metric('Percentage of ' + trg_name + ' within 20% of med depth',  short_name='&#177;20% med',  multiqc=dict(order=9, kind='cov'),                             unit='%')
     ])
     for depth in depth_thresholds:
         name = 'Part of ' + trg_name + ' covered at least by ' + str(depth) + 'x'
@@ -363,7 +363,7 @@ def make_general_reports(view, samples, target, genome, depth_thresholds, bed_pa
         depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample, depth_thresholds)
         sample.avg_depth = depth_stats['ave_depth']
 
-        if sample.name in num_reads_by_sample:
+        if num_reads_by_sample and sample.name in num_reads_by_sample:
             reads_stats['original_num_reads'] = num_reads_by_sample[sample.name]
 
         chrom_lengths = reference_data.get_chrom_lengths(genome)
@@ -377,10 +377,11 @@ def make_general_reports(view, samples, target, genome, depth_thresholds, bed_pa
                 target_stats['target_size'] if not target.is_wgs else target_stats['reference_size'],
                 depth_thresholds)
 
-            depth_stats['wn_20_percent'] = calc_rate_within_normal(
-                depth_stats['bases_by_depth'],
-                depth_stats['median_depth'],
-                target_stats['target_size'] if not target.is_wgs else target_stats['reference_size'])
+            if depth_stats['median_depth'] > 0:
+                depth_stats['wn_20_percent'] = calc_rate_within_normal(
+                    depth_stats['bases_by_depth'],
+                    depth_stats['median_depth'],
+                    target_stats['target_size'] if not target.is_wgs else target_stats['reference_size'])
 
         if target_stats['target_size']:
             target.bases_num = target_stats['target_size']
@@ -521,11 +522,12 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
         est_full_cov = times_downsampled * depth_stats['ave_depth']
         report.add_record('Estimated ' + trg_type + ' full coverage depth', est_full_cov)
     report.add_record('Median ' + trg_type + ' coverage depth', depth_stats['median_depth'])
-    report.add_record('Std. dev. of ' + trg_type + ' coverage depth', depth_stats['stddev_depth'])
+    if depth_stats['median_depth'] > 0:
+        report.add_record('Std. dev. of ' + trg_type + ' coverage depth', depth_stats['stddev_depth'])
     # report.add_record('Minimal ' + trg_type + ' coverage depth', depth_stats['min_depth'])
     # report.add_record('Maximum ' + trg_type + ' coverage depth', depth_stats['max_depth'])
     if 'wn_20_percent' in depth_stats:
-        report.add_record('Percentage of ' + trg_type + ' within 20% of mean depth', depth_stats['wn_20_percent'])
+        report.add_record('Percentage of ' + trg_type + ' within 20% of med depth', depth_stats['wn_20_percent'])
         assert depth_stats['wn_20_percent'] <= 1.0 or depth_stats['wn_20_percent'] is None, str(depth_stats['wn_20_percent'])
 
     if 'bases_within_threshs' in depth_stats:
