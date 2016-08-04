@@ -4,3 +4,6 @@
 [submodule "Utils"]
 	path = Utils
 	url = https://github.com/vladsaveliev/Utils.git
+[submodule "MultiQC"]
+	path = MultiQC
+	url = https://github.com/vladsaveliev/MultiQC.git

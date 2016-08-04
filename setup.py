@@ -35,8 +35,9 @@ if sys.argv[-1] == 'tag':
     sys.exit()
 
 if sys.argv[-1] == 'up':
-    _run('cd Utils; git up; cd ..')
-    _run('cd GeneAnnotation; git up; cd ..')
+    _run('cd Utils && git up && cd ..')
+    _run('cd GeneAnnotation && git up && cd ..')
+    _run('cd MultiQC && git up && cd ..')
     _run('git up')
     sys.exit()
 
@@ -69,6 +70,8 @@ def sambamba_executable():
         return path
     else:
         sys.stderr.write('Error: could not find sambamba ' + path + '(.gz)')
+
+_run('cd MultiQC && python setup.py install && cd ..')
 
 setup(
     name=name,
