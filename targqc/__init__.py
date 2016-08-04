@@ -41,16 +41,16 @@ def start_targqc(work_dir, samples, target, parallel_cfg, bwa_prefix,
                  dedup=config.dedup,
                  reuse=config.reuse_intermediate,
                  is_debug=config.is_debug,
+                 num_reads_by_sample=None
                  ):
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
-    num_reads_by_sample = dict()
     if fastq_samples:
         if not bwa_prefix:
             critical('--bwa-prefix is required when running from fastq')
         with parallel_view(len(fastq_samples), parallel_cfg, join(work_dir, 'sge_fastq')) as view:
-            num_reads_by_sample = proc_fastq(fastq_samples, view, work_dir, bwa_prefix,
-                                             downsample_pairs_num, dedup)
+            num_reads_by_sample = proc_fastq(fastq_samples, view, work_dir, bwa_prefix, downsample_pairs_num,
+                                             num_reads_by_sample, dedup=dedup, reuse=reuse)
 
     for s in samples:
         if s.bam:
@@ -82,7 +82,7 @@ def start_targqc(work_dir, samples, target, parallel_cfg, bwa_prefix,
 
 class Sample:
     def __init__(self, name, dirpath, work_dir, bam=None, l_fpath=None, r_fpath=None,
-                 genome=None, qualimap_dirpath=None, normal_match=None):
+                 genome=None, qualimap_dirpath=None, normal_match=None, read_pairs_num=None):
         self.name = name
         self.bam = bam
         self.l_fpath = l_fpath
@@ -99,6 +99,7 @@ class Sample:
         self.normal_match = normal_match
         self.min_af = None
         self.avg_depth = None
+        self.read_pairs_num = read_pairs_num
 
         self.targqc_dirpath                  = None
         self.targqc_html_fpath               = None
@@ -107,20 +108,6 @@ class Sample:
         self.targqc_region_tsv               = None
         self.targqc_norm_depth_vcf_txt       = None
         self.targqc_norm_depth_vcf_tsv       = None
-
-        self.qualimap_dirpath                = None
-        self.qualimap_html_fpath             = None
-        self.qualimap_genome_results_fpath   = None
-        self.qualimap_ins_size_hist_fpath    = None
-        self.qualimap_cov_hist_fpath         = None
-        self.qualimap_gc_hist_fpath          = None
-
-        self.fastqc_dirpath                  = None
-        self.fastqc_html_fpath               = None
-
-        self.picard_dirpath                  = None
-        self.picard_ins_size_hist_txt_fpath  = None
-        self.picard_ins_size_hist_pdf_fpath  = None
 
         if dirpath:
             self.targqc_dirpath = dirpath
@@ -131,6 +118,13 @@ class Sample:
             self.targqc_region_tsv           = join(self.targqc_dirpath, 'regions.tsv')
             self.targqc_norm_depth_vcf_txt   = None
             self.targqc_norm_depth_vcf_tsv   = None
+
+        self.qualimap_dirpath                = None
+        self.qualimap_html_fpath             = None
+        self.qualimap_genome_results_fpath   = None
+        self.qualimap_ins_size_hist_fpath    = None
+        self.qualimap_cov_hist_fpath         = None
+        self.qualimap_gc_hist_fpath          = None
 
         qualimap_dirpath = qualimap_dirpath or join(self.targqc_dirpath, qualimap_name)
         if qualimap_dirpath:

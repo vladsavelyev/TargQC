@@ -12,13 +12,17 @@ from Utils.file_utils import open_gzipsafe, file_transaction, file_exists, inter
 from Utils.logger import critical, debug, info, warn, err
 
 
-def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num, dedup=True, reuse_intermediate=False):
-    num_reads_by_sample = dict()
+def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num, num_reads_by_sample=None,
+               dedup=True, reuse=False):
+    num_reads_by_sample = num_reads_by_sample or dict()
     if downsample_pairs_num:
-        info('Counting read numbers')
-        read_counts = parall_view.run(count_reads, [[s.name, s.work_dir, s.l_fpath, reuse_intermediate] for s in samples])
-        for s, read_count in zip(samples, read_counts):
-            num_reads_by_sample[s.name] = read_count
+        if all(s.name in num_reads_by_sample for s in samples):
+            pass
+        else:
+            info('Counting read numbers')
+            read_counts = parall_view.run(count_reads, [[s.name, s.work_dir, s.l_fpath, reuse] for s in samples])
+            for s, read_count in zip(samples, read_counts):
+                num_reads_by_sample[s.name] = read_count
 
         info('Downsampling the reads to ' + str(int(downsample_pairs_num)))
         fastq_pairs = parall_view.run(downsample,
@@ -41,7 +45,7 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num,
     info()
     info('Aligning reads to the reference')
     bam_fpaths = parall_view.run(align,
-        [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, sb, bwa_prefix, dedup, parall_view.cores_per_job, reuse_intermediate]
+        [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, sb, bwa_prefix, dedup, parall_view.cores_per_job, reuse]
          for s in samples])
 
     bam_fpaths = map(verify_bam, bam_fpaths)
