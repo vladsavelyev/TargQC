@@ -141,32 +141,6 @@ def _prep_best_report(metric_storage, samples):
     return report
 
 
-def _get_targqc_metric(metric, header_metric_storage, report_type='targetcov'):  # report type is in ['targetcov', 'qualimap', 'ngscat']
-    qualimap_to_targetcov_dict = {
-        'Number of reads': header_metric_storage.find_metric('Reads'),
-        'Mapped reads': header_metric_storage.find_metric('Mapped reads'),
-        'Unmapped reads': header_metric_storage.find_metric('Unmapped reads'),
-        'Mapped reads (on target)': header_metric_storage.find_metric('Reads mapped on target'),
-        'Coverage Mean': header_metric_storage.find_metric('Average target coverage depth'),
-        'Coverage Standard Deviation': header_metric_storage.find_metric('Std. dev. of target coverage depth')
-    }
-
-    ngscat_to_targetcov_dict = {
-        'Number reads': header_metric_storage.find_metric('Mapped reads'),
-        # '% target bases with coverage >= 1x': cov.header_metric_storage.get_metric('Percentage of target covered by at least 1 read'),
-        '% reads on target': header_metric_storage.find_metric('Reads mapped on target'),
-        'mean coverage': header_metric_storage.find_metric('Average target coverage depth')
-    }
-
-    if report_type == 'targetcov':
-        return metric
-    elif report_type == 'qualimap':
-        if metric.name in qualimap_to_targetcov_dict:
-            return qualimap_to_targetcov_dict[metric.name]
-        return metric
-    return metric
-
-
 def _get_targqc_metric_storage(metric_storages_by_report_type):
     class SectionId:
         def __init__(self, name, title):
@@ -210,19 +184,6 @@ def _get_targqc_metric_storage(metric_storages_by_report_type):
         general_section=ReportSection(
             general_section_id.name, general_section_id.title, general_section_metric_list),
         sections=sections)
-
-
-def _get_targqc_records(records_by_report_type, header_storage):
-    targqc_records = []
-    filled_metric_names = []
-    for report_type, records in records_by_report_type:
-        for record in records:
-            new_metric = _get_targqc_metric(record.metric, header_storage, report_type)
-            if not new_metric or new_metric.name not in filled_metric_names:
-                filled_metric_names.append(record.metric.name)
-                record.metric = new_metric
-                targqc_records.append(record)
-    return targqc_records
 
 
 def _correct_qualimap_genome_results(samples):

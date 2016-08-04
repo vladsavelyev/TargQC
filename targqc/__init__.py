@@ -6,6 +6,7 @@ from Utils.sambamba import index_bam
 from Utils.parallel import parallel_view
 from Utils.logger import info, critical
 
+from targqc import config
 from targqc.fastq import proc_fastq
 from targqc.region_coverage import make_region_reports
 from targqc.general_report import make_general_reports
@@ -32,16 +33,14 @@ fastqc_repr              = 'FastQC'
 fastqc_report_fname      = 'fastqc_report.html'
 
 
-def start_targqc(work_dir, samples, target,
-                 parallel_cfg,
-                 bwa_prefix,
-                 genome,
-                 depth_thresholds,
-                 downsample_pairs_num,
-                 padding,
-                 dedup,
-                 reuse,
-                 is_debug,
+def start_targqc(work_dir, samples, target, parallel_cfg, bwa_prefix,
+                 genome=config.genome,
+                 depth_thresholds=config.depth_thresholds,
+                 downsample_pairs_num=config.downsample_pairs_num,
+                 padding=config.padding,
+                 dedup=config.dedup,
+                 reuse=config.reuse_intermediate,
+                 is_debug=config.is_debug,
                  ):
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
