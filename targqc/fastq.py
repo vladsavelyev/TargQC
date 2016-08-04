@@ -63,7 +63,7 @@ def count_reads(s_name, work_dir, fastq_fpath, reuse=False):
     from Utils.logger import info
 
     read_counts_fpath = join(work_dir, 'original_read_count.txt')
-    if reuse and isfile(read_counts_fpath) and verify_file(read_counts_fpath, cmp_date_fpath=fastq_fpath):
+    if isfile(read_counts_fpath) and verify_file(read_counts_fpath, cmp_date_fpath=fastq_fpath):
         with open(read_counts_fpath) as f:
             return int(f.read().strip())
     else:

@@ -233,8 +233,8 @@ def main(args):
     # cmd = 'multiqc ' + output_dir + ('' if cfg.reuse_intermediate else ' --force') + ' -v ' + ' '.join(s.dirpath for s in samples)
     # run(cmd)
 
-    if not is_debug and work_dir and isdir(work_dir):
-        shutil.rmtree(work_dir)
+    # if not is_debug and work_dir and isdir(work_dir):
+    #     shutil.rmtree(work_dir)
 
 
 def get_inputs(opts, args):
