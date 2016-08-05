@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from os.path import join, splitext
 
+import Utils.reference_data as ref
 from Utils.file_utils import safe_mkdir, can_reuse
 from Utils.sambamba import index_bam
 from Utils.parallel import parallel_view
@@ -10,6 +11,8 @@ from targqc import config
 from targqc.fastq import proc_fastq
 from targqc.region_coverage import make_region_reports
 from targqc.general_report import make_general_reports
+from targqc.Target import Target
+from targqc.summarize import summarize_targqc
 
 targqc_repr              = 'TargQC'
 targqc_name              = 'targqc'
@@ -33,7 +36,8 @@ fastqc_repr              = 'FastQC'
 fastqc_report_fname      = 'fastqc_report.html'
 
 
-def start_targqc(work_dir, samples, target, parallel_cfg, bwa_prefix,
+def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, bwa_prefix,
+                 fai_fpath=None,
                  genome=config.genome,
                  depth_thresholds=config.depth_thresholds,
                  downsample_pairs_num=config.downsample_pairs_num,
@@ -43,6 +47,8 @@ def start_targqc(work_dir, samples, target, parallel_cfg, bwa_prefix,
                  is_debug=config.is_debug,
                  num_pairs_by_sample=None
                  ):
+    fai_fpath = fai_fpath or ref.get_fai(genome)
+    target = Target(work_dir, fai_fpath, target_bed_fpath)
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
     if fastq_samples:
@@ -71,6 +77,11 @@ def start_targqc(work_dir, samples, target, parallel_cfg, bwa_prefix,
         info()
         info('Making region-level reports...')
         make_region_reports(view, work_dir, samples, target, genome, depth_thresholds, reuse=reuse)
+
+    info()
+    info('*' * 70)
+    info('Summarizing')
+    summarize_targqc(parallel_cfg.threads, output_dir, work_dir, samples, bed_fpath=target_bed_fpath)
 
     # for general_report, per_gene_report, sample in zip(general_reports, per_gene_reports, samples):
     #     info('')

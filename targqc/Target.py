@@ -13,7 +13,7 @@ from targqc import config as cfg
 
 
 class Target:
-    def __init__(self, work_dir, fai_fpath, reuse, bed_fpath=None, genome=None):
+    def __init__(self, work_dir, fai_fpath, bed_fpath=None, genome=None):
         self.bed = None
         self.original_bed_fpath = None
         self.bed_fpath = None
@@ -32,7 +32,7 @@ class Target:
             self.is_wgs = False
             verify_bed(bed_fpath, is_critical=True)
             self.original_bed_fpath = bed_fpath
-            self._make_target_bed(bed_fpath, work_dir, fai_fpath, reuse, genome=genome)
+            self._make_target_bed(bed_fpath, work_dir, fai_fpath, genome=genome)
         else:
             info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
             self.is_wgs = True
@@ -44,7 +44,7 @@ class Target:
         else:
             return None
 
-    def _make_target_bed(self, bed_fpath, work_dir, fai_fpath=None, reuse=False, genome=None):
+    def _make_target_bed(self, bed_fpath, work_dir, fai_fpath=None, genome=None):
         clean_target_bed_fpath = intermediate_fname(work_dir, bed_fpath, 'clean')
         if not can_reuse(clean_target_bed_fpath, bed_fpath):
             debug()
@@ -68,7 +68,7 @@ class Target:
         if not can_reuse(ann_target_bed_fpath, sort_target_bed_fpath):
             debug()
             info('Annotating target BED file and collecting overlapping genome features...')
-            annotate(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir, reuse=reuse, genome=genome or cfg.genome,
+            annotate(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir, genome=genome or cfg.genome,
                      is_debug=cfg.is_debug, extended=True, output_features=True)
             debug('Saved to ' + ann_target_bed_fpath)
 

@@ -258,17 +258,17 @@ MALE_TARGET_REGIONS_FACTOR = 0.7
 AVE_DEPTH_THRESHOLD_TO_DETERMINE_SEX = 5
 FEMALE_Y_COVERAGE_FACTOR = 10.0
 
-def _determine_sex(work_dir, bam_fpath, ave_depth, target_bed=None):
+def _determine_sex(work_dir, bam_fpath, ave_depth, genome, target_bed=None):
     info()
     info('Determining sex')
 
     male_bed = None
     for k in chry_key_regions_by_genome:
-        if k in cfg.genome:
+        if k in genome:
             male_bed = BedTool(chry_key_regions_by_genome.get(k))
             break
     if not male_bed:
-        warn('Warning: no male key regions for ' + cfg.genome + ', cannot identify sex')
+        warn('Warning: no male key regions for ' + genome + ', cannot identify sex')
         return None
 
     male_area_size = male_bed.count()
@@ -295,7 +295,7 @@ def _determine_sex(work_dir, bam_fpath, ave_depth, target_bed=None):
         critical('BAM file is required.')
     index_bam(bam_fpath)
 
-    chry_cov_output_fpath = sambamba_depth(work_dir, male_bed, bam_fpath, [], reuse=cfg.reuse_intermediate)
+    chry_cov_output_fpath = sambamba_depth(work_dir, male_bed, bam_fpath, [])
     chry_mean_coverage = get_mean_cov(chry_cov_output_fpath)
     info('Y key regions average depth: ' + str(chry_mean_coverage))
     ave_depth = float(ave_depth)
@@ -353,113 +353,127 @@ def make_general_reports(view, samples, target, genome, depth_thresholds, bed_pa
     summary_reports = []
 
     for sample in samples:
-        info('-'*70)
-        info(sample.name)
-
-        info('-'*70)
-        info('Parsing QualiMap results...')
+        debug('-'*70)
+        debug(sample.name)
+        debug('-'*70)
+        debug('Parsing QualiMap results...')
         depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample, depth_thresholds)
-        sample.avg_depth = depth_stats['ave_depth']
 
-        if num_pairs_by_sample and sample.name in num_pairs_by_sample:
-            reads_stats['original_num_reads'] = num_pairs_by_sample[sample.name] * 2
-
-        chrom_lengths = reference_data.get_chrom_lengths(genome)
-        if 'Y' in chrom_lengths or 'chrY' in chrom_lengths:
-            reads_stats['gender'] = _determine_sex(sample.work_dir, sample.bam, depth_stats['ave_depth'], target.get_capture_bed())
-            info()
-
-        if 'bases_by_depth' in depth_stats:
-            depth_stats['bases_within_threshs'], depth_stats['rates_within_threshs'] = calc_bases_within_threshs(
-                depth_stats['bases_by_depth'],
-                target_stats['target_size'] if not target.is_wgs else target_stats['reference_size'],
-                depth_thresholds)
-
-            if depth_stats['median_depth'] > 0:
-                depth_stats['wn_20_percent'] = calc_rate_within_normal(
-                    depth_stats['bases_by_depth'],
-                    depth_stats['median_depth'],
-                    target_stats['target_size'] if not target.is_wgs else target_stats['reference_size'])
-
-        if target_stats['target_size']:
-            target.bases_num = target_stats['target_size']
-            target.fraction  = target_stats['target_fraction']
-        else:
-            target.bases_num = target_stats['reference_size']
-
-        reads_stats['mapped_dedup'] = number_of_mapped_reads(sample.work_dir, sample.bam, dedup=True, reuse=reuse)
-
-        if not target.is_wgs:
-            reads_stats['mapped_dedup_on_target'] = number_mapped_reads_on_target(
-                sample.work_dir, target.bed.cut(range(3)).saveas().fn, sample.bam, dedup=True, target_name='target') or 0
-
-            reads_stats['mapped_dedup_on_padded_target'] = number_mapped_reads_on_target(
-                sample.work_dir, target.padded_bed_fpath, sample.bam, dedup=True, target_name='padded_target') or 0
-
-        else:
-            cds_bed = GeneAnnotation.get_merged_cds(genome)
-            info('Using the CDS reference BED to calc "reads on CDS"')
-            reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(
-                sample.work_dir, cds_bed, sample.bam, dedup=True, target_name='exome') or 0
+        _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_stats,
+                          target, num_pairs_by_sample, genome, depth_thresholds)
 
         r = _build_report(sample.work_dir, depth_stats, reads_stats, indels_stats, sample, target,
-                          depth_thresholds, bed_padding, is_debug=is_debug)
+                          depth_thresholds, bed_padding, sample_num=len(samples), is_debug=is_debug)
         summary_reports.append(r)
 
     return summary_reports
 
 
-def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target, depth_thresholds, bed_padding, is_debug=False):
+def _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_stats,
+                      target, num_pairs_by_sample, genome, depth_thresholds):
+    sample.avg_depth = depth_stats['ave_depth']
+
+    if num_pairs_by_sample and sample.name in num_pairs_by_sample:
+        reads_stats['original_num_reads'] = num_pairs_by_sample[sample.name] * 2
+
+    chrom_lengths = reference_data.get_chrom_lengths(genome)
+    if 'Y' in chrom_lengths or 'chrY' in chrom_lengths:
+        reads_stats['gender'] = _determine_sex(sample.work_dir, sample.bam, depth_stats['ave_depth'],
+                                               genome, target.get_capture_bed())
+        info()
+
+    if 'bases_by_depth' in depth_stats:
+        depth_stats['bases_within_threshs'], depth_stats['rates_within_threshs'] = calc_bases_within_threshs(
+            depth_stats['bases_by_depth'],
+            target_stats['target_size'] if not target.is_wgs else target_stats['reference_size'],
+            depth_thresholds)
+
+        if depth_stats['median_depth'] > 0:
+            depth_stats['wn_20_percent'] = calc_rate_within_normal(
+                depth_stats['bases_by_depth'],
+                depth_stats['median_depth'],
+                target_stats['target_size'] if not target.is_wgs else target_stats['reference_size'])
+
+    if target_stats['target_size']:
+        target.bases_num = target_stats['target_size']
+        target.fraction  = target_stats['target_fraction']
+    else:
+        target.bases_num = target_stats['reference_size']
+
+    reads_stats['mapped_dedup'] = number_of_mapped_reads(sample.work_dir, sample.bam, dedup=True)
+
+    if not target.is_wgs:
+        reads_stats['mapped_dedup_on_target'] = number_mapped_reads_on_target(
+            sample.work_dir, target.bed.cut(range(3)).saveas().fn, sample.bam, dedup=True, target_name='target') or 0
+
+        reads_stats['mapped_dedup_on_padded_target'] = number_mapped_reads_on_target(
+            sample.work_dir, target.padded_bed_fpath, sample.bam, dedup=True, target_name='padded_target') or 0
+
+    else:
+        cds_bed = GeneAnnotation.get_merged_cds(genome)
+        info('Using the CDS reference BED to calc "reads on CDS"')
+        reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(
+            sample.work_dir, cds_bed, sample.bam, dedup=True, target_name='exome') or 0
+
+    return depth_stats, reads_stats, indels_stats
+
+
+def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target, depth_thresholds, bed_padding, 
+                  sample_num, is_debug=False):
     report = SampleReport(sample, metric_storage=get_header_metric_storage(depth_thresholds, is_wgs=target.bed_fpath is None, padding=bed_padding))
-    report.add_record('Qualimap', value='Qualimap', url=relpath(sample.qualimap_html_fpath, sample.dirpath), silent=True)
+
+    def _add(_metric_name, _val, url=None):
+        return report.add_record(_metric_name, _val, silent=(sample_num > 1 and not is_debug))
+
+    _add('Qualimap', 'Qualimap', url=relpath(sample.qualimap_html_fpath, sample.dirpath))
     if reads_stats.get('gender') is not None:
-        report.add_record('Sex', reads_stats['gender'], silent=True)
+        _add('Sex', reads_stats['gender'])
 
     info('* General coverage statistics *')
-    report.add_record('Reads', reads_stats['total'])
-    report.add_record('Mapped reads', reads_stats['mapped'])
-    # report.add_record('Unmapped reads', reads_stats['totaAvgl'] - reads_stats['mapped'])
+    _add('Reads', reads_stats['total'])
+    _add('Mapped reads', reads_stats['mapped'])
+    # _add('Unmapped reads', reads_stats['totaAvgl'] - reads_stats['mapped'])
     percent_mapped = 1.0 * (reads_stats['mapped'] or 0) / reads_stats['total'] if reads_stats['total'] else None
     assert percent_mapped <= 1.0 or percent_mapped is None, str(percent_mapped)
-    report.add_record('Percentage of mapped reads', percent_mapped)
+    _add('Percentage of mapped reads', percent_mapped)
     # percent_unmapped = 1.0 * (reads_stats['total'] - reads_stats['mapped']) / reads_stats['total'] if reads_stats['total'] else None
     # assert percent_unmapped <= 1.0 or percent_unmapped is None, str(percent_unmapped)
-    # report.add_record('Percentage of unmapped reads', percent_unmapped)
+    # _add('Percentage of unmapped reads', percent_unmapped)
     if reads_stats.get('mapped_paired') is not None:
         total_paired_reads_pecent = 1.0 * (reads_stats['mapped_paired'] or 0) / reads_stats['total'] if reads_stats['total'] else None
         assert total_paired_reads_pecent <= 1.0 or total_paired_reads_pecent is None, str(total_paired_reads_pecent)
-        report.add_record('Properly paired mapped reads percent', total_paired_reads_pecent)
+        _add('Properly paired mapped reads percent', total_paired_reads_pecent)
     # if reads_stats.get('paired') is not None:
     #     total_paired_reads_pecent = 1.0 * (reads_stats['paired'] or 0) / reads_stats['total'] if reads_stats['total'] else None
     #     assert total_paired_reads_pecent <= 1.0 or total_paired_reads_pecent is None, str(total_paired_reads_pecent)
-    #     report.add_record('Properly paired reads percent', total_paired_reads_pecent)
+    #     _add('Properly paired reads percent', total_paired_reads_pecent)
     # if dedup_bam_stats:
     # dup_rate = 1 - (1.0 * dedup_bam_stats['mapped'] / bam_stats['mapped']) if bam_stats['mapped'] else None
-    report.add_record('Duplication rate', reads_stats['dup_rate'])
-    # report.add_record('Dedupped mapped reads', reads_stats['mapped'] - reads_stats[''])
-    report.add_record('Median GC', reads_stats['median_gc'])
-    report.add_record('Median insert size', reads_stats['median_ins_size'])
+    _add('Duplication rate', reads_stats['dup_rate'])
+    # _add('Dedupped mapped reads', reads_stats['mapped'] - reads_stats[''])
+    _add('Median GC', reads_stats['median_gc'])
+    _add('Median insert size', reads_stats['median_ins_size'])
 
     info('')
 
     if not target.is_wgs:
         info('* Target coverage statistics *')
         if target.original_bed_fpath:
-            report.add_record('Target', target.original_bed_fpath)
+            _add('Target', target.original_bed_fpath)
             if count_bed_cols(target.original_bed_fpath) == 3:
-                report.add_record('Ready target (clean, sorted and annotated)', target.bed_fpath)
+                _add('Ready target (clean, sorted and annotated)', target.bed_fpath)
         else:
-            report.add_record('Target', target.bed_fpath)
-        report.add_record('Bases in target', target.bases_num)
-        report.add_record('Percentage of reference', target.fraction)
-        report.add_record('Regions in target', target.regions_num)
-        report.add_record('Scope', 'targeted')
-        report.add_record('Genes in target', len(target.gene_keys_list))
+            _add('Target', target.bed_fpath)
+        _add('Bases in target', target.bases_num)
+        _add('Percentage of reference', target.fraction)
+        _add('Regions in target', target.regions_num)
+        _add('Scope', 'targeted')
+        _add('Genes in target', len(target.gene_keys_list))
     else:
         info('* Genome coverage statistics *')
-        report.add_record('Target', 'whole genome')
-        report.add_record('Reference size', target.bases_num)
-        report.add_record('Scope', 'WGS')
+        _add('Target', 'whole genome')
+        _add('Reference size', target.bases_num)
+        _add('Scope', 'WGS')
 
     trg_type = 'target' if not target.is_wgs else 'genome'
 
@@ -469,81 +483,81 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
         v_percent_covered_bases_in_targ = 1.0 * (v_covered_bases_in_targ or 0) / target.bases_num if target.bases_num else None
         assert v_percent_covered_bases_in_targ <= 1.0 or v_percent_covered_bases_in_targ is None, str(v_percent_covered_bases_in_targ)
 
-        report.add_record('Covered bases in ' + trg_type, v_covered_bases_in_targ)
-        report.add_record('Percentage of ' + trg_type + ' covered by at least 1 read', v_percent_covered_bases_in_targ)
+        _add('Covered bases in ' + trg_type, v_covered_bases_in_targ)
+        _add('Percentage of ' + trg_type + ' covered by at least 1 read', v_percent_covered_bases_in_targ)
 
     if not target.is_wgs:
         info('Getting number of mapped reads on target...')
         # mapped_reads_on_target = number_mapped_reads_on_target(cnf, target_info.bed, bam_fpath)
         if 'mapped_dedup_on_target' in reads_stats:
-            # report.add_record('Reads mapped on target', reads_stats['mapped_on_target'])
+            # _add('Reads mapped on target', reads_stats['mapped_on_target'])
             info('Unique mapped on target: ' + str(reads_stats['mapped_dedup_on_target']))
             percent_mapped_dedup_on_target = 1.0 * reads_stats['mapped_dedup_on_target'] / reads_stats['mapped_dedup'] if reads_stats['mapped_dedup'] != 0 else None
-            report.add_record('Percentage of reads mapped on target', percent_mapped_dedup_on_target)
+            _add('Percentage of reads mapped on target', percent_mapped_dedup_on_target)
             assert percent_mapped_dedup_on_target <= 1.0 or percent_mapped_dedup_on_target is None, str(percent_mapped_dedup_on_target)
 
             percent_mapped_dedup_off_target = 1.0 * (reads_stats['mapped_dedup'] - reads_stats['mapped_dedup_on_target']) / reads_stats['mapped_dedup'] if reads_stats['mapped_dedup'] != 0 else None
-            report.add_record('Percentage of reads mapped off target', percent_mapped_dedup_off_target)
+            _add('Percentage of reads mapped off target', percent_mapped_dedup_off_target)
             assert percent_mapped_dedup_off_target <= 1.0 or percent_mapped_dedup_off_target is None, str(percent_mapped_dedup_off_target)
 
             percent_usable = 1.0 * reads_stats['mapped_dedup_on_target'] / reads_stats['total'] if reads_stats['total'] != 0 else None
-            report.add_record('Percentage of usable reads', percent_usable)
+            _add('Percentage of usable reads', percent_usable)
             assert percent_usable <= 1.0 or percent_usable is None, str(percent_usable)
 
         read_bases_on_targ = int(target.bases_num * depth_stats['ave_depth'])  # sum of all coverages
-        report.add_record('Read bases mapped on target', read_bases_on_targ)
+        _add('Read bases mapped on target', read_bases_on_targ)
 
         if 'mapped_dedup_on_padded_target' in reads_stats:
-            # report.add_record('Reads mapped on padded target', reads_stats['mapped_reads_on_padded_target'])
+            # _add('Reads mapped on padded target', reads_stats['mapped_reads_on_padded_target'])
             percent_mapped_on_padded_target = 1.0 * reads_stats['mapped_dedup_on_padded_target'] / reads_stats['mapped_dedup'] if reads_stats['mapped_dedup'] else None
-            report.add_record('Percentage of reads mapped on padded target', percent_mapped_on_padded_target)
+            _add('Percentage of reads mapped on padded target', percent_mapped_on_padded_target)
             assert percent_mapped_on_padded_target <= 1.0 or percent_mapped_on_padded_target is None, str(percent_mapped_on_padded_target)
 
     elif 'mapped_dedup_on_exome' in reads_stats:
-        # report.add_record('Reads mapped on target', reads_stats['mapped_on_target'])
+        # _add('Reads mapped on target', reads_stats['mapped_on_target'])
         percent_mapped_on_exome = 1.0 * reads_stats['mapped_dedup_on_exome'] / reads_stats['mapped_dedup'] if reads_stats['mapped_dedup'] != 0 else None
         if percent_mapped_on_exome:
-            report.add_record('Percentage of reads mapped on exome', percent_mapped_on_exome)
+            _add('Percentage of reads mapped on exome', percent_mapped_on_exome)
             assert percent_mapped_on_exome <= 1.0 or percent_mapped_on_exome is None, str(percent_mapped_on_exome)
             percent_mapped_off_exome = 1.0 - percent_mapped_on_exome
-            report.add_record('Percentage of reads mapped off exome ', percent_mapped_off_exome)
+            _add('Percentage of reads mapped off exome ', percent_mapped_off_exome)
 
         percent_usable = 1.0 * reads_stats['mapped_dedup'] / reads_stats['total'] if reads_stats['total'] != 0 else None
-        report.add_record('Percentage of usable reads', percent_usable)
+        _add('Percentage of usable reads', percent_usable)
         assert percent_usable <= 1.0 or percent_usable is None, str(percent_usable)
 
     info('')
-    report.add_record('Average ' + trg_type + ' coverage depth', depth_stats['ave_depth'])
+    _add('Average ' + trg_type + ' coverage depth', depth_stats['ave_depth'])
     if 'original_num_reads' in reads_stats:
-        report.add_record('Original reads', reads_stats['original_num_reads'])
+        _add('Original reads', reads_stats['original_num_reads'])
         times_downsampled = 1.0 * reads_stats['original_num_reads'] / reads_stats['total']
         est_full_cov = times_downsampled * depth_stats['ave_depth']
-        report.add_record('Estimated ' + trg_type + ' full coverage depth', est_full_cov)
-    report.add_record('Median ' + trg_type + ' coverage depth', depth_stats['median_depth'])
+        _add('Estimated ' + trg_type + ' full coverage depth', est_full_cov)
+    _add('Median ' + trg_type + ' coverage depth', depth_stats['median_depth'])
     if depth_stats['median_depth'] > 0:
-        report.add_record('Std. dev. of ' + trg_type + ' coverage depth', depth_stats['stddev_depth'])
-    # report.add_record('Minimal ' + trg_type + ' coverage depth', depth_stats['min_depth'])
-    # report.add_record('Maximum ' + trg_type + ' coverage depth', depth_stats['max_depth'])
+        _add('Std. dev. of ' + trg_type + ' coverage depth', depth_stats['stddev_depth'])
+    # _add('Minimal ' + trg_type + ' coverage depth', depth_stats['min_depth'])
+    # _add('Maximum ' + trg_type + ' coverage depth', depth_stats['max_depth'])
     if 'wn_20_percent' in depth_stats:
-        report.add_record('Percentage of ' + trg_type + ' within 20% of med depth', depth_stats['wn_20_percent'])
+        _add('Percentage of ' + trg_type + ' within 20% of med depth', depth_stats['wn_20_percent'])
         assert depth_stats['wn_20_percent'] <= 1.0 or depth_stats['wn_20_percent'] is None, str(depth_stats['wn_20_percent'])
 
     if 'bases_within_threshs' in depth_stats:
         for depth, bases in depth_stats['bases_within_threshs'].items():
             fraction_val = 1.0 * (bases or 0) / target.bases_num if target.bases_num else 0
             if fraction_val > 0:
-                report.add_record('Part of ' + trg_type + ' covered at least by ' + str(depth) + 'x', fraction_val)
+                _add('Part of ' + trg_type + ' covered at least by ' + str(depth) + 'x', fraction_val)
             assert fraction_val <= 1.0 or fraction_val is None, str(fraction_val)
     info()
 
-    report.add_record('Read mean length', reads_stats['ave_len'])
-    report.add_record('Read min length', reads_stats['min_len'])
-    report.add_record('Read max length', reads_stats['max_len'])
-    report.add_record('Mean Mapping Quality', mm_indels_stats['mean_mq'])
-    report.add_record('Mismatches', mm_indels_stats['mismatches'])
-    report.add_record('Insertions', mm_indels_stats['insertions'])
-    report.add_record('Deletions', mm_indels_stats['deletions'])
-    report.add_record('Homopolymer indels', mm_indels_stats['homo_indels'])
+    _add('Read mean length', reads_stats['ave_len'])
+    _add('Read min length', reads_stats['min_len'])
+    _add('Read max length', reads_stats['max_len'])
+    _add('Mean Mapping Quality', mm_indels_stats['mean_mq'])
+    _add('Mismatches', mm_indels_stats['mismatches'])
+    _add('Insertions', mm_indels_stats['insertions'])
+    _add('Deletions', mm_indels_stats['deletions'])
+    _add('Homopolymer indels', mm_indels_stats['homo_indels'])
 
     info()
     info('Saving reports...')

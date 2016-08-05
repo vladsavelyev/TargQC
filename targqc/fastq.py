@@ -25,8 +25,9 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, num_downsample_pairs,
     num_pairs_by_sample = num_pairs_by_sample or dict()
     if num_downsample_pairs:
         # Read pairs counts
+        debug()
         if all(s.name in num_pairs_by_sample for s in samples):
-            debug('Reusing pairs counts')
+            debug('Using read pairs counts extracted from FastQC reports')
         elif all(can_reuse(make_pair_counts_fpath(s.work_dir), s.l_fpath) for s in samples):
             debug('Reusing pairs counts, reading from files')
             num_pairs_by_sample = {s.name: int(open(make_pair_counts_fpath(s.work_dir)).read().strip()) for s in samples}
@@ -36,6 +37,7 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, num_downsample_pairs,
             num_pairs_by_sample = {s.name: pairs_count for s, pairs_count in zip(samples, num_pairs)}
 
         # Downsampling
+        debug()
         if all(can_reuse(make_downsampled_fpath(s.work_dir, s.l_fpath), s.l_fpath) and
                can_reuse(make_downsampled_fpath(s.work_dir, s.r_fpath), s.r_fpath) for s in samples):
             debug('Reusing downsampled FastQ')
@@ -53,6 +55,7 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, num_downsample_pairs,
     else:
         info('Skipping downsampling')
 
+    debug()
     if all(can_reuse(make_bam_fpath(s.work_dir), [s.l_fpath, s.r_fpath]) for s in samples):
         debug('All downsampled BAM exists, reusing')
         for s in samples:
@@ -66,7 +69,6 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, num_downsample_pairs,
             if not samtools:    err('Error: samtools is required for the alignment pipeline')
             if not smb:         err('Error: sambamba is required for the alignment pipeline')
             critical('Tools required for alignment not found')
-        info()
         info('Aligning reads to the reference')
         bam_fpaths = parall_view.run(align,
             [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, smb, bwa_prefix, dedup, parall_view.cores_per_job]

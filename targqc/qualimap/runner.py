@@ -93,7 +93,10 @@ def run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report):
         2. Adds records to targqc_full_report.plots
     """
     plots_dirpath = join(output_dir, 'plots')
-    if cfg.reuse_intermediate and isdir(plots_dirpath) and [f for f in listdir(plots_dirpath) if not f.startswith('.')]:
+    individual_report_fpaths = [s.qualimap_html_fpath for s in samples]
+    if isdir(plots_dirpath) and not any(
+            not can_reuse(join(plots_dirpath, f), individual_report_fpaths)
+            for f in listdir(plots_dirpath) if not f.startswith('.')):
         info('Qualimap miltisample plots exist - ' + plots_dirpath + ', reusing...')
     else:
         # Qualimap2 run for multi-sample plots

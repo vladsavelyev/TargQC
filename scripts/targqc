@@ -20,8 +20,6 @@ from Utils.parallel import ParallelCfg, parallel_view
 import targqc
 from targqc import config
 from targqc import Sample
-from targqc.Target import Target
-from targqc.summarize import summarize_targqc
 
 options = [
     (['--test'], dict(
@@ -207,13 +205,10 @@ def main(args):
     bam_by_sample, fastqs_by_sample, target_bed_fpath = get_inputs(opts, args)
 
     samples = _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir)
-
-    target = Target(work_dir, fai_fpath, reuse, target_bed_fpath)
-
     info()
-    targqc.start_targqc(work_dir, samples, target,
-                        parallel_cfg=parallel_cfg,
-                        bwa_prefix=bwa_prefix,
+
+    targqc.start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, bwa_prefix,
+                        fai_fpath=fai_fpath,
                         genome=genome,
                         depth_thresholds=depth_thresholds,
                         downsample_pairs_num=downsample_pairs_num,
@@ -222,11 +217,6 @@ def main(args):
                         reuse=reuse,
                         is_debug=is_debug,
                         )
-
-    info()
-    info('*' * 70)
-    info('Summarizing')
-    summarize_targqc(parallel_cfg.threads, output_dir, work_dir, samples, bed_fpath=target_bed_fpath)
 
     # info()
     # info('Summarizing: running MultiQC')
