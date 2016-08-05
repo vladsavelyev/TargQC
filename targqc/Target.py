@@ -6,7 +6,7 @@ from GeneAnnotation.annotate_bed import annotate, get_sort_key, tx_sort_key
 from Utils import reference_data
 from Utils.bed_utils import filter_bed_with_gene_set, get_gene_keys_from_bed, calc_region_number, merge_overlaps
 from Utils.bed_utils import remove_comments, sort_bed, count_bed_cols, cut, verify_bed
-from Utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction, verify_file
+from Utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction, verify_file, can_reuse
 from Utils.logger import debug, info, warn
 from Utils.utils import OrderedDefaultDict
 from targqc import config as cfg
@@ -45,12 +45,10 @@ class Target:
             return None
 
     def _make_target_bed(self, bed_fpath, work_dir, fai_fpath=None, reuse=False, genome=None):
-        debug()
-        info('Cleaning target BED file...')
         clean_target_bed_fpath = intermediate_fname(work_dir, bed_fpath, 'clean')
-        if isfile(clean_target_bed_fpath) and verify_file(clean_target_bed_fpath, cmp_date_fpath=bed_fpath):
-            pass
-        else:
+        if not can_reuse(clean_target_bed_fpath, bed_fpath):
+            debug()
+            info('Cleaning target BED file...')
             bed = BedTool(bed_fpath)\
                 .filter(lambda x: x.chrom and not any(x.chrom.startswith(e) for e in ['#', ' ', 'track', 'browser']))\
                 .remove_invalid()\
@@ -59,26 +57,27 @@ class Target:
                 bed.saveas(tx)
             debug('Saved to ' + clean_target_bed_fpath)
 
-        debug()
-        info('Sorting target BED file...')
-        sort_target_bed_fpath = sort_bed(clean_target_bed_fpath, work_dir=work_dir, fai_fpath=fai_fpath, reuse=reuse)
-        debug('Saved to ' + sort_target_bed_fpath)
+        sort_target_bed_fpath = intermediate_fname(work_dir, clean_target_bed_fpath, 'sorted')
+        if not can_reuse(sort_target_bed_fpath, clean_target_bed_fpath):
+            debug()
+            info('Sorting target BED file...')
+            sort_target_bed_fpath = sort_bed(clean_target_bed_fpath, output_bed_fpath=sort_target_bed_fpath, fai_fpath=fai_fpath)
+            debug('Saved to ' + sort_target_bed_fpath)
 
-        debug()
-        info('Annotating target BED file and collecting overlapping genome features...')
-        ann_target_bed_fpath = add_suffix(sort_target_bed_fpath, 'ann')
-        annotate(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir, reuse=reuse, genome=genome or cfg.genome,
-                 is_debug=cfg.is_debug, extended=True, output_features=True)
-        # TODO prepare BEDs: annotate with --report-features, then use that whole BED to find coverage, but only "cature" for summary reports
-        debug('Saved to ' + ann_target_bed_fpath)
+        ann_target_bed_fpath = intermediate_fname(work_dir, sort_target_bed_fpath, 'ann')
+        if not can_reuse(ann_target_bed_fpath, sort_target_bed_fpath):
+            debug()
+            info('Annotating target BED file and collecting overlapping genome features...')
+            annotate(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir, reuse=reuse, genome=genome or cfg.genome,
+                     is_debug=cfg.is_debug, extended=True, output_features=True)
+            debug('Saved to ' + ann_target_bed_fpath)
 
-        self.bed_fpath = intermediate_fname(work_dir, ann_target_bed_fpath, 'clean')
-        if isfile(self.bed_fpath) and verify_file(self.bed_fpath, cmp_date_fpath=ann_target_bed_fpath):
-            pass
-        else:
-            self.bed = BedTool(ann_target_bed_fpath).remove_invalid()
-            with file_transaction(work_dir, self.bed_fpath) as tx:
-                self.bed.saveas(tx)
+        final_clean_target_bed_fpath = intermediate_fname(work_dir, ann_target_bed_fpath, 'clean')
+        if not can_reuse(final_clean_target_bed_fpath, ann_target_bed_fpath):
+            bed = BedTool(ann_target_bed_fpath).remove_invalid()
+            with file_transaction(work_dir, final_clean_target_bed_fpath) as tx:
+                bed.saveas(tx)
+        self.bed_fpath = final_clean_target_bed_fpath
         self.bed = BedTool(self.bed_fpath)
 
         gene_key_set, gene_key_list = get_gene_keys_from_bed(bed_fpath)
@@ -94,8 +93,7 @@ class Target:
             return None
 
         self.padded_bed_fpath = intermediate_fname(work_dir, self.bed_fpath, 'padded')
-        if isfile(self.padded_bed_fpath) and verify_file(self.padded_bed_fpath, cmp_date_fpath=self.bed_fpath):
-            debug('Padded BED file ' + self.padded_bed_fpath + ' is ready, reusing')
+        if can_reuse(self.padded_bed_fpath, self.bed_fpath):
             return BedTool(self.padded_bed_fpath)
 
         padded_bed = self.bed.slop(b=cfg.padding, g=fai_fpath).sort().merge()
@@ -108,8 +106,7 @@ class Target:
             return None
 
         self.qualimap_bed_fpath = intermediate_fname(work_dir, self.bed_fpath, 'qualimap_ready')
-        if isfile(self.qualimap_bed_fpath) and verify_file(self.qualimap_bed_fpath, cmp_date_fpath=self.bed_fpath):
-            debug('Qualimap-ready BED file ' + self.qualimap_bed_fpath + ' is ready, reusing')
+        if can_reuse(self.qualimap_bed_fpath, self.bed_fpath):
             return self.qualimap_bed_fpath
 
         debug('Merging and saving BED into required bed6 format for Qualimap')
@@ -125,8 +122,7 @@ class Target:
 
     def _make_wgs_regions_file(self, work_dir, genome=None):
         self.wgs_bed_fpath = join(work_dir, 'targqc_features_to_report.bed')
-        if isfile(self.wgs_bed_fpath) and cfg.reuse_intermediate and verify_file(self.wgs_bed_fpath):
-            debug(self.wgs_bed_fpath + ' exists, reusing')
+        if can_reuse(self.wgs_bed_fpath, ga.ensembl_gtf_fpath(genome)):
             return self.wgs_bed_fpath
 
         chr_order = reference_data.get_chrom_order(genome or cfg.genome)

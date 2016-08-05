@@ -7,108 +7,127 @@ from os.path import splitext, dirname, join, basename, isfile
 from Utils import sambamba
 from Utils.bam_utils import verify_bam
 from Utils.call_process import run
-from Utils.file_utils import open_gzipsafe, file_transaction, file_exists, intermediate_fname, verify_file, add_suffix, \
-    splitext_plus, safe_mkdir, which
+from Utils.file_utils import open_gzipsafe, file_transaction, verify_file, add_suffix, safe_mkdir, which, can_reuse
 from Utils.logger import critical, debug, info, warn, err
 
 
-def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_pairs_num, num_reads_by_sample=None,
-               dedup=True, reuse=False):
-    num_reads_by_sample = num_reads_by_sample or dict()
-    if downsample_pairs_num:
-        if all(s.name in num_reads_by_sample for s in samples):
-            pass
-        else:
-            info('Counting read numbers')
-            read_counts = parall_view.run(count_reads, [[s.name, s.work_dir, s.l_fpath, reuse] for s in samples])
-            for s, read_count in zip(samples, read_counts):
-                num_reads_by_sample[s.name] = read_count
+def make_downsampled_fpath(work_dir, fastq_fpath):
+    return join(work_dir, add_suffix(basename(fastq_fpath), 'subset'))
 
-        info('Downsampling the reads to ' + str(int(downsample_pairs_num)))
-        fastq_pairs = parall_view.run(downsample,
-            [[s.work_dir, s.name, s.work_dir, s.l_fpath, s.r_fpath, downsample_pairs_num, 'subset']
-             for s in samples])
-        for s, (l_r, r_r) in zip(samples, fastq_pairs):
-            s.l_fpath = l_r
-            s.r_fpath = r_r
+def make_pair_counts_fpath(work_dir):
+    return join(work_dir, 'full_pairs_count.txt')
+
+def make_bam_fpath(work_dir):
+    return join(work_dir, 'downsampled.bam')
+
+
+def proc_fastq(samples, parall_view, work_dir, bwa_prefix, num_downsample_pairs, num_pairs_by_sample=None, dedup=True):
+    num_pairs_by_sample = num_pairs_by_sample or dict()
+    if num_downsample_pairs:
+        # Read pairs counts
+        if all(s.name in num_pairs_by_sample for s in samples):
+            debug('Reusing pairs counts')
+        elif all(can_reuse(make_pair_counts_fpath(s.work_dir), s.l_fpath) for s in samples):
+            debug('Reusing pairs counts, reading from files')
+            num_pairs_by_sample = {s.name: int(open(make_pair_counts_fpath(s.work_dir)).read().strip()) for s in samples}
+        else:
+            info('Counting read pairs')
+            num_pairs = parall_view.run(count_read_pairs, [[s.name, s.work_dir, s.l_fpath] for s in samples])
+            num_pairs_by_sample = {s.name: pairs_count for s, pairs_count in zip(samples, num_pairs)}
+
+        # Downsampling
+        if all(can_reuse(make_downsampled_fpath(s.work_dir, s.l_fpath), s.l_fpath) and
+               can_reuse(make_downsampled_fpath(s.work_dir, s.r_fpath), s.r_fpath) for s in samples):
+            debug('Reusing downsampled FastQ')
+            for s in samples:
+                s.l_fpath = make_downsampled_fpath(s.work_dir, s.l_fpath)
+                s.r_fpath = make_downsampled_fpath(s.work_dir, s.r_fpath)
+        else:
+            info('Downsampling FastQ to ' + str(int(num_downsample_pairs)) + ' read pairs')
+            fastq_pairs = parall_view.run(downsample,
+                [[s.work_dir, s.name, s.l_fpath, s.r_fpath, num_downsample_pairs, num_pairs_by_sample.get(s.name)]
+                 for s in samples])
+            for s, (l_r, r_r) in zip(samples, fastq_pairs):
+                s.l_fpath = l_r
+                s.r_fpath = r_r
     else:
         info('Skipping downsampling')
 
-    bwa = which('bwa')
-    samtools = which('samtools')
-    sb = sambamba.get_executable()
-    if not (bwa and samtools and sb):
-        if not bwa:         err('Error: bwa is required for alignment')
-        if not samtools:    err('Error: samtools is required for alignment')
-        if not sb:          err('Error: sambamba is required')
-        critical()
-    info()
-    info('Aligning reads to the reference')
-    bam_fpaths = parall_view.run(align,
-        [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, sb, bwa_prefix, dedup, parall_view.cores_per_job, reuse]
-         for s in samples])
+    if all(can_reuse(make_bam_fpath(s.work_dir), [s.l_fpath, s.r_fpath]) for s in samples):
+        debug('All downsampled BAM exists, reusing')
+        for s in samples:
+            s.bam = make_bam_fpath(s.work_dir)
+    else:
+        bwa = which('bwa')
+        samtools = which('samtools')
+        sb = sambamba.get_executable()
+        if not (bwa and samtools and sb):
+            if not bwa:         err('Error: bwa is required for the alignment pipeline')
+            if not samtools:    err('Error: samtools is required for the alignment pipeline')
+            if not sb:          err('Error: sambamba is required for the alignment pipeline')
+            critical('Tools required for alignment not found')
+        info()
+        info('Aligning reads to the reference')
+        bam_fpaths = parall_view.run(align,
+            [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, sb, bwa_prefix, dedup, parall_view.cores_per_job]
+             for s in samples])
 
-    bam_fpaths = map(verify_bam, bam_fpaths)
-    if len(bam_fpaths) < len(samples):
-        critical('Some samples were not aligned successfully.')
-    for bam, s in zip(bam_fpaths, samples):
-        s.bam = bam
+        bam_fpaths = map(verify_bam, bam_fpaths)
+        if len(bam_fpaths) < len(samples):
+            critical('Some samples were not aligned successfully.')
+        for bam, s in zip(bam_fpaths, samples):
+            s.bam = bam
 
-    return num_reads_by_sample
+    return num_pairs_by_sample
 
 
-def count_reads(s_name, work_dir, fastq_fpath, reuse=False):
-    from os.path import join, isfile
-    from Utils.file_utils import verify_file
+def count_read_pairs(s_name, work_dir, fastq_fpath):
     from Utils.logger import info
 
-    read_counts_fpath = join(work_dir, 'original_read_count.txt')
-    if isfile(read_counts_fpath) and verify_file(read_counts_fpath, cmp_date_fpath=fastq_fpath):
-        with open(read_counts_fpath) as f:
+    pairs_counts_fpath = make_pair_counts_fpath(work_dir)
+    if can_reuse(pairs_counts_fpath, fastq_fpath):
+        with open(pairs_counts_fpath) as f:
             return int(f.read().strip())
     else:
-        info('Counting read numbers in ' + s_name + ', writing to ' + read_counts_fpath)
-        pairs_number = count_records_in_fastq(fastq_fpath)
-        read_number = pairs_number * 2
-        with open(read_counts_fpath, 'w') as out:
-            out.write(str(read_number))
-        return read_number
+        info('Counting read pairs in ' + s_name + ', writing to ' + pairs_counts_fpath)
+        pairs_number = _count_records_in_fastq(fastq_fpath)
+        with open(pairs_counts_fpath, 'w') as out:
+            out.write(str(pairs_number))
+        return pairs_number
 
 
-def count_records_in_fastq(fastq_fpath):
+def _count_records_in_fastq(fastq_fpath):
     return sum(1 for _ in open_gzipsafe(fastq_fpath)) / 4
 
 
-def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_fpath, N_pairs,
-               suffix=None, num_read_pairs=None, reuse=False):
+def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, num_downsample_pairs, num_pairs=None):
     """ get N random headers from a fastq file without reading the
     whole thing into memory
     modified from: http://www.biostars.org/p/6544/
     """
     sample_name = sample_name or splitext(''.join(lc if lc == rc else '' for lc, rc in izip(fastq_left_fpath, fastq_right_fpath)))[0]
 
-    l_out_fpath = join(output_dir, add_suffix(basename(fastq_left_fpath), suffix or 'subset'))
-    r_out_fpath = join(output_dir, add_suffix(basename(fastq_right_fpath), suffix or 'subset'))
-    if reuse and verify_file(l_out_fpath, silent=True) and verify_file(r_out_fpath, silent=True):
-        debug(l_out_fpath + ' and ' + r_out_fpath + ' exist, reusing.')
+    l_out_fpath = make_downsampled_fpath(work_dir, fastq_left_fpath)
+    r_out_fpath = make_downsampled_fpath(work_dir, fastq_right_fpath)
+    if can_reuse(l_out_fpath, [fastq_left_fpath, fastq_right_fpath]):
         return l_out_fpath, r_out_fpath
 
     info('Processing ' + sample_name)
-    N_pairs = int(N_pairs)
-    if num_read_pairs is None:
+    num_downsample_pairs = int(num_downsample_pairs)
+    if num_pairs is None:
         info(sample_name + ': counting number of reads in fastq...')
-        num_read_pairs = count_records_in_fastq(fastq_left_fpath)
-    if num_read_pairs > LIMIT:
+        num_pairs = _count_records_in_fastq(fastq_left_fpath)
+    if num_pairs > LIMIT:
         info(sample_name + ' the number of reads is higher than ' + str(LIMIT) +
              ', sampling from only first ' + str(LIMIT))
-        num_read_pairs = LIMIT
-    info(sample_name + ': ' + str(num_read_pairs) + ' reads')
-    if num_read_pairs <= N_pairs:
-        info(sample_name + ': and it is less than ' + str(N_pairs) + ', so no downsampling.')
+        num_pairs = LIMIT
+    info(sample_name + ': ' + str(num_pairs) + ' reads')
+    if num_pairs <= num_downsample_pairs:
+        info(sample_name + ': and it is less than ' + str(num_downsample_pairs) + ', so no downsampling.')
         return fastq_left_fpath, fastq_right_fpath
     else:
-        info(sample_name + ': downsampling to ' + str(N_pairs))
-        rand_records = sorted(random.sample(xrange(num_read_pairs), N_pairs))
+        info(sample_name + ': downsampling to ' + str(num_downsample_pairs))
+        rand_records = sorted(random.sample(xrange(num_pairs), num_downsample_pairs))
 
     info('Opening ' + fastq_left_fpath)
     fh1 = open_gzipsafe(fastq_left_fpath)
@@ -141,8 +160,8 @@ def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_
             written_records += 1
             if written_records % 10000 == 0:
                 info(sample_name + ': written ' + str(written_records) + ', rec_no ' + str(rec_no + 1))
-            if rec_no > num_read_pairs:
-                info(sample_name + ' reached the limit of ' + str(num_read_pairs), ' read lines, stopping.')
+            if rec_no > num_pairs:
+                info(sample_name + ' reached the limit of ' + str(num_pairs), ' read lines, stopping.')
                 break
         info(sample_name + ': done, written ' + str(written_records) + ', rec_no ' + str(rec_no))
         fh1.close()
@@ -155,11 +174,10 @@ def downsample(work_dir, sample_name, output_dir, fastq_left_fpath, fastq_right_
     return l_out_fpath, r_out_fpath
 
 
-def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, smb, bwa_prefix, dedup=True, threads=1, reuse=False):
+def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, smb, bwa_prefix, dedup=True):
     info('Running bwa to align reads...')
-    bam_fpath = join(work_dir, sample_name + '_downsampled.bam')
-    if isfile(bam_fpath) and verify_bam(bam_fpath) and reuse:
-        debug(bam_fpath + ' exists, reusing')
+    bam_fpath = make_bam_fpath(work_dir)
+    if can_reuse(bam_fpath, [l_fpath, r_fpath]):
         return bam_fpath
 
     tmp_dirpath = join(work_dir, 'sambamba_tmp_dir')
@@ -168,7 +186,7 @@ def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, smb, bwa_prefi
     bwa_cmdline = ('{bwa} mem -t {threads} -v 2 {bwa_prefix} {l_fpath} {r_fpath} | ' +
                    '{smb} view /dev/stdin -t {threads} -f bam -S -o - | ' +
                    '{smb} sort /dev/stdin -t {threads} --tmpdir {tmp_dirpath} -o {bam_fpath}').format(**locals())
-    run(bwa_cmdline, output_fpath=bam_fpath, stdout_to_outputfile=False, reuse=reuse)
+    run(bwa_cmdline, output_fpath=bam_fpath, stdout_to_outputfile=False)
 
     if dedup:
         dedup_bam_fpath = add_suffix(bam_fpath, 'dedup')

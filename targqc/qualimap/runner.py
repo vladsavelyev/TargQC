@@ -9,11 +9,13 @@ from pybedtools import BedTool
 
 from Utils.bed_utils import merge_overlaps
 from Utils.call_process import run
-from Utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname
+from Utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname, \
+    can_reuse
 from Utils.logger import info, warn, err, critical, debug
 from Utils.reporting.reporting import write_tsv_rows
 
 import targqc.config as cfg
+import targqc
 
 
 def get_qualimap_max_mem(bam):
@@ -30,8 +32,7 @@ def find_executable():
     critical('Error: could not find Qualimap executable')
 
 
-def run_qualimap(work_dir, output_dir, bam_fpath, genome, bed_fpath=None,
-                 threads=1, reuse_intermediate=False):
+def run_qualimap(work_dir, output_dir, bam_fpath, genome, bed_fpath=None, threads=1):
     info('Analysing ' + bam_fpath)
 
     safe_mkdir(dirname(output_dir))
@@ -55,9 +56,12 @@ def run_qualimap(work_dir, output_dir, bam_fpath, genome, bed_fpath=None,
         debug('Using amplicons/capture panel ' + bed_fpath)
 
     cmdline = cmdline.format(**locals())
-    report_fpath = join(output_dir, 'qualimapReport.html')
-    run(cmdline, output_fpath=report_fpath, stdout_to_outputfile=False, env_vars=dict(DISPLAY=None),
-        checks=[lambda _1, _2: verify_file(report_fpath)], reuse=reuse_intermediate)
+    report_fpath = join(output_dir, targqc.qualimap_report_fname)
+    if can_reuse(report_fpath, bam_fpath):
+        return report_fpath
+    else:
+        run(cmdline, output_fpath=report_fpath, stdout_to_outputfile=False, env_vars=dict(DISPLAY=None),
+            checks=[lambda _1, _2: verify_file(report_fpath)])
 
 
 def fix_bed_for_qualimap(bed_fpath, qualimap_bed_fpath):

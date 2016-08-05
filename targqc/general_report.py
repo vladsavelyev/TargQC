@@ -8,13 +8,14 @@ from pybedtools import BedTool
 import GeneAnnotation
 from Utils import reference_data
 from targqc.Target import Target
-from targqc.qualimap.report_parser import parse_qualimap_sample_report
-from targqc.qualimap.runner import run_qualimap
+from targqc.qualimap import report_parser, runner
+# from targqc.qualimap.report_parser import parse_qualimap_sample_report
+# from targqc import qualimap.runner import run_qualimap
 
 from Utils.bed_utils import get_padded_bed_file, intersect_bed, calc_sum_of_regions, count_bed_cols,\
     calc_bases_within_threshs, calc_rate_within_normal, Region, GeneInfo
 from Utils.sambamba import index_bam, number_mapped_reads_on_target, number_of_mapped_reads, sambamba_depth
-from Utils.file_utils import intermediate_fname, verify_file, safe_mkdir
+from Utils.file_utils import intermediate_fname, verify_file, safe_mkdir, can_reuse
 from Utils.logger import critical, info, err, warn, debug
 from Utils.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport
 
@@ -190,7 +191,7 @@ def parse_qualimap_results(sample, depth_thresholds):
     if not verify_file(sample.qualimap_html_fpath):
         critical('QualiMap report was not found')
 
-    qualimap_value_by_metric = parse_qualimap_sample_report(sample.qualimap_html_fpath)
+    qualimap_value_by_metric = report_parser.parse_qualimap_sample_report(sample.qualimap_html_fpath)
     bases_by_depth, median_depth = parse_qualimap_coverage_hist(sample.qualimap_cov_hist_fpath)
     median_gc, median_human_gc = parse_qualimap_gc_content(sample.qualimap_gc_hist_fpath)
     median_ins_size = parse_qualimap_insert_size(sample.qualimap_ins_size_hist_fpath)
@@ -340,19 +341,14 @@ def get_mean_cov(bedcov_output_fpath):
 
 
 def make_general_reports(view, samples, target, genome, depth_thresholds, bed_padding,
-                         num_reads_by_sample=None, reuse=False, is_debug=False):
-    info('Running QualiMap...')
-    view.run(run_qualimap,
-        [[s.work_dir, s.qualimap_dirpath, s.bam, genome, target.qualimap_bed_fpath,
-          view.cores_per_job, reuse]
-         for s in samples])
-
-    # try:
-    #     picard_ins_size_hist(sample, sample.bam)
-    # except subprocess.CalledProcessError as e:
-    #     err('Picard insert size histogram command exit with error code ' + str(e.returncode) + ':\n ' + str(e.cmd))
-    # else:
-    #     os.remove(sample.qualimap_ins_size_hist_fpath)
+                         num_pairs_by_sample=None, reuse=False, is_debug=False):
+    if all(can_reuse(s.qualimap_html_fpath, [s.bam, target.qualimap_bed_fpath]) for s in samples):
+        debug('Reusing QualiMap runs')
+    else:
+        info('Running QualiMap...')
+        view.run(runner.run_qualimap,
+            [[s.work_dir, s.qualimap_dirpath, s.bam, genome, target.qualimap_bed_fpath, view.cores_per_job]
+             for s in samples])
 
     summary_reports = []
 
@@ -365,8 +361,8 @@ def make_general_reports(view, samples, target, genome, depth_thresholds, bed_pa
         depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample, depth_thresholds)
         sample.avg_depth = depth_stats['ave_depth']
 
-        if num_reads_by_sample and sample.name in num_reads_by_sample:
-            reads_stats['original_num_reads'] = num_reads_by_sample[sample.name]
+        if num_pairs_by_sample and sample.name in num_pairs_by_sample:
+            reads_stats['original_num_reads'] = num_pairs_by_sample[sample.name] * 2
 
         chrom_lengths = reference_data.get_chrom_lengths(genome)
         if 'Y' in chrom_lengths or 'chrY' in chrom_lengths:
@@ -395,16 +391,16 @@ def make_general_reports(view, samples, target, genome, depth_thresholds, bed_pa
 
         if not target.is_wgs:
             reads_stats['mapped_dedup_on_target'] = number_mapped_reads_on_target(
-                sample.work_dir, target.bed.cut(range(3)).saveas().fn, sample.bam, dedup=True, reuse=reuse) or 0
+                sample.work_dir, target.bed.cut(range(3)).saveas().fn, sample.bam, dedup=True, target_name='target') or 0
 
             reads_stats['mapped_dedup_on_padded_target'] = number_mapped_reads_on_target(
-                sample.work_dir, target.padded_bed_fpath, sample.bam, dedup=True, reuse=reuse) or 0
+                sample.work_dir, target.padded_bed_fpath, sample.bam, dedup=True, target_name='padded_target') or 0
 
         else:
             cds_bed = GeneAnnotation.get_merged_cds(genome)
             info('Using the CDS reference BED to calc "reads on CDS"')
             reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(
-                sample.work_dir, cds_bed, sample.bam, dedup=True, reuse=reuse) or 0
+                sample.work_dir, cds_bed, sample.bam, dedup=True, target_name='exome') or 0
 
         r = _build_report(sample.work_dir, depth_stats, reads_stats, indels_stats, sample, target,
                           depth_thresholds, bed_padding, is_debug=is_debug)

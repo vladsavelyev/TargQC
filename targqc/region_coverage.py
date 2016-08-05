@@ -12,20 +12,20 @@ from Utils import reference_data
 from Utils.bed_utils import count_bed_cols
 from Utils.sambamba import sambamba_depth
 from Utils.call_process import run
-from Utils.file_utils import intermediate_fname, verify_file, file_transaction
+from Utils.file_utils import intermediate_fname, verify_file, file_transaction, can_reuse
 from Utils.logger import info, debug
 
 from Utils.utils import OrderedDefaultDict
 
 
 def make_region_reports(view, work_dir, samples, target, genome, depth_thresholds, reuse=False):
-    info('Calculating coverage statistics for CDS and exon regions from RefSeq...')
+    bed_fpath = target.bed_fpath or target.wgs_bed_fpath
 
-    if reuse and all(
-            isfile(s.targqc_region_tsv) and verify_file(s.targqc_region_tsv)
-            for s in samples):
-        debug('All reports exist, reusing')
+    if all(can_reuse(s.targqc_region_tsv, [s.bam, bed_fpath]) for s in samples):
+        debug('All region reports exist, reusing')
         return [s.targqc_region_tsv for s in samples]
+
+    info('Calculating coverage statistics for CDS and exon regions from RefSeq...')
 
     depth_thresholds_by_sample = {s.name: sorted(depth_thresholds + [max(1, int(s.avg_depth / 2))])
                                   for s in samples}
@@ -61,7 +61,6 @@ def make_region_reports(view, work_dir, samples, target, genome, depth_threshold
     # else:
     #     concat_bed_fpath = exons_and_cds_bed.fn
 
-    bed_fpath = target.bed_fpath or target.wgs_bed_fpath
 
     debug()
     debug('Running sambamba...')
@@ -94,8 +93,8 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
     regions_by_genekey = defaultdict(list)
     #####################################
     #####################################
-    if reuse and isfile(output_fpath) and verify_file(output_fpath):
-        debug(output_fpath + ' exists, reusing')
+    if can_reuse(output_fpath, sambamba_depth_output_fpath):
+        return output_fpath
 
     debug('Reading coverage statistics and writing regions to ' + output_fpath)
 
@@ -180,7 +179,7 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                 if total_regions_count > 0 and total_regions_count % 10000 == 0:
                     debug('  Processed {0:,} regions'.format(total_regions_count))
         debug('Total regions: ' + str(len(regions_by_genekey)))
-
+    return output_fpath
 
 # def _get_values_from_row(fields, cols):
 #     return [fields[col] if col else None for col in cols]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
-from os.path import join, isfile
+from os.path import join, isfile, abspath, dirname
 
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
@@ -16,7 +16,7 @@ else:
     install_reqs = parse_requirements('requirements.txt', session=PipSession())
 
 reqs = [str(ir.req) for ir in install_reqs]
-version = open('VERSION.txt').read().strip()
+version = open(join(dirname(abspath(__file__)), 'VERSION.txt')).read().strip()
 
 name = 'targqc'
 

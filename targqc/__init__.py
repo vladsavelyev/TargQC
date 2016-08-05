@@ -1,10 +1,10 @@
 from collections import OrderedDict
 from os.path import join, splitext
 
-from Utils.file_utils import safe_mkdir
+from Utils.file_utils import safe_mkdir, can_reuse
 from Utils.sambamba import index_bam
 from Utils.parallel import parallel_view
-from Utils.logger import info, critical
+from Utils.logger import info, critical, debug
 
 from targqc import config
 from targqc.fastq import proc_fastq
@@ -41,7 +41,7 @@ def start_targqc(work_dir, samples, target, parallel_cfg, bwa_prefix,
                  dedup=config.dedup,
                  reuse=config.reuse_intermediate,
                  is_debug=config.is_debug,
-                 num_reads_by_sample=None
+                 num_pairs_by_sample=None
                  ):
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
@@ -49,8 +49,8 @@ def start_targqc(work_dir, samples, target, parallel_cfg, bwa_prefix,
         if not bwa_prefix:
             critical('--bwa-prefix is required when running from fastq')
         with parallel_view(len(fastq_samples), parallel_cfg, join(work_dir, 'sge_fastq')) as view:
-            num_reads_by_sample = proc_fastq(fastq_samples, view, work_dir, bwa_prefix, downsample_pairs_num,
-                                             num_reads_by_sample, dedup=dedup, reuse=reuse)
+            num_pairs_by_sample = proc_fastq(fastq_samples, view, work_dir, bwa_prefix,
+                 downsample_pairs_num, num_pairs_by_sample, dedup=dedup)
 
     for s in samples:
         if s.bam:
@@ -58,11 +58,14 @@ def start_targqc(work_dir, samples, target, parallel_cfg, bwa_prefix,
 
     info()
     with parallel_view(len(samples), parallel_cfg, join(work_dir, 'sge_bam')) as view:
-        info('Indexing BAMs...')
-        view.run(index_bam, [[s.bam] for s in samples])
+        if all(can_reuse(s.bam + '.bai', s.bam) for s in samples):
+            debug('BAM indexes exists')
+        else:
+            info('Indexing BAMs...')
+            view.run(index_bam, [[s.bam] for s in samples])
 
         info('Making general reports...')
-        make_general_reports(view, samples, target, genome, depth_thresholds, padding, num_reads_by_sample,
+        make_general_reports(view, samples, target, genome, depth_thresholds, padding, num_pairs_by_sample,
                              reuse=reuse, is_debug=is_debug)
 
         info()
