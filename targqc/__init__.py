@@ -53,7 +53,8 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
                  dedup=config.dedup,
                  reuse=config.reuse_intermediate,
                  is_debug=config.is_debug,
-                 num_pairs_by_sample=None
+                 num_pairs_by_sample=None,
+                 reannotate=config.reannotate,
                  ):
     d = get_description()
     info('*'*len(d))
@@ -62,7 +63,8 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
     info()
 
     fai_fpath = fai_fpath or ref.get_fai(genome)
-    target = Target(work_dir, fai_fpath, target_bed_fpath)
+    target = Target(work_dir, fai_fpath, padding=padding, bed_fpath=target_bed_fpath,
+         reannotate=reannotate, genome=genome, is_debug=is_debug)
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
     if fastq_samples:
@@ -85,12 +87,11 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
             view.run(index_bam, [[s.bam] for s in samples])
 
         info('Making general reports...')
-        make_general_reports(view, samples, target, genome, depth_thresholds, padding, num_pairs_by_sample,
-                             reuse=reuse, is_debug=is_debug)
+        make_general_reports(view, samples, target, genome, depth_thresholds, padding, num_pairs_by_sample, is_debug=is_debug)
 
         info()
         info('Making region-level reports...')
-        make_region_reports(view, work_dir, samples, target, genome, depth_thresholds, reuse=reuse)
+        make_region_reports(view, work_dir, samples, target, genome, depth_thresholds)
 
     info()
     info('*' * 70)

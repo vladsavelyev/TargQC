@@ -2,7 +2,7 @@ from collections import defaultdict
 from os.path import isfile, join
 from pybedtools import BedTool
 import GeneAnnotation as ga
-from GeneAnnotation.annotate_bed import annotate, get_sort_key, tx_sort_key
+from GeneAnnotation.annotate_bed import annotate, overlap_with_features, get_sort_key, tx_sort_key
 from Utils import reference_data
 from Utils.bed_utils import filter_bed_with_gene_set, get_gene_keys_from_bed, calc_region_number, merge_overlaps
 from Utils.bed_utils import remove_comments, sort_bed, count_bed_cols, cut, verify_bed
@@ -13,7 +13,8 @@ from targqc import config as cfg
 
 
 class Target:
-    def __init__(self, work_dir, fai_fpath, bed_fpath=None, genome=None):
+    def __init__(self, work_dir, fai_fpath, padding, bed_fpath=None,
+                 reannotate=False, genome=None, is_debug=False):
         self.bed = None
         self.original_bed_fpath = None
         self.bed_fpath = None
@@ -32,7 +33,8 @@ class Target:
             self.is_wgs = False
             verify_bed(bed_fpath, is_critical=True)
             self.original_bed_fpath = bed_fpath
-            self._make_target_bed(bed_fpath, work_dir, fai_fpath, genome=genome)
+            self._make_target_bed(bed_fpath, work_dir, padding=padding, is_debug=is_debug,
+                                  fai_fpath=fai_fpath, genome=genome, reannotate=reannotate)
         else:
             info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
             self.is_wgs = True
@@ -44,7 +46,8 @@ class Target:
         else:
             return None
 
-    def _make_target_bed(self, bed_fpath, work_dir, fai_fpath=None, genome=None):
+    def _make_target_bed(self, bed_fpath, work_dir, padding, is_debug,
+                         fai_fpath=None, genome=None, reannotate=False):
         clean_target_bed_fpath = intermediate_fname(work_dir, bed_fpath, 'clean')
         if not can_reuse(clean_target_bed_fpath, bed_fpath):
             debug()
@@ -52,7 +55,7 @@ class Target:
             bed = BedTool(bed_fpath)\
                 .filter(lambda x: x.chrom and not any(x.chrom.startswith(e) for e in ['#', ' ', 'track', 'browser']))\
                 .remove_invalid()\
-                .cut(range(3))
+                .cut(range(4))
             with file_transaction(work_dir, clean_target_bed_fpath) as tx:
                 bed.saveas(tx)
             debug('Saved to ' + clean_target_bed_fpath)
@@ -67,9 +70,14 @@ class Target:
         ann_target_bed_fpath = intermediate_fname(work_dir, sort_target_bed_fpath, 'ann')
         if not can_reuse(ann_target_bed_fpath, sort_target_bed_fpath):
             debug()
-            info('Annotating target BED file and collecting overlapping genome features...')
-            annotate(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir, genome=genome or cfg.genome,
-                     is_debug=cfg.is_debug, extended=True, output_features=True)
+            if BedTool(sort_target_bed_fpath).field_count() > 3 or reannotate:
+                info('Annotating target BED file and collecting overlapping genome features...')
+                overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
+                     genome=genome, is_debug=is_debug, extended=True, reannotate=reannotate)
+            else:
+                info('Collecting overlapping genome features...')
+                overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
+                     genome=genome, is_debug=is_debug, extended=True)
             debug('Saved to ' + ann_target_bed_fpath)
 
         final_clean_target_bed_fpath = intermediate_fname(work_dir, ann_target_bed_fpath, 'clean')
@@ -86,9 +94,9 @@ class Target:
         self.regions_num = self.get_capture_bed().count()
 
         self._make_qualimap_bed(work_dir)
-        self._make_padded_bed(work_dir, fai_fpath)
+        self._make_padded_bed(work_dir, fai_fpath, padding)
 
-    def _make_padded_bed(self, work_dir, fai_fpath):
+    def _make_padded_bed(self, work_dir, fai_fpath, padding):
         if self.is_wgs:
             return None
 
@@ -96,7 +104,7 @@ class Target:
         if can_reuse(self.padded_bed_fpath, self.bed_fpath):
             return BedTool(self.padded_bed_fpath)
 
-        padded_bed = self.bed.slop(b=cfg.padding, g=fai_fpath).sort().merge()
+        padded_bed = self.bed.slop(b=padding, g=fai_fpath).sort().merge()
         with file_transaction(work_dir, self.padded_bed_fpath) as tx:
             padded_bed.saveas(tx)
         return BedTool(self.padded_bed_fpath)

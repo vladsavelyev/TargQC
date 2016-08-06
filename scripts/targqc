@@ -105,12 +105,12 @@ options = [
         dest='fai',
         help=SUPPRESS_HELP,  # Path to FAI file - to sort BAM and BED files, and to get chromosome lengths for proper padding BED files; optional
      )),
-    # (['--reannotate'], dict(
-    #     dest='reannotate',
-    #     help='re-annotate BED file with gene names',
-    #     action='store_true',
-    #     default=True)
-    #  ),
+    (['--reannotate'], dict(
+        dest='reannotate',
+        help='Re-annotate BED file with gene names, even if it\'s 4 columns or more',
+        action='store_true',
+        default=False,
+     )),
     (['-e', '--extended'], dict(
         dest='extended',
         action='store_true',
@@ -195,6 +195,7 @@ def main(args):
     debug('Depth thresholds: ' + str(depth_thresholds))
     genome = opts.genome
     dedup = not opts.no_dedup
+    reannotate = opts.reannotate
     if opts.downsample_pairs_num == 'off':
         downsample_pairs_num = None
     else:
@@ -216,7 +217,7 @@ def main(args):
                         dedup=dedup,
                         reuse=reuse,
                         is_debug=is_debug,
-                        )
+                        reannotate=reannotate)
 
     # info()
     # info('Summarizing: running MultiQC')

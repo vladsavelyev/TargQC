@@ -14,11 +14,10 @@ from Utils.sambamba import sambamba_depth
 from Utils.call_process import run
 from Utils.file_utils import intermediate_fname, verify_file, file_transaction, can_reuse
 from Utils.logger import info, debug
-
 from Utils.utils import OrderedDefaultDict
 
 
-def make_region_reports(view, work_dir, samples, target, genome, depth_thresholds, reuse=False):
+def make_region_reports(view, work_dir, samples, target, genome, depth_thresholds):
     bed_fpath = target.bed_fpath or target.wgs_bed_fpath
 
     if all(can_reuse(s.targqc_region_tsv, [s.bam, bed_fpath]) for s in samples):
@@ -61,12 +60,11 @@ def make_region_reports(view, work_dir, samples, target, genome, depth_threshold
     # else:
     #     concat_bed_fpath = exons_and_cds_bed.fn
 
-
     debug()
     debug('Running sambamba...')
     sambamba_depth_output_fpaths = view.run(sambamba_depth,
         [[s.work_dir, bed_fpath, s.bam, depth_thresholds_by_sample[s.name],
-          None, False, s.name, reuse]
+          None, False, s.name]
          for s in samples])
     assert len(sambamba_depth_output_fpaths) == len(samples), \
         'Number of sambamba results = ' + str(len(sambamba_depth_output_fpaths)) + \
@@ -82,7 +80,7 @@ def make_region_reports(view, work_dir, samples, target, genome, depth_threshold
     return [s.targqc_region_tsv for s in samples]
 
 
-def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name, depth_thresholds, reuse=False):
+def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name, depth_thresholds):
     read_count_col = None
     mean_cov_col = None
     median_cov_col = None
