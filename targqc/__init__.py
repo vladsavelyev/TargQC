@@ -36,6 +36,14 @@ fastqc_repr              = 'FastQC'
 fastqc_report_fname      = 'fastqc_report.html'
 
 
+def get_description():
+    from targqc import version
+    description = 'TargQC, target coverage evaluation tool. Version ' + version.__version__
+    if version.__git_revision__:
+        description += ', revision ' + version.__git_revision__
+    return description
+
+
 def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, bwa_prefix,
                  fai_fpath=None,
                  genome=config.genome,
@@ -47,6 +55,12 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
                  is_debug=config.is_debug,
                  num_pairs_by_sample=None
                  ):
+    d = get_description()
+    info('*'*len(d))
+    info(d)
+    info('*'*len(d))
+    info()
+
     fai_fpath = fai_fpath or ref.get_fai(genome)
     target = Target(work_dir, fai_fpath, target_bed_fpath)
 
@@ -80,7 +94,7 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
 
     info()
     info('*' * 70)
-    info('Summarizing')
+    info('Summarizing TargQC coverage statistics for all samples...')
     summarize_targqc(parallel_cfg.threads, output_dir, work_dir, samples, bed_fpath=target_bed_fpath)
 
     # for general_report, per_gene_report, sample in zip(general_reports, per_gene_reports, samples):

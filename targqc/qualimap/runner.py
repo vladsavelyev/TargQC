@@ -97,7 +97,7 @@ def run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report):
     if isdir(plots_dirpath) and not any(
             not can_reuse(join(plots_dirpath, f), individual_report_fpaths)
             for f in listdir(plots_dirpath) if not f.startswith('.')):
-        info('Qualimap miltisample plots exist - ' + plots_dirpath + ', reusing...')
+        debug('Qualimap miltisample plots exist - ' + plots_dirpath + ', reusing...')
     else:
         # Qualimap2 run for multi-sample plots
         if len([s.qualimap_html_fpath for s in samples if s.qualimap_html_fpath]) > 0:

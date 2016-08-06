@@ -176,7 +176,7 @@ def _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir):
 
 
 def main(args):
-    parser = OptionParser(description='Target coverage evaluation tool.')
+    parser = OptionParser(description=targqc.get_description())
     parser.set_usage('Usage: %prog *.bam -o targqc_stats [--bed target.bed ...]')
     for args, kwargs in options:
         parser.add_option(*args, **kwargs)

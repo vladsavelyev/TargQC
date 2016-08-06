@@ -353,8 +353,8 @@ def make_general_reports(view, samples, target, genome, depth_thresholds, bed_pa
     summary_reports = []
 
     for sample in samples:
-        debug('-'*70)
-        debug(sample.name)
+        info('-'*70)
+        info(sample.name)
         debug('-'*70)
         debug('Parsing QualiMap results...')
         depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample, depth_thresholds)
@@ -429,7 +429,7 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
     if reads_stats.get('gender') is not None:
         _add('Sex', reads_stats['gender'])
 
-    info('* General coverage statistics *')
+    debug('* General coverage statistics *')
     _add('Reads', reads_stats['total'])
     _add('Mapped reads', reads_stats['mapped'])
     # _add('Unmapped reads', reads_stats['totaAvgl'] - reads_stats['mapped'])
@@ -454,10 +454,10 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
     _add('Median GC', reads_stats['median_gc'])
     _add('Median insert size', reads_stats['median_ins_size'])
 
-    info('')
+    debug()
 
     if not target.is_wgs:
-        info('* Target coverage statistics *')
+        debug('* Target coverage statistics *')
         if target.original_bed_fpath:
             _add('Target', target.original_bed_fpath)
             if count_bed_cols(target.original_bed_fpath) == 3:
@@ -470,7 +470,7 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
         _add('Scope', 'targeted')
         _add('Genes in target', len(target.gene_keys_list))
     else:
-        info('* Genome coverage statistics *')
+        debug('* Genome coverage statistics *')
         _add('Target', 'whole genome')
         _add('Reference size', target.bases_num)
         _add('Scope', 'WGS')
@@ -487,11 +487,11 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
         _add('Percentage of ' + trg_type + ' covered by at least 1 read', v_percent_covered_bases_in_targ)
 
     if not target.is_wgs:
-        info('Getting number of mapped reads on target...')
+        debug('Getting number of mapped reads on target...')
         # mapped_reads_on_target = number_mapped_reads_on_target(cnf, target_info.bed, bam_fpath)
         if 'mapped_dedup_on_target' in reads_stats:
             # _add('Reads mapped on target', reads_stats['mapped_on_target'])
-            info('Unique mapped on target: ' + str(reads_stats['mapped_dedup_on_target']))
+            debug('Unique mapped reads on target: ' + str(reads_stats['mapped_dedup_on_target']))
             percent_mapped_dedup_on_target = 1.0 * reads_stats['mapped_dedup_on_target'] / reads_stats['mapped_dedup'] if reads_stats['mapped_dedup'] != 0 else None
             _add('Percentage of reads mapped on target', percent_mapped_dedup_on_target)
             assert percent_mapped_dedup_on_target <= 1.0 or percent_mapped_dedup_on_target is None, str(percent_mapped_dedup_on_target)
@@ -526,7 +526,7 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
         _add('Percentage of usable reads', percent_usable)
         assert percent_usable <= 1.0 or percent_usable is None, str(percent_usable)
 
-    info('')
+    debug()
     _add('Average ' + trg_type + ' coverage depth', depth_stats['ave_depth'])
     if 'original_num_reads' in reads_stats:
         _add('Original reads', reads_stats['original_num_reads'])
@@ -548,7 +548,7 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
             if fraction_val > 0:
                 _add('Part of ' + trg_type + ' covered at least by ' + str(depth) + 'x', fraction_val)
             assert fraction_val <= 1.0 or fraction_val is None, str(fraction_val)
-    info()
+    debug()
 
     _add('Read mean length', reads_stats['ave_len'])
     _add('Read min length', reads_stats['min_len'])
@@ -559,7 +559,7 @@ def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target
     _add('Deletions', mm_indels_stats['deletions'])
     _add('Homopolymer indels', mm_indels_stats['homo_indels'])
 
-    info()
+    debug()
     info('Saving reports...')
     report.save_json(sample.targqc_json_fpath)
     report.save_txt(sample.targqc_txt_fpath)
