@@ -74,11 +74,11 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
             num_pairs_by_sample = proc_fastq(fastq_samples, view, work_dir, bwa_prefix,
                  downsample_pairs_num, num_pairs_by_sample, dedup=dedup)
 
+    info()
     for s in samples:
         if s.bam:
             info(s.name + ': using alignment ' + s.bam)
 
-    info()
     with parallel_view(len(samples), parallel_cfg, join(work_dir, 'sge_bam')) as view:
         if all(can_reuse(s.bam + '.bai', s.bam) for s in samples):
             debug('BAM indexes exists')

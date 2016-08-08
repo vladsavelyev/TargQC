@@ -74,12 +74,12 @@ class Target:
         ann_target_bed_fpath = intermediate_fname(work_dir, sort_target_bed_fpath, 'ann')
         if not can_reuse(ann_target_bed_fpath, sort_target_bed_fpath):
             debug()
-            if BedTool(sort_target_bed_fpath).field_count() > 3 or reannotate:
-                info('Annotating target BED file and collecting overlapping genome features...')
+            if BedTool(sort_target_bed_fpath).field_count() == 3 or reannotate:
+                info('Annotating target BED file and collecting overlapping genome features:')
                 overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
                      genome=genome, is_debug=is_debug, extended=True, reannotate=reannotate)
             else:
-                info('Collecting overlapping genome features...')
+                info('Overlapping with genomic features:')
                 overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
                      genome=genome, is_debug=is_debug, extended=True)
             debug('Saved to ' + ann_target_bed_fpath)

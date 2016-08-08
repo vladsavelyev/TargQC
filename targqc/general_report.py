@@ -342,7 +342,7 @@ def get_mean_cov(bedcov_output_fpath):
 
 def make_general_reports(view, samples, target, genome, depth_thresholds, bed_padding,
                          num_pairs_by_sample=None, reuse=False, is_debug=False):
-    if all(can_reuse(s.qualimap_html_fpath, [s.bam, target.qualimap_bed_fpath]) for s in samples):
+    if all(can_reuse(s.qualimap_html_fpath, [s.bam, target.qualimap_bed_fpath] if target.bed else s.bam) for s in samples):
         debug('Reusing QualiMap runs')
     else:
         info('Running QualiMap...')
@@ -362,7 +362,7 @@ def make_general_reports(view, samples, target, genome, depth_thresholds, bed_pa
         _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_stats,
                           target, num_pairs_by_sample, genome, depth_thresholds)
 
-        r = _build_report(sample.work_dir, depth_stats, reads_stats, indels_stats, sample, target,
+        r = _build_report(depth_stats, reads_stats, indels_stats, sample, target,
                           depth_thresholds, bed_padding, sample_num=len(samples), is_debug=is_debug)
         summary_reports.append(r)
 
@@ -418,12 +418,12 @@ def _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_sta
     return depth_stats, reads_stats, indels_stats
 
 
-def _build_report(cnf, depth_stats, reads_stats, mm_indels_stats, sample, target, depth_thresholds, bed_padding, 
-                  sample_num, is_debug=False):
+def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
+                  depth_thresholds, bed_padding, sample_num, is_debug=False):
     report = SampleReport(sample, metric_storage=get_header_metric_storage(depth_thresholds, is_wgs=target.bed_fpath is None, padding=bed_padding))
 
     def _add(_metric_name, _val, url=None):
-        return report.add_record(_metric_name, _val, silent=(sample_num > 1 and not is_debug))
+        return report.add_record(_metric_name, _val, silent=(sample_num > 1 and not is_debug), url=url)
 
     _add('Qualimap', 'Qualimap', url=relpath(sample.qualimap_html_fpath, sample.dirpath))
     if reads_stats.get('gender') is not None:
