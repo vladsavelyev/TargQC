@@ -101,7 +101,7 @@ if sys.argv[-1] == 'install':
     print('''-----------------------------------
  Installing TargQC version {}
 -----------------------------------
-'''.format(version_git))
+'''.format(version))
 
 # sambamba = join('Utils', 'sambamba', 'build', 'sambamba')
 # if not isfile(sambamba):
