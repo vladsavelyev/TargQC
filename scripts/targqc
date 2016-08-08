@@ -4,7 +4,7 @@ import os
 import shutil
 import sys
 from optparse import OptionParser, SUPPRESS_HELP
-from os.path import isfile, join, isdir
+from os.path import isfile, join, isdir, exists, dirname, islink
 
 import Utils.reference_data as ref
 from Utils import logger
@@ -82,11 +82,11 @@ options = [
         choices=["lsf", "sge", "torque", "slurm", "pbspro"],
         help="Scheduler to use for ipython parallel"
      )),
-    (["-q", "--queue"], dict(
+    (['-q', '--queue'], dict(
         dest='queue',
         help="Scheduler queue to run jobs on, for ipython parallel"
      )),
-    (["-r", "--resources"], dict(
+    (['-r', '--resources'], dict(
         dest='resources',
         help=("Cluster specific resources specifications. "
           "Can be specified multiple times.\n"
@@ -183,8 +183,9 @@ def main(args):
     opts, args = parser.parse_args()
 
     is_debug = logger.is_debug = opts.debug
-    reuse = opts.reuse_intermediate
-    output_dir, work_dir = set_up_dirs(targqc.targqc_name, opts.output_dir, opts.work_dir, opts.log_dir, reuse)
+    output_dir, work_dir = set_up_dirs(
+            targqc.targqc_name, opts.output_dir, opts.work_dir,
+            opts.log_dir, opts.reuse_intermediate)
     debug(' '.join(sys.argv))
     debug()
 
@@ -215,7 +216,6 @@ def main(args):
                         downsample_pairs_num=downsample_pairs_num,
                         padding=padding,
                         dedup=dedup,
-                        reuse=reuse,
                         is_debug=is_debug,
                         reannotate=reannotate)
 
@@ -224,8 +224,29 @@ def main(args):
     # cmd = 'multiqc ' + output_dir + ('' if cfg.reuse_intermediate else ' --force') + ' -v ' + ' '.join(s.dirpath for s in samples)
     # run(cmd)
 
-    # if not is_debug and work_dir and isdir(work_dir):
-    #     shutil.rmtree(work_dir)
+    if not check_results(output_dir, samples):
+        critical('Error: expected results not found in the output dir ' + output_dir)
+
+    # removing only automatically created work_dir, unless debug, and unless --reuse
+    if not is_debug and not opts.reuse_intermediate and not opts.work_dir and work_dir and isdir(work_dir):
+        shutil.rmtree(work_dir)
+        latest_symlink = join(dirname(work_dir), 'latest')
+        if islink(latest_symlink):
+            os.remove(latest_symlink)
+
+
+def check_results(output_dir, samples):
+    for fname in ['regions.tsv', 'summary.html', 'summary.tsv']:
+        if not verify_file(join(output_dir, fname)):
+            return False
+    for s in samples:
+        for fpath in [s.targqc_txt_fpath,
+                      s.targqc_html_fpath,
+                      s.targqc_json_fpath,
+                      s.targqc_region_tsv]:
+            if not verify_file(fpath):
+                return False
+    return True
 
 
 def get_inputs(opts, args):

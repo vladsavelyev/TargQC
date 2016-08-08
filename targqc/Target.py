@@ -52,13 +52,16 @@ class Target:
         if not can_reuse(clean_target_bed_fpath, bed_fpath):
             debug()
             info('Cleaning target BED file...')
-            bed = BedTool(bed_fpath)\
+            bed = BedTool(bed_fpath)
+            if bed.field_count() > 4:
+                bed = bed.cut(range(4))
+            bed = bed\
                 .filter(lambda x: x.chrom and not any(x.chrom.startswith(e) for e in ['#', ' ', 'track', 'browser']))\
-                .remove_invalid()\
-                .cut(range(4))
+                .remove_invalid()
             with file_transaction(work_dir, clean_target_bed_fpath) as tx:
                 bed.saveas(tx)
             debug('Saved to ' + clean_target_bed_fpath)
+            verify_file(clean_target_bed_fpath, is_critical=True)
 
         sort_target_bed_fpath = intermediate_fname(work_dir, clean_target_bed_fpath, 'sorted')
         if not can_reuse(sort_target_bed_fpath, clean_target_bed_fpath):
@@ -66,6 +69,7 @@ class Target:
             info('Sorting target BED file...')
             sort_target_bed_fpath = sort_bed(clean_target_bed_fpath, output_bed_fpath=sort_target_bed_fpath, fai_fpath=fai_fpath)
             debug('Saved to ' + sort_target_bed_fpath)
+            verify_file(sort_target_bed_fpath, is_critical=True)
 
         ann_target_bed_fpath = intermediate_fname(work_dir, sort_target_bed_fpath, 'ann')
         if not can_reuse(ann_target_bed_fpath, sort_target_bed_fpath):
@@ -79,12 +83,14 @@ class Target:
                 overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
                      genome=genome, is_debug=is_debug, extended=True)
             debug('Saved to ' + ann_target_bed_fpath)
+            verify_file(ann_target_bed_fpath, is_critical=True)
 
         final_clean_target_bed_fpath = intermediate_fname(work_dir, ann_target_bed_fpath, 'clean')
         if not can_reuse(final_clean_target_bed_fpath, ann_target_bed_fpath):
             bed = BedTool(ann_target_bed_fpath).remove_invalid()
             with file_transaction(work_dir, final_clean_target_bed_fpath) as tx:
                 bed.saveas(tx)
+            verify_file(final_clean_target_bed_fpath, is_critical=True)
         self.bed_fpath = final_clean_target_bed_fpath
         self.bed = BedTool(self.bed_fpath)
 
@@ -107,6 +113,7 @@ class Target:
         padded_bed = self.bed.slop(b=padding, g=fai_fpath).sort().merge()
         with file_transaction(work_dir, self.padded_bed_fpath) as tx:
             padded_bed.saveas(tx)
+        verify_file(self.padded_bed_fpath, is_critical=True)
         return BedTool(self.padded_bed_fpath)
 
     def _make_qualimap_bed(self, work_dir):
@@ -126,6 +133,7 @@ class Target:
                     fillers = [str(i), "1.0", "+"]
                     full = region + fillers[:6 - len(region)]
                     out.write("\t".join(full) + "\n")
+        verify_file(self.qualimap_bed_fpath, is_critical=True)
         return self.qualimap_bed_fpath
 
     def _make_wgs_regions_file(self, work_dir, genome=None):

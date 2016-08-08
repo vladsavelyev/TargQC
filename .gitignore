@@ -43,3 +43,7 @@ nosetests.xml
 
 venv/
 
+test/data
+test/develop_results
+test/gold_standard
+test/results
