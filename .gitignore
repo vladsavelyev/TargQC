@@ -43,6 +43,8 @@ nosetests.xml
 
 venv/
 
+targqc/version.py
+
 test/data
 test/develop_results
 test/gold_standard
