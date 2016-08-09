@@ -92,7 +92,8 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
             view.run(index_bam, [[s.bam] for s in samples])
 
         info('Making general reports...')
-        make_general_reports(view, samples, target, genome, depth_thresholds, padding, num_pairs_by_sample, is_debug=is_debug)
+        make_general_reports(view, samples, target, genome, depth_thresholds, padding, num_pairs_by_sample,
+                             is_debug=is_debug, reannotate=reannotate)
 
         info()
         info('Making region-level reports...')

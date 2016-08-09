@@ -345,7 +345,7 @@ def _qualimap_outputs(sample):
 
 
 def make_general_reports(view, samples, target, genome, depth_thresholds, bed_padding,
-                         num_pairs_by_sample=None, reuse=False, is_debug=False):
+                         num_pairs_by_sample=None, reuse=False, is_debug=False, reannotate=False):
     if all(all(can_reuse(fp, [s.bam, target.qualimap_bed_fpath] if target.bed else s.bam)
                for fp in _qualimap_outputs(s))
            for s in samples):
@@ -373,7 +373,8 @@ def make_general_reports(view, samples, target, genome, depth_thresholds, bed_pa
                           target, num_pairs_by_sample, genome, depth_thresholds)
 
         r = _build_report(depth_stats, reads_stats, indels_stats, sample, target,
-                          depth_thresholds, bed_padding, sample_num=len(samples), is_debug=is_debug)
+                          depth_thresholds, bed_padding, sample_num=len(samples), is_debug=is_debug,
+                          reannotate=reannotate)
         summary_reports.append(r)
 
     return summary_reports
