@@ -1,0 +1,44 @@
+#sudo: required
+#dist: trusty
+
+language: python
+python:
+  - "2.7"
+
+install: "pip install -r requirements.txt"
+script:
+  - cd tests
+  - nosetests
+
+#env:
+#  - BCBIO_DOCKER_PRIVILEGED=True
+
+#before_install:
+  # Temporal fix for networking problem: https://github.com/travis-ci/travis-ci/issues/1484
+#  - echo "127.0.1.1 "`hostname` | sudo tee /etc/hosts
+  # download test data
+  # install bedtools (embed? or docker?)
+  # git clone ... targqc
+  # cd targqc
+  # python setup.py install
+
+#install:
+#  # Install bcbio-nextgen and bcbio-nextgen-vm
+#  - export PATH=~/install/bcbio-vm/anaconda/bin/:$PATH
+#  - conda install --yes -c bioconda -c r bcbio-nextgen-vm -q
+#  # Get docker container
+#  - bcbio_vm.py --datadir=${TRAVIS_BUILD_DIR}/tests/data install --tools
+#  # Update to latest bcbio-nextgen code externally and within the container
+#  - ~/install/bcbio-vm/anaconda/bin/python setup.py install
+#  - bcbio_vm.py devel setup_install
+#  - pip install cwl_runner
+
+#script:
+#  - cd tests
+#  - bash run_tests.sh docker
+#  - bash run_tests.sh docker_ipython
+
+#notifications:
+#    email: false
+#    slack:
+#        secure:
