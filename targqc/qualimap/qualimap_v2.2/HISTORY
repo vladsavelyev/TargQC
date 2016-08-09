@@ -1,6 +1,20 @@
 Version Release History
 =======================
 
+Version 2.2 - January 29, 2016
+------------------------------
+
+    * BAM QC: added a novel option to control the skipping of duplicate alignments (reported by Patrik Smeds and Vlad Saveliev ) The default mode was switched to marked duplicates only.
+    * BAM QC: fixed issue with processing alignments (reported by Roberto Spreafico)
+    * BAM QC: fixed fail when zero mapped reads inside of region (reported by Jochen Singer)
+    * BAM QC: improved the number of windows output (reported by Alexander Peltzer)
+    * BAM QC: integrate mm10 support to command line
+    * BAM QC: fixed insert size histogram computation
+    * Multisample BAM QC: implmeneted support for per sample groups/conditions
+    * Multisample BAM QC: added novel statistics report and global coverage plot (suggested by Angela Heck )
+    * RNA-seq QC: fixed the numbers of reads computation for paired-end reads (reported by Priyanka Jain )
+    * Documentation: updates in BAM QC, Multisample BAM QC, RNA-seq QC
+ 
 
 Version 2.1.3 - October 29, 2015
 ----------------------------------
