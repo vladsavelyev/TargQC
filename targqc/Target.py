@@ -1,5 +1,5 @@
 from collections import defaultdict
-from os.path import isfile, join
+from os.path import isfile, join, basename
 from pybedtools import BedTool
 import GeneAnnotation as ga
 from GeneAnnotation.annotate_bed import annotate, overlap_with_features, get_sort_key, tx_sort_key
@@ -13,11 +13,12 @@ from targqc import config as cfg
 
 
 class Target:
-    def __init__(self, work_dir, fai_fpath, padding, bed_fpath=None,
+    def __init__(self, work_dir, output_dir, fai_fpath, padding, bed_fpath=None,
                  reannotate=False, genome=None, is_debug=False):
         self.bed = None
         self.original_bed_fpath = None
-        self.bed_fpath = None
+        self.bed_fpath = None  # with genomic features
+        self.capture_bed_fpath = None  # w/o genomic features
         self.qualimap_bed_fpath = None
         self.padded_bed_fpath = None
 
@@ -33,7 +34,7 @@ class Target:
             self.is_wgs = False
             verify_bed(bed_fpath, is_critical=True)
             self.original_bed_fpath = bed_fpath
-            self._make_target_bed(bed_fpath, work_dir, padding=padding, is_debug=is_debug,
+            self._make_target_bed(bed_fpath, work_dir, output_dir, padding=padding, is_debug=is_debug,
                                   fai_fpath=fai_fpath, genome=genome, reannotate=reannotate)
         else:
             info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
@@ -46,7 +47,7 @@ class Target:
         else:
             return None
 
-    def _make_target_bed(self, bed_fpath, work_dir, padding, is_debug,
+    def _make_target_bed(self, bed_fpath, work_dir, output_dir, padding, is_debug,
                          fai_fpath=None, genome=None, reannotate=False):
         clean_target_bed_fpath = intermediate_fname(work_dir, bed_fpath, 'clean')
         if not can_reuse(clean_target_bed_fpath, bed_fpath):
@@ -71,11 +72,11 @@ class Target:
             debug('Saved to ' + sort_target_bed_fpath)
             verify_file(sort_target_bed_fpath, is_critical=True)
 
-        ann_target_bed_fpath = intermediate_fname(work_dir, sort_target_bed_fpath, 'ann')
+        ann_target_bed_fpath = intermediate_fname(work_dir, sort_target_bed_fpath, 'ann_plus_features')
         if not can_reuse(ann_target_bed_fpath, sort_target_bed_fpath):
             debug()
             if BedTool(sort_target_bed_fpath).field_count() == 3 or reannotate:
-                info('Annotating target BED file and collecting overlapping genome features:')
+                info('Annotating target BED file and collecting overlapping genome features')
                 overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
                      genome=genome, is_debug=is_debug, extended=True, reannotate=reannotate)
             else:
@@ -91,8 +92,13 @@ class Target:
             with file_transaction(work_dir, final_clean_target_bed_fpath) as tx:
                 bed.saveas(tx)
             verify_file(final_clean_target_bed_fpath, is_critical=True)
+
         self.bed_fpath = final_clean_target_bed_fpath
         self.bed = BedTool(self.bed_fpath)
+
+        self.capture_bed_fpath = add_suffix(join(output_dir, basename(bed_fpath)), 'clean_sorted_ann')
+        with file_transaction(work_dir, self.capture_bed_fpath) as tx:
+            self.get_capture_bed().saveas(tx)
 
         gene_key_set, gene_key_list = get_gene_keys_from_bed(bed_fpath)
         self.gene_keys_set = gene_key_set
@@ -106,8 +112,8 @@ class Target:
         if self.is_wgs:
             return None
 
-        self.padded_bed_fpath = intermediate_fname(work_dir, self.bed_fpath, 'padded')
-        if can_reuse(self.padded_bed_fpath, self.bed_fpath):
+        self.padded_bed_fpath = intermediate_fname(work_dir, self.capture_bed_fpath, 'padded')
+        if can_reuse(self.padded_bed_fpath, self.capture_bed_fpath):
             return BedTool(self.padded_bed_fpath)
 
         padded_bed = self.bed.slop(b=padding, g=fai_fpath).sort().merge()
@@ -120,8 +126,8 @@ class Target:
         if self.is_wgs:
             return None
 
-        self.qualimap_bed_fpath = intermediate_fname(work_dir, self.bed_fpath, 'qualimap_ready')
-        if can_reuse(self.qualimap_bed_fpath, self.bed_fpath):
+        self.qualimap_bed_fpath = intermediate_fname(work_dir, self.capture_bed_fpath, 'qualimap_ready')
+        if can_reuse(self.qualimap_bed_fpath, self.capture_bed_fpath):
             return self.qualimap_bed_fpath
 
         debug('Merging and saving BED into required bed6 format for Qualimap')

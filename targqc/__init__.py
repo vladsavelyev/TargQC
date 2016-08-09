@@ -68,7 +68,7 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
     info()
 
     fai_fpath = fai_fpath or ref.get_fai(genome)
-    target = Target(work_dir, fai_fpath, padding=padding, bed_fpath=target_bed_fpath,
+    target = Target(work_dir, output_dir, fai_fpath, padding=padding, bed_fpath=target_bed_fpath,
          reannotate=reannotate, genome=genome, is_debug=is_debug)
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]

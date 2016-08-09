@@ -1,11 +1,12 @@
 import subprocess
 import unittest
 import os
-from genericpath import getsize
+from genericpath import getsize, getmtime
 from os.path import dirname, join, exists, isfile, splitext, basename, isdir, relpath
 from datetime import datetime
 from time import sleep
 
+import shutil
 from nose.plugins.attrib import attr
 from collections import namedtuple
 import sys
@@ -25,19 +26,6 @@ def call(cmdl):
 def check_call(cmdl):
     info(cmdl if isinstance(cmdl, basestring) else ' '.join(cmdl))
     subprocess.check_call(cmdl, shell=isinstance(cmdl, basestring))
-
-# def run(args, fname, suf):
-#     fpath = join(test_dir, fname)
-#     output_fpath = join(test_dir, splitext(fname)[0] + '.anno' + (('_'+suf) if suf else '') + '.bed')
-#     prev_output_fpath = None
-#     if isfile(output_fpath):
-#         prev_output_fpath = output_fpath + '_' + datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-#         os.rename(output_fpath, prev_output_fpath)
-#
-#     call(script + ' ' + fpath + ' ' + args + ' -o ' + output_fpath)
-#
-#     if prev_output_fpath:
-#         os.system('diff ' + prev_output_fpath + ' ' + output_fpath)
 
 
 class TestTargQC(unittest.TestCase):
@@ -64,6 +52,8 @@ class TestTargQC(unittest.TestCase):
 
     results_dir = join(dirname(__file__), 'results')
     gold_standard_dir = join(join(dirname(__file__), 'gold_standard'))
+
+    remove_work_dir_on_success = False
 
     def setUp(self):
         if not exists(self.syn3_dir):
@@ -96,8 +86,8 @@ class TestTargQC(unittest.TestCase):
                 check_call(cmdl)
 
     def _test(self, output_dirname=None, used_samples=samples, bams=None, fastq=None, bed=None,
-              debug=False, reuse=False, reannotate=False, genome='hg19-chr21', bwa=None,
-              threads=None, ipython=None):
+              debug=False, reuse_intermediate=False, reuse_output_dir=False, reannotate=False,
+              genome='hg19-chr21', bwa=None, threads=None, ipython=None, keep_work_dir=True):
         os.chdir(self.results_dir)
         cmdl = [self.script]
         output_dir = None
@@ -108,12 +98,21 @@ class TestTargQC(unittest.TestCase):
         if fastq: cmdl.extend(fastq)
         if bed: cmdl.extend(['--bed', bed])
         if debug: cmdl.append('--debug')
-        if reuse: cmdl.append('--reuse')
+        if reuse_intermediate:
+            reuse_output_dir = True
+            cmdl.append('--reuse')
         if reannotate: cmdl.append('--reannotate')
         if genome: cmdl.extend(['-g', genome])
         if bwa: cmdl.extend(['--bwa', bwa])
         if threads: cmdl.extend(['-t', str(threads)])
         if ipython: cmdl.extend('-s sge -q queue -r pename=smp'.split())
+        if keep_work_dir: cmdl.append('--keep-work-dir')
+
+        output_dir = output_dir or self._default_output_dir()
+        if exists(output_dir) and reuse_output_dir is False:
+            last_changed = datetime.fromtimestamp(getmtime(output_dir))
+            prev_output_dir = output_dir + '_' + last_changed.strftime("%Y_%m_%d_%H_%M_%S")
+            os.rename(output_dir, prev_output_dir)
 
         info('-' * 100)
         check_call(cmdl)
@@ -122,9 +121,17 @@ class TestTargQC(unittest.TestCase):
 
         self._check_results(output_dir, used_samples)
 
+        if self.remove_work_dir_on_success and not reuse_intermediate and not reuse_output_dir:
+            work_dir = join(output_dir, 'work')
+            if not isdir(work_dir):
+                info('Work dir for run ' + output_dirname + ' does not exist under ' + work_dir)
+            else:
+                shutil.rmtree(work_dir)
+
+    def _default_output_dir(self):
+        return join(os.getcwd(), 'targqc')
+
     def _check_results(self, output_dir, used_samples):
-        if not output_dir:
-            output_dir = join(os.getcwd(), 'targqc')
         assert isdir(output_dir)
         self.check_file(join(output_dir, 'regions.tsv'))
         self.check_file(join(output_dir, 'summary.tsv'))
@@ -163,7 +170,10 @@ class TestTargQC(unittest.TestCase):
         self._test('fastq', fastq=self.fastqs, bwa=self.bwa_path, bed=self.bed4)
 
     def test_09_debug_and_reuse(self):
-        self._test('debug_and_reuse', bams=self.bams, bed=self.bed4, debug=True, reuse=True)
+        self._test('debug_and_reuse', bams=self.bams, bed=self.bed4, debug=True, reuse_intermediate=True)
+
+    def test_09_reuse_output(self):
+        self._test('reuse_output_dir', bams=self.bams, bed=self.bed4, reuse_output_dir=True)
 
     def test_10_full_hg19(self):
         raise SkipTest
@@ -182,11 +192,11 @@ class TestTargQC(unittest.TestCase):
         output_dirname = 'api'
         output_dir = join(self.results_dir, output_dirname)
         work_dir = join(output_dir, 'work')
-        samples = [targqc.Sample(s.name,
+        samples = sorted([targqc.Sample(s.name,
              dirpath=safe_mkdir(join(output_dir, s.name)),
              work_dir=safe_mkdir(join(work_dir, s.name)),
              bam=join(self.syn3_dir, s.bam))
-                   for s in self.samples]
+                   for s in self.samples], key=lambda _s: _s.key_to_sort())
         parallel_cfg = ParallelCfg(None, None, None, 1, None)
         info('-' * 100)
         targqc.start_targqc(work_dir, output_dir, samples, self.bed4,

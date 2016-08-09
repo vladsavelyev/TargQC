@@ -414,7 +414,7 @@ def _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_sta
 
     if not target.is_wgs:
         reads_stats['mapped_dedup_on_target'] = number_mapped_reads_on_target(
-            sample.work_dir, target.bed.cut(range(3)).saveas().fn, sample.bam, dedup=True, target_name='target') or 0
+            sample.work_dir, target.get_capture_bed().cut(range(3)).saveas().fn, sample.bam, dedup=True, target_name='target') or 0
 
         reads_stats['mapped_dedup_on_padded_target'] = number_mapped_reads_on_target(
             sample.work_dir, target.padded_bed_fpath, sample.bam, dedup=True, target_name='padded_target') or 0
@@ -429,7 +429,7 @@ def _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_sta
 
 
 def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
-                  depth_thresholds, bed_padding, sample_num, is_debug=False):
+                  depth_thresholds, bed_padding, sample_num, is_debug=False, reannotate=False):
     report = SampleReport(sample, metric_storage=get_header_metric_storage(depth_thresholds, is_wgs=target.bed_fpath is None, padding=bed_padding))
 
     def _add(_metric_name, _val, url=None):
@@ -470,10 +470,10 @@ def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
         debug('* Target coverage statistics *')
         if target.original_bed_fpath:
             _add('Target', target.original_bed_fpath)
-            if count_bed_cols(target.original_bed_fpath) == 3:
-                _add('Ready target (clean, sorted and annotated)', target.bed_fpath)
+            if count_bed_cols(target.original_bed_fpath) == 3 or reannotate:
+                _add('Ready target (clean, sorted and annotated)', target.capture_bed_fpath)
         else:
-            _add('Target', target.bed_fpath)
+            _add('Target', target.capture_bed_fpath)
         _add('Bases in target', target.bases_num)
         _add('Percentage of reference', target.fraction)
         _add('Regions in target', target.regions_num)

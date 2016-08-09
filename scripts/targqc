@@ -129,6 +129,12 @@ options = [
         default=config.is_debug,
         help=SUPPRESS_HELP,
      )),
+    (['--keep-work-dir'], dict(
+        dest='keep_work_dir',
+        action='store_true',
+        default=False,
+        help=SUPPRESS_HELP,  # keep work directory
+     )),
     (['--work-dir'], dict(dest='work_dir', metavar='DIR', help=SUPPRESS_HELP)),
     (['--log-dir'], dict(dest='log_dir', metavar='DIR', help=SUPPRESS_HELP)),
     (['--project-name'], dict(dest='project_name', help=SUPPRESS_HELP)),
@@ -228,11 +234,23 @@ def main(args):
         critical('Error: expected results not found in the output dir ' + output_dir)
 
     # removing only automatically created work_dir, unless debug, and unless --reuse
-    if not is_debug and not opts.reuse_intermediate and not opts.work_dir and work_dir and isdir(work_dir):
-        shutil.rmtree(work_dir)
+    if all([not is_debug,
+            not opts.keep_work_dir,       # option set to explicitly keep work dir
+            not opts.reuse_intermediate,  # reusing previous work_dir, and want to keep the dir being reused
+            not opts.work_dir,            # removing only automatically created work dir
+            work_dir, isdir(work_dir),    # work dir exists
+            ]):
+
+        try:
+            shutil.rmtree(work_dir)
+        except OSError as e:
+            err('Cannot remove work directory ' + work_dir + ': ' + str(e))
         latest_symlink = join(dirname(work_dir), 'latest')
         if islink(latest_symlink):
-            os.remove(latest_symlink)
+            try:
+                os.remove(latest_symlink)
+            except OSError as e:
+                err('Cannot remove "latest" work directory symlink ' + latest_symlink + ': ' + str(e))
 
 
 def check_results(output_dir, samples):

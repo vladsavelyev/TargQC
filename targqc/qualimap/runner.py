@@ -1,7 +1,7 @@
 import os
 import subprocess
 from distutils.version import LooseVersion
-from os.path import getsize, dirname, join, abspath, relpath, isdir, exists, splitext, basename
+from os.path import getsize, dirname, join, abspath, relpath, isdir, exists, splitext, basename, isfile
 from os import listdir
 import shutil
 
@@ -57,6 +57,9 @@ def run_qualimap(work_dir, output_dir, output_fpaths, bam_fpath, genome, bed_fpa
 
     cmdline = cmdline.format(**locals())
     if not all(can_reuse(fp, [bam_fpath, bed_fpath] if bed_fpath else [bam_fpath]) for fp in output_fpaths):
+        for fp in output_fpaths:
+            if isfile(fp):
+                os.remove(fp)
         run(cmdline, env_vars=dict(DISPLAY=None))
     if not all(verify_file(fp, cmp_f=[bam_fpath, bed_fpath] if bed_fpath else [bam_fpath]) for fp in output_fpaths):
         critical('Some of the QualiMap results were not generated')
