@@ -31,12 +31,12 @@ def check_call(cmdl):
 class TestTargQC(unittest.TestCase):
     script = 'targqc'
 
-    syn3_url = 'https://www.dropbox.com/s/lxv11oou8r316sq/TargQC_test_data/syn3-chr21.tar.gz'
-    bwa_url = 'https://www.dropbox.com/s/lxv11oou8r316sq/TargQC_test_data/bwa.tar.gz'
+    syn3_url = 'http://quast.bioinf.spbau.ru/static/chr21.tar.gz'
+    bwa_url = 'http://quast.bioinf.spbau.ru/static/bwa.tar.gz'
 
     data_dir = join(dirname(__file__), 'data')
 
-    syn3_dir = join(data_dir, 'syn3-chr21')
+    syn3_dir = join(data_dir, 'chr21')
     bed3 = join(syn3_dir, 'NGv3.chr21.3col.bed')
     bed4 = join(syn3_dir, 'NGv3.chr21.4col.bed')
     Sample = namedtuple('Sample', 'name bam l_fastq r_fastq')
@@ -55,23 +55,40 @@ class TestTargQC(unittest.TestCase):
 
     remove_work_dir_on_success = False
 
-    def setUp(self):
-        if not exists(self.syn3_dir):
-            self._download_test_data()
-        if not exists(self.bwa_dir):
-            self._download_bwa_data()
-        if not exists(self.results_dir):
-            os.makedirs(self.results_dir)
+    # def _download_test_data(self):
+    #     cur_dir = os.getcwd()
+    #     os.chdir(self.data_dir)
+    #     check_call(['wget', self.syn3_url])
+    #     check_call(['tar', '-xzvf', basename(self.syn3_url)])
+    #     os.chdir(cur_dir)
 
-    def _download_test_data(self):
-        os.chdir(self.data_dir)
-        check_call(['wget', self.syn3_url, '-O', self.syn3_dir])
-        check_call(['tar', '-xzvf', basename(self.syn3_url)])
+    # def _download_bwa_data(self):
+    #     cur_dir = os.getcwd()
+    #     os.chdir(self.data_dir)
+    #     check_call(['wget', self.bwa_url])
+    #     check_call(['tar', '-xzvf', basename(self.bwa_url)])
+    #     os.chdir(cur_dir)
 
-    def _download_bwa_data(self):
-        os.chdir(self.data_dir)
-        check_call(['wget', self.bwa_url, '-O', self.bwa_dir])
-        check_call(['tar', '-xzvf', basename(self.bwa_url)])
+    if not isdir(data_dir):
+        os.mkdir(data_dir)
+    if not isdir(syn3_dir):
+        info(syn3_dir + ' does not exist, downloading test data')
+        cur_dir = os.getcwd()
+        os.chdir(data_dir)
+        check_call(['wget', syn3_url])
+        check_call(['tar', '-xzvf', basename(syn3_url)])
+        os.chdir(cur_dir)
+        # self._download_test_data()
+    if not isdir(bwa_dir):
+        info(bwa_dir + ' does not exist, downloading bwa reference data')
+        # self._download_bwa_data()
+        cur_dir = os.getcwd()
+        os.chdir(data_dir)
+        check_call(['wget', bwa_url])
+        check_call(['tar', '-xzvf', basename(bwa_url)])
+        os.chdir(cur_dir)
+    if not exists(results_dir):
+        os.makedirs(results_dir)
 
     def check_file(self, fpath, diff_ignore_re=''):
         assert isfile(fpath)
