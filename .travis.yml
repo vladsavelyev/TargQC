@@ -7,8 +7,8 @@ python:
 
 install: "pip install -r requirements.txt"
 script:
-  - cd test
-  - nosetests
+  - python setup.py install
+  - nosetests test
 
 #env:
 #  - BCBIO_DOCKER_PRIVILEGED=True

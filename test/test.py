@@ -55,42 +55,27 @@ class TestTargQC(unittest.TestCase):
 
     remove_work_dir_on_success = False
 
-    # def _download_test_data(self):
-    #     cur_dir = os.getcwd()
-    #     os.chdir(self.data_dir)
-    #     check_call(['wget', self.syn3_url])
-    #     check_call(['tar', '-xzvf', basename(self.syn3_url)])
-    #     os.chdir(cur_dir)
+    def setUp(self):
+        if not isdir(self.data_dir):
+            os.mkdir(self.data_dir)
+        if not isdir(self.syn3_dir):
+            info(self.syn3_dir + ' does not exist, downloading test data')
+            cur_dir = os.getcwd()
+            os.chdir(self.data_dir)
+            check_call(['wget', self.syn3_url])
+            check_call(['tar', '-xzvf', basename(self.syn3_url)])
+            os.chdir(cur_dir)
+        if not isdir(self.bwa_dir):
+            info(self.bwa_dir + ' does not exist, downloading bwa reference data')
+            cur_dir = os.getcwd()
+            os.chdir(self.data_dir)
+            check_call(['wget', self.bwa_url])
+            check_call(['tar', '-xzvf', basename(self.bwa_url)])
+            os.chdir(cur_dir)
+        if not exists(self.results_dir):
+            os.makedirs(self.results_dir)
 
-    # def _download_bwa_data(self):
-    #     cur_dir = os.getcwd()
-    #     os.chdir(self.data_dir)
-    #     check_call(['wget', self.bwa_url])
-    #     check_call(['tar', '-xzvf', basename(self.bwa_url)])
-    #     os.chdir(cur_dir)
-
-    if not isdir(data_dir):
-        os.mkdir(data_dir)
-    if not isdir(syn3_dir):
-        info(syn3_dir + ' does not exist, downloading test data')
-        cur_dir = os.getcwd()
-        os.chdir(data_dir)
-        check_call(['wget', syn3_url])
-        check_call(['tar', '-xzvf', basename(syn3_url)])
-        os.chdir(cur_dir)
-        # self._download_test_data()
-    if not isdir(bwa_dir):
-        info(bwa_dir + ' does not exist, downloading bwa reference data')
-        # self._download_bwa_data()
-        cur_dir = os.getcwd()
-        os.chdir(data_dir)
-        check_call(['wget', bwa_url])
-        check_call(['tar', '-xzvf', basename(bwa_url)])
-        os.chdir(cur_dir)
-    if not exists(results_dir):
-        os.makedirs(results_dir)
-
-    def check_file(self, fpath, diff_ignore_re=''):
+    def _check_file(self, fpath, diff_ignore_re=''):
         assert isfile(fpath)
         assert getsize(fpath) > 0
         if isdir(self.gold_standard_dir):
@@ -150,16 +135,16 @@ class TestTargQC(unittest.TestCase):
 
     def _check_results(self, output_dir, used_samples):
         assert isdir(output_dir)
-        self.check_file(join(output_dir, 'regions.tsv'))
-        self.check_file(join(output_dir, 'summary.tsv'))
-        self.check_file(join(output_dir, 'summary.html'), diff_ignore_re='report_date')
+        self._check_file(join(output_dir, 'regions.tsv'))
+        self._check_file(join(output_dir, 'summary.tsv'))
+        self._check_file(join(output_dir, 'summary.html'), diff_ignore_re='report_date')
         for s in used_samples:
             s_dir = join(output_dir, s.name)
             assert isdir(s_dir)
-            self.check_file(join(s_dir, 'regions.tsv'))
-            self.check_file(join(s_dir, 'summary.txt'))
-            self.check_file(join(s_dir, 'summary.html'), diff_ignore_re='report_date')
-            self.check_file(join(s_dir, 'summary.json'), diff_ignore_re='work_dir')
+            self._check_file(join(s_dir, 'regions.tsv'))
+            self._check_file(join(s_dir, 'summary.txt'))
+            self._check_file(join(s_dir, 'summary.html'), diff_ignore_re='report_date')
+            self._check_file(join(s_dir, 'summary.json'), diff_ignore_re='work_dir')
         # TODO: check line numbers and some values isntead of diff?
 
     def test_01_onesample(self):
