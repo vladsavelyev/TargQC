@@ -36,6 +36,11 @@ fastqc_repr              = 'FastQC'
 fastqc_report_fname      = 'fastqc_report.html'
 
 
+def get_version():
+    from targqc import version
+    return version.__version__
+
+
 def get_description():
     from targqc import version
     description = 'TargQC, target coverage evaluation tool. Version ' + version.__version__

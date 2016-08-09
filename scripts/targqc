@@ -94,6 +94,12 @@ options = [
           "parameters."),
         default=[],
         action="append")),
+    (['--reannotate'], dict(
+        dest='reannotate',
+        help='Re-annotate BED file with gene names, even if it\'s 4 columns or more',
+        action='store_true',
+        default=False,
+     )),
 
     ##############
     ## Extended: #
@@ -104,12 +110,6 @@ options = [
     (['--fai'], dict(
         dest='fai',
         help=SUPPRESS_HELP,  # Path to FAI file - to sort BAM and BED files, and to get chromosome lengths for proper padding BED files; optional
-     )),
-    (['--reannotate'], dict(
-        dest='reannotate',
-        help='Re-annotate BED file with gene names, even if it\'s 4 columns or more',
-        action='store_true',
-        default=False,
      )),
     (['-e', '--extended'], dict(
         dest='extended',
@@ -176,7 +176,7 @@ def _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir):
 
 
 def main(args):
-    parser = OptionParser(description=targqc.get_description())
+    parser = OptionParser(description=targqc.get_description(), version=targqc.get_version())
     parser.set_usage('Usage: %prog *.bam -o targqc_stats [--bed target.bed ...]')
     for args, kwargs in options:
         parser.add_option(*args, **kwargs)

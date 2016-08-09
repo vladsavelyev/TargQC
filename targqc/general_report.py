@@ -340,15 +340,25 @@ def get_mean_cov(bedcov_output_fpath):
     return mean_cov
 
 
+def _qualimap_outputs(sample):
+    return [v for k, v in sample.__dict__.iteritems() if k.startswith('qualimap_') and k.endswith('_fpath')]
+
+
 def make_general_reports(view, samples, target, genome, depth_thresholds, bed_padding,
                          num_pairs_by_sample=None, reuse=False, is_debug=False):
-    if all(can_reuse(s.qualimap_html_fpath, [s.bam, target.qualimap_bed_fpath] if target.bed else s.bam) for s in samples):
-        debug('Reusing QualiMap runs')
+    if all(all(can_reuse(fp, [s.bam, target.qualimap_bed_fpath] if target.bed else s.bam)
+               for fp in _qualimap_outputs(s))
+           for s in samples):
+        debug('All QualiMap files for all samples exist and newer than BAMs and BEDs, reusing')
     else:
         info('Running QualiMap...')
         view.run(runner.run_qualimap,
-            [[s.work_dir, s.qualimap_dirpath, s.bam, genome, target.qualimap_bed_fpath, view.cores_per_job]
+            [[s.work_dir, s.qualimap_dirpath, _qualimap_outputs(s), s.bam, genome, target.qualimap_bed_fpath, view.cores_per_job]
              for s in samples])
+
+        for s in samples:
+            for fp in _qualimap_outputs(s):
+                verify_file(fp, is_critical=True)
 
     summary_reports = []
 

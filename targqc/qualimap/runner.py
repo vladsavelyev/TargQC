@@ -32,7 +32,7 @@ def find_executable():
     critical('Error: could not find Qualimap executable')
 
 
-def run_qualimap(work_dir, output_dir, bam_fpath, genome, bed_fpath=None, threads=1):
+def run_qualimap(work_dir, output_dir, output_fpaths, bam_fpath, genome, bed_fpath=None, threads=1):
     info('Analysing ' + bam_fpath)
 
     safe_mkdir(dirname(output_dir))
@@ -56,12 +56,12 @@ def run_qualimap(work_dir, output_dir, bam_fpath, genome, bed_fpath=None, thread
         debug('Using amplicons/capture panel ' + bed_fpath)
 
     cmdline = cmdline.format(**locals())
-    report_fpath = join(output_dir, targqc.qualimap_report_fname)
-    if can_reuse(report_fpath, bam_fpath):
-        return report_fpath
-    else:
-        run(cmdline, output_fpath=report_fpath, stdout_to_outputfile=False, env_vars=dict(DISPLAY=None),
-            checks=[lambda _1, _2: verify_file(report_fpath)])
+    if not all(can_reuse(fp, [bam_fpath, bed_fpath] if bed_fpath else [bam_fpath]) for fp in output_fpaths):
+        run(cmdline, env_vars=dict(DISPLAY=None))
+    if not all(verify_file(fp, cmp_f=[bam_fpath, bed_fpath] if bed_fpath else [bam_fpath]) for fp in output_fpaths):
+        critical('Some of the QualiMap results were not generated')
+
+    return output_dir
 
 
 def fix_bed_for_qualimap(bed_fpath, qualimap_bed_fpath):
