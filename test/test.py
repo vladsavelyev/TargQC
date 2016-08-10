@@ -164,8 +164,8 @@ class TestTargQC(unittest.TestCase):
     def test_06_threads(self):
         self._test('threads', bams=self.bams, bed=self.bed4, threads='2')
 
-    def test_07_ipython(self):
-        self._test('ipython', bams=self.bams, bed=self.bed4, ipython=True, threads='2')
+    # def test_07_ipython(self):
+    #     self._test('ipython', bams=self.bams, bed=self.bed4, ipython=True, threads='2')
 
     def test_08_fastq(self):
         self._test('fastq', fastq=self.fastqs, bwa=self.bwa_path, bed=self.bed4)
