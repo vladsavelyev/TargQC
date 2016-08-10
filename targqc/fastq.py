@@ -2,7 +2,7 @@ import os
 import random
 import gzip
 from itertools import izip, product
-from os.path import splitext, dirname, join, basename, isfile
+from os.path import splitext, dirname, join, basename, isfile, abspath
 
 from Utils import sambamba
 from Utils.bam_utils import verify_bam
@@ -61,7 +61,9 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, num_downsample_pairs,
         for s in samples:
             s.bam = make_bam_fpath(s.work_dir)
     else:
-        bwa = which('bwa')
+        bwa = join(dirname(dirname(abspath(__file__))), 'bwa', 'bwa')
+        if not isfile(bwa):
+            critical('BWA not found under ' + bwa)
         smb = sambamba.get_executable()
         if not (bwa and smb):
             if not bwa:         err('Error: bwa is required for the alignment pipeline')

@@ -9,6 +9,7 @@ from pip.req import parse_requirements
 from sys import platform as sys_platform
 import platform
 
+from Utils.file_utils import which
 
 name = 'targqc'
 
@@ -52,27 +53,36 @@ def all_required_binaries_exist(aligner_dirpath, required_binaries):
             return False
     return True
 
-def compile_tool(tool_name, dirpath, requirements, just_notice=False):
+def compile_tool(tool_name, dirpath, requirements):
     make_logs_basepath = join(dirpath, 'make')
     failed_compilation_flag = make_logs_basepath + '.failed'
 
     if not all_required_binaries_exist(dirpath, requirements):
         # making
-        print 'Compiling ' + tool_name + ' (details are in ' + make_logs_basepath + '.log and make.err)'
+        print 'Compiling ' + tool_name
         return_code = subprocess.call(['make', '-C', dirpath],
-                                      stdout=open(make_logs_basepath + '.log', 'w'),
-                                      stderr=open(make_logs_basepath + '.err', 'w'),)
+              stdout=open(make_logs_basepath + '.log', 'w'),
+              stderr=open(make_logs_basepath + '.err', 'w'),)
 
         if return_code != 0 or not all_required_binaries_exist(dirpath, requirements):
-            sys.stderr.write('Failed to compile ' + tool_name + ' (' + dirpath + ')\n')
+            sys.stderr.write('Failed to compile ' + tool_name + ' (' + dirpath + '), '
+                 'details are in ' + make_logs_basepath + '.log and make.err\n')
             open(failed_compilation_flag, 'w').close()
             return False
+        try:
+            os.remove(make_logs_basepath + '.log')
+            os.remove(make_logs_basepath + '.err')
+        except OSError as e:
+            sys.stderr.write('Warning: cannot remove make_logs_basepath.* : ' + str(e) + '\n')
     return True
 
 bedtools_dirpath = join(dirname(abspath(__file__)), 'Utils', 'bedtools', 'bedtools2')
 success_compilation = compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])
-if not success_compilation:
-    sys.exit(1)
+if not success_compilation: sys.exit(1)
+
+bwa_dirpath = join(dirname(abspath(__file__)), 'bwa')
+success_compilation = compile_tool('bwa', bwa_dirpath, ['bwa'])
+if not success_compilation: sys.stderr.write('BWA has failed to compile, cannot process FastQ without BWA')
 
 # def write_version_py():
 #     """
@@ -205,6 +215,9 @@ setup(
             'picard/picard/*.jar',
             'gender/*.bed',
         ],
+        'bwa': [
+            'bwa',
+        ]
     },
     include_package_data=True,
     zip_safe=False,
