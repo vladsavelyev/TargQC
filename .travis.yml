@@ -14,7 +14,7 @@ install:
   - python setup.py install
 
 script:
-  - nosetests test
+  - nosetests test --nocapture
 
 notifications:
   on_success: always

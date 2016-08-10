@@ -146,8 +146,8 @@ class TestTargQC(unittest.TestCase):
             self._check_file(join(s_dir, 'summary.json'), diff_ignore_re='work_dir')
         # TODO: check line numbers and some values isntead of diff?
 
-    def test_01_onesample(self):
-        self._test('one_sample', [self.samples[0]], bams=[self.bams[0]], bed=self.bed4)
+    def test_01_simple(self):
+        self._test('simple', [self.samples[0]], bams=[self.bams[0]], bed=self.bed4)
 
     def test_02_bed3(self):
         self._test('bed3', bams=self.bams, bed=self.bed3)
