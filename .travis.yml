@@ -9,6 +9,7 @@ before_install:
   - mkdir -p test/data
   - wget -qO- http://quast.bioinf.spbau.ru/static/chr21.tar.gz | tar xvz -C test/data
   - wget -qO- http://quast.bioinf.spbau.ru/static/bwa.tar.gz | tar xvz -C test/data
+  - pip install --upgrade setuptools pip
 
 install:
   - python setup.py install
