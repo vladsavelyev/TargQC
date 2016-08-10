@@ -1,5 +1,9 @@
 from collections import OrderedDict
-from os.path import join, splitext
+from os.path import join, splitext, dirname
+
+from pybedtools import settings
+import targqc.bedtools
+settings._bedtools_path = dirname(targqc.bedtools.find_executable())
 
 import Utils.reference_data as ref
 from Utils.file_utils import safe_mkdir, can_reuse

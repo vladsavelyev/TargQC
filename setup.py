@@ -46,6 +46,34 @@ def write_version_py():
 
 write_version_py()
 
+def all_required_binaries_exist(aligner_dirpath, required_binaries):
+    for required_binary in required_binaries:
+        if not isfile(join(aligner_dirpath, required_binary)):
+            return False
+    return True
+
+def compile_tool(tool_name, dirpath, requirements, just_notice=False):
+    make_logs_basepath = join(dirpath, 'make')
+    failed_compilation_flag = make_logs_basepath + '.failed'
+
+    if not all_required_binaries_exist(dirpath, requirements):
+        # making
+        print 'Compiling ' + tool_name + ' (details are in ' + make_logs_basepath + '.log and make.err)'
+        return_code = subprocess.call(['make', '-C', dirpath],
+                                      stdout=open(make_logs_basepath + '.log', 'w'),
+                                      stderr=open(make_logs_basepath + '.err', 'w'),)
+
+        if return_code != 0 or not all_required_binaries_exist(dirpath, requirements):
+            sys.stderr.write('Failed to compile ' + tool_name + ' (' + dirpath + ')\n')
+            open(failed_compilation_flag, 'w').close()
+            return False
+    return True
+
+bedtools_dirpath = join(dirname(abspath(__file__)), 'targqc', 'bedtools', 'bedtools2')
+success_compilation = compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])
+if not success_compilation:
+    sys.exit(1)
+
 # def write_version_py():
 #     """
 #     ''' Versioning:
@@ -168,6 +196,7 @@ setup(
         ],
         'targqc': [
             'bedops/bedops_*',
+            'bedtools/bedtools2/bin/*',
             'qualimap/*/qualimap',
             'qualimap/*/qualimap.jar',
             'qualimap/*/lib/*.jar',
