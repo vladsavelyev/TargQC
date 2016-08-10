@@ -69,7 +69,7 @@ def compile_tool(tool_name, dirpath, requirements, just_notice=False):
             return False
     return True
 
-bedtools_dirpath = join(dirname(abspath(__file__)), 'targqc', 'bedtools', 'bedtools2')
+bedtools_dirpath = join(dirname(abspath(__file__)), 'Utils', 'bedtools', 'bedtools2')
 success_compilation = compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])
 if not success_compilation:
     sys.exit(1)

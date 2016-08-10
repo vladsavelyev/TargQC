@@ -13,9 +13,7 @@ from Utils.bam_utils import verify_bam
 from Utils.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
 from Utils.logger import critical, err, info, warn, debug, is_local
 from Utils.proc_args import read_samples, find_bams, find_fastq_pairs, set_up_dirs
-from Utils.sambamba import index_bam
-from Utils import sambamba
-from Utils.parallel import ParallelCfg, parallel_view
+from Utils.parallel import ParallelCfg
 
 import targqc
 from targqc import config
