@@ -5,6 +5,11 @@ language: python
 python:
   - "2.7"
 
+addons:
+  apt:
+    packages:
+    - bwa
+
 before_install:
   - mkdir -p test/data
   - wget -qO- http://quast.bioinf.spbau.ru/static/chr21.tar.gz | tar xvz -C test/data

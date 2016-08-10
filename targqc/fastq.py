@@ -62,16 +62,14 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, num_downsample_pairs,
             s.bam = make_bam_fpath(s.work_dir)
     else:
         bwa = which('bwa')
-        samtools = which('samtools')
         smb = sambamba.get_executable()
-        if not (bwa and samtools and smb):
+        if not (bwa and smb):
             if not bwa:         err('Error: bwa is required for the alignment pipeline')
-            if not samtools:    err('Error: samtools is required for the alignment pipeline')
             if not smb:         err('Error: sambamba is required for the alignment pipeline')
             critical('Tools required for alignment not found')
         info('Aligning reads to the reference')
         bam_fpaths = parall_view.run(align,
-            [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, samtools, smb, bwa_prefix, dedup, parall_view.cores_per_job]
+            [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, smb, bwa_prefix, dedup, parall_view.cores_per_job]
              for s in samples])
 
         bam_fpaths = map(verify_bam, bam_fpaths)
@@ -176,7 +174,7 @@ def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, num_d
     return l_out_fpath, r_out_fpath
 
 
-def align(work_dir, sample_name, l_fpath, r_fpath, bwa, samtools, smb, bwa_prefix, dedup=True, threads=1):
+def align(work_dir, sample_name, l_fpath, r_fpath, bwa, smb, bwa_prefix, dedup=True, threads=1):
     info('Running bwa to align reads...')
     bam_fpath = make_bam_fpath(work_dir)
     if can_reuse(bam_fpath, [l_fpath, r_fpath]):
