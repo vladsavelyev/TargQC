@@ -192,11 +192,11 @@ setup(
             'reporting/*.html',
             'reporting/*.json',
             os.path.relpath(sambamba_executable(), 'Utils'),
+            'bedtools/bedtools2/bin/*',
             'tools/*.sh',
         ],
         'targqc': [
             'bedops/bedops_*',
-            'bedtools/bedtools2/bin/*',
             'qualimap/*/qualimap',
             'qualimap/*/qualimap.jar',
             'qualimap/*/lib/*.jar',
