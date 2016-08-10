@@ -127,6 +127,12 @@ options = [
         default=config.is_debug,
         help=SUPPRESS_HELP,
      )),
+    (['--local'], dict(
+        dest='local',
+        action='store_true',
+        default=False,
+        help=SUPPRESS_HELP,
+     )),
     (['--keep-work-dir'], dict(
         dest='keep_work_dir',
         action='store_true',
@@ -194,7 +200,8 @@ def main(args):
     debug()
 
     tag = ('targqc_' + opts.project_name) if opts.project_name else 'targqc'
-    parallel_cfg = ParallelCfg(opts.scheduler, opts.queue, opts.resources, opts.threads, tag)
+    parallel_cfg = ParallelCfg(opts.scheduler, opts.queue, opts.resources,
+                               opts.threads, tag, opts.local)
     padding = opts.padding
     depth_thresholds = opts.depth_thresholds
     debug('Depth thresholds: ' + str(depth_thresholds))

@@ -16,8 +16,7 @@ import nose
 
 
 def info(msg=''):
-    print msg
-    sys.stdout.flush()
+    sys.stdout.write(msg + '\n')
 
 def call(cmdl):
     info(cmdl)
@@ -107,7 +106,7 @@ class TestTargQC(unittest.TestCase):
         if genome: cmdl.extend(['-g', genome])
         if bwa: cmdl.extend(['--bwa', bwa])
         if threads: cmdl.extend(['-t', str(threads)])
-        if ipython: cmdl.extend('-s sge -q queue -r pename=smp'.split())
+        if ipython: cmdl.extend('-s sge -q queue -r pename=smp -r --local'.split())
         if keep_work_dir: cmdl.append('--keep-work-dir')
 
         output_dir = output_dir or self._default_output_dir()
