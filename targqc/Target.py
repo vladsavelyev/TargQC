@@ -1,9 +1,9 @@
 from collections import defaultdict
 from os.path import isfile, join, basename
-from pybedtools import BedTool
 import GeneAnnotation as ga
 from GeneAnnotation.annotate_bed import annotate, overlap_with_features, get_sort_key, tx_sort_key
 from Utils import reference_data
+from Utils.bedtools import BedTool
 from Utils.bed_utils import filter_bed_with_gene_set, get_gene_keys_from_bed, calc_region_number, merge_overlaps
 from Utils.bed_utils import remove_comments, sort_bed, count_bed_cols, cut, verify_bed
 from Utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction, verify_file, can_reuse

@@ -3,8 +3,6 @@
 from collections import defaultdict
 from os.path import isfile, join
 
-from pybedtools import BedTool
-
 import GeneAnnotation as ga
 from GeneAnnotation import BedCols
 from GeneAnnotation.annotate_bed import tx_sort_key, get_sort_key

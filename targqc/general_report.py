@@ -3,9 +3,8 @@ import os
 from collections import OrderedDict
 from os.path import join, abspath, realpath, dirname, relpath
 
-from pybedtools import BedTool
-
 import GeneAnnotation
+from Utils.bedtools import BedTool
 from Utils import reference_data
 from targqc.Target import Target
 from targqc.qualimap import report_parser, runner

@@ -5,9 +5,6 @@ from os.path import getsize, dirname, join, abspath, relpath, isdir, exists, spl
 from os import listdir
 import shutil
 
-from pybedtools import BedTool
-
-from Utils.bed_utils import merge_overlaps
 from Utils.call_process import run
 from Utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname, \
     can_reuse
