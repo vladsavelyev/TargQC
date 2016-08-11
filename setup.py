@@ -158,7 +158,7 @@ setup(
     version=version,
     author='Vlad Saveliev and Alla Mikheenko',
     author_email='vladislav.sav@gmail.com',
-    description='Target coverage evaluation tool',
+    description='Genome capture target coverage evaluation tool',
     long_description=(open('README.md').read()),
     keywords='bioinformatics',
     url='https://github.com/vladsaveliev/TargQC',
