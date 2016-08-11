@@ -7,7 +7,7 @@ RUN apt-get update && \
 
 # TargQC installation
 RUN pip install --upgrade setuptools pip
-RUN git clone --depth=50 --branch=master https://github.com/vladsaveliev/TargQC.git TargQC
+RUN git clone --depth 50 https://github.com/vladsaveliev/TargQC.git TargQC
 RUN cd TargQC && git submodule update --init --recursive && python setup.py install
 
 # clean filesystem

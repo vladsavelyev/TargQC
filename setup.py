@@ -68,26 +68,26 @@ def which(program):
     return None
 
 def compile_tool(tool_name, dirpath, requirements):
-    make_logs_basepath = join(dirpath, 'make')
-    failed_compilation_flag = make_logs_basepath + '.failed'
+    # make_logs_basepath = join(dirpath, 'make')
+    # failed_compilation_flag = make_logs_basepath + '.failed'
 
     if not all_required_binaries_exist(dirpath, requirements):
         # making
         print 'Compiling ' + tool_name
-        return_code = subprocess.call(['make', '-C', dirpath],
-              stdout=open(make_logs_basepath + '.log', 'w'),
-              stderr=open(make_logs_basepath + '.err', 'w'),)
+        return_code = subprocess.call(['make', '-C', dirpath])
+              # stdout=open(make_logs_basepath + '.log', 'w'),
+              # stderr=open(make_logs_basepath + '.err', 'w'),)
 
         if return_code != 0 or not all_required_binaries_exist(dirpath, requirements):
-            sys.stderr.write('Failed to compile ' + tool_name + ' (' + dirpath + '), '
-                 'details are in ' + make_logs_basepath + '.log and make.err\n')
-            open(failed_compilation_flag, 'w').close()
+            sys.stderr.write('Failed to compile ' + tool_name + ' (' + dirpath + ')\n')
+                 # 'details are in ' + make_logs_basepath + '.log and make.err\n')
+            # open(failed_compilation_flag, 'w').close()
             return False
-        try:
-            os.remove(make_logs_basepath + '.log')
-            os.remove(make_logs_basepath + '.err')
-        except OSError as e:
-            sys.stderr.write('Warning: cannot remove make_logs_basepath.* : ' + str(e) + '\n')
+        # try:
+        #     os.remove(make_logs_basepath + '.log')
+        #     os.remove(make_logs_basepath + '.err')
+        # except OSError as e:
+        #     sys.stderr.write('Warning: cannot remove make_logs_basepath.* : ' + str(e) + '\n')
     return True
 
 

@@ -27,7 +27,7 @@ def check_call(cmdl):
     subprocess.check_call(cmdl, shell=isinstance(cmdl, basestring))
 
 
-class TestTargQC(unittest.TestCase):
+class BaseTargQC(unittest.TestCase):
     script = 'targqc'
 
     syn3_url = 'http://quast.bioinf.spbau.ru/static/chr21.tar.gz'
@@ -146,6 +146,8 @@ class TestTargQC(unittest.TestCase):
             self._check_file(join(s_dir, 'summary.json'), diff_ignore_re='work_dir')
         # TODO: check line numbers and some values isntead of diff?
 
+
+class UnitTests(BaseTargQC):
     def test_01_simple(self):
         self._test('simple', [self.samples[0]], bams=[self.bams[0]], bed=self.bed4)
 
@@ -164,8 +166,8 @@ class TestTargQC(unittest.TestCase):
     def test_06_threads(self):
         self._test('threads', bams=self.bams, bed=self.bed4, threads='2')
 
-    # def test_07_ipython(self):
-    #     self._test('ipython', bams=self.bams, bed=self.bed4, ipython=True, threads='2')
+    def test_07_ipython(self):
+        self._test('ipython', bams=self.bams, bed=self.bed4, ipython=True, threads='2')
 
     def test_08_fastq(self):
         self._test('fastq', fastq=self.fastqs, bwa=self.bwa_path, bed=self.bed4)
@@ -211,4 +213,12 @@ class TestTargQC(unittest.TestCase):
         self._check_results(output_dir, self.samples)
 
 
-# nose.main()
+class TravisTests(BaseTargQC):
+    def test_01_bed3(self):
+        self._test('bed3', bams=self.bams, bed=self.bed3, threads=2)
+
+    def test_02_wgs(self):
+        self._test('bed3', bams=self.bams, threads=2)
+
+    def test_03_fastq(self):
+        self._test('fastq', fastq=self.fastqs, bwa=self.bwa_path, bed=self.bed4, threads=2)
