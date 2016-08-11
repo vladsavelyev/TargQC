@@ -9,3 +9,4 @@ ipyparallel
 ipython-cluster-helper
 PyMonad
 gffutils
+nose

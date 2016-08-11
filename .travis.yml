@@ -14,9 +14,9 @@ install:
   - python setup.py install
 
 script:
-  - nosetests --nocapture tests:TravisTests.test_01_bed3
-  - nosetests --nocapture tests:TravisTests.test_02_wgs
-  - nosetests --nocapture tests:TravisTests.test_03_fastq
+  - nosetests --nocapture tests test.py:TravisTests.test_01_bed3
+  - nosetests --nocapture tests test.py:TravisTests.test_02_wgs
+  - nosetests --nocapture tests test.py:TravisTests.test_03_fastq
 
 notifications:
   on_success: always
