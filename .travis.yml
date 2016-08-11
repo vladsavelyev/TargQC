@@ -5,16 +5,16 @@ python:
   - "2.7"
 
 before_install:
-  - mkdir -p test/data
-  - wget -qO- http://quast.bioinf.spbau.ru/static/chr21.tar.gz | tar xvz -C test/data
-  - wget -qO- http://quast.bioinf.spbau.ru/static/bwa.tar.gz | tar xvz -C test/data
+  - mkdir -p tests/data
+  - wget -qO- http://quast.bioinf.spbau.ru/static/chr21.tar.gz | tar xvz -C tests/data
+  - wget -qO- http://quast.bioinf.spbau.ru/static/bwa.tar.gz | tar xvz -C tests/data
   - pip install --upgrade setuptools pip
 
 install:
   - python setup.py install
 
 script:
-  - nosetests test --nocapture
+  - nosetests tests --nocapture
 
 notifications:
   on_success: always

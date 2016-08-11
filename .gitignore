@@ -9,6 +9,7 @@
 dist
 build
 eggs
+.eggs/
 parts
 bin
 #var
@@ -41,11 +42,13 @@ nosetests.xml
 
 .sass-cache
 
-venv/
+# virtualenv
+venv*/
+ENV/
 
 targqc/version.py
 
-test/data
-test/develop_results
-test/gold_standard
-test/results
+tests/data
+tests/develop_results
+tests/gold_standard
+tests/results

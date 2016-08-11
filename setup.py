@@ -43,8 +43,6 @@ def write_version_py():
             '__version__ = \'' + version + '\'\n' +
             '__git_revision__ = \'' + git_revision + '\''))
 
-write_version_py()
-
 def all_required_binaries_exist(aligner_dirpath, required_binaries):
     for required_binary in required_binaries:
         if not isfile(join(aligner_dirpath, required_binary)):
@@ -92,19 +90,6 @@ def compile_tool(tool_name, dirpath, requirements):
             sys.stderr.write('Warning: cannot remove make_logs_basepath.* : ' + str(e) + '\n')
     return True
 
-bedtools_dirpath = join(dirname(abspath(__file__)), 'Utils', 'bedtools', 'bedtools2')
-success_compilation = compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])
-if not success_compilation:
-    bedtools = which('bedtools')
-    if bedtools:
-        sys.stderr.write('Compilation failed, using bedtools in $PATH: ' + bedtools + '\n')
-    else:
-        sys.exit(1)
-
-bwa_dirpath = join(dirname(abspath(__file__)), 'bwa')
-success_compilation = compile_tool('bwa', bwa_dirpath, ['bwa'])
-if not success_compilation: sys.stderr.write('BWA has failed to compile, cannot process FastQ without BWA')
-
 
 def _run(_cmd):
     print('$ ' + _cmd)
@@ -133,14 +118,25 @@ if sys.argv[-1] == 'install':
 -----------------------------------
 '''.format(version))
 
-# sambamba = join('Utils', 'sambamba', 'build', 'sambamba')
-# if not isfile(sambamba):
-#     _run('cd Utils/sambamba; make sambamba-ldmd2-64; cd ../..')
-#     if not isfile(sambamba):
-#         sys.stderr.write('Error: could not compile sambamba, exiting.\n')
-#         sys.exit(1)
+    write_version_py()
 
-def sambamba_executable():
+    bedtools_dirpath = join(dirname(abspath(__file__)), 'Utils', 'bedtools', 'bedtools2')
+    success_compilation = compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])
+    if not success_compilation:
+        bedtools = which('bedtools')
+        if bedtools:
+            sys.stderr.write('Compilation failed, using bedtools in $PATH: ' + bedtools + '\n')
+        else:
+            sys.exit(1)
+
+    bwa_dirpath = join(dirname(abspath(__file__)), 'bwa')
+    success_compilation = compile_tool('bwa', bwa_dirpath, ['bwa'])
+    if not success_compilation: sys.stderr.write('BWA has failed to compile, cannot process FastQ without BWA')
+
+    _run('cd MultiQC && python setup.py install && cd ..')
+
+
+def get_sambamba_executable():
     sambamba_dirpath = join('Utils', 'sambamba_binaries')
     if 'darwin' in sys_platform:
         path = join(sambamba_dirpath, 'sambamba_osx')
@@ -156,8 +152,6 @@ def sambamba_executable():
         return path
     else:
         sys.stderr.write('Error: could not find sambamba ' + path + '(.gz)')
-
-_run('cd MultiQC && python setup.py install && cd ..')
 
 setup(
     name=name,
@@ -193,7 +187,7 @@ setup(
             'reporting/static/*/*.pxm',
             'reporting/*.html',
             'reporting/*.json',
-            os.path.relpath(sambamba_executable(), 'Utils'),
+            os.path.relpath(get_sambamba_executable(), 'Utils'),
             'bedtools/bedtools2/bin/*',
             'tools/*.sh',
         ],
@@ -229,6 +223,8 @@ setup(
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
     ],
+    test_suite='nose.collector',
+    tests_require=['nose'],
 )
 
 if sys.argv[-1] == 'install':
