@@ -13,6 +13,8 @@
 ```
 git clone --recursive https://github.com/vladsaveliev/TargQC
 cd TargQC
+virtualenv venv_targqc
+source venv_targqc/bin/activate
 python setup.py install
 ```
 

@@ -129,7 +129,7 @@ if sys.argv[-1] == 'install':
         else:
             sys.exit(1)
 
-    bwa_dirpath = join(dirname(abspath(__file__)), 'bwa')
+    bwa_dirpath = join(dirname(abspath(__file__)), name, 'bwa')
     success_compilation = compile_tool('bwa', bwa_dirpath, ['bwa'])
     if not success_compilation: sys.stderr.write('BWA has failed to compile, cannot process FastQ without BWA')
 
@@ -200,15 +200,16 @@ setup(
             'qualimap/*/species/*.jar',
             'picard/picard/*.jar',
             'gender/*.bed',
+            'bwa/bwa',
         ],
-        'bwa': [
-            'bwa',
-        ]
     },
     include_package_data=True,
     zip_safe=False,
     scripts=['scripts/' + name, 'GeneAnnotation/annotate_bed.py'],
     install_requires=reqs,
+    setup_requires=[
+        'numpy'
+    ],
     classifiers=[
         'Environment :: Console',
         'Environment :: Web Environment',
