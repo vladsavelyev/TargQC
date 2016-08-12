@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/vladsaveliev/TargQC.svg?branch=master)](https://travis-ci.org/vladsaveliev/TargQC)
+
 # Alignment target coverage analysis tool 
 
 ## Input
@@ -13,15 +15,9 @@
 ```
 git clone --recursive https://github.com/vladsaveliev/TargQC
 cd TargQC
-virtualenv venv_targqc
-source venv_targqc/bin/activate
+virtualenv venv_targqc && source venv_targqc/bin/activate  # optional, but recommended if you are not a an admin
+pip install --upgrade setuptools pip
 python setup.py install
-```
-
-If you are not an administator in your system, create a virtual environment first:
-```
-virtualenv venv
-source venv/bin/activate
 ```
 
 ## Usage
