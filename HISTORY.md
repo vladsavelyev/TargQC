@@ -1,5 +1,12 @@
-# 1.0.0-dev (in progress)
+# 1.1.0
 - Moved code from AZ Reporting Suite.
 - Decoupled from SGE using iPython-cluster-helper (https://github.com/roryk/ipython-cluster-helper).
-- New region coverage reports.
-- Support FastQ and downsampling.
+- New BED annotation, using Ensembl
+- New region coverage reports
+- Support FastQ processing with downsampling
+- Add nosetests
+- Add Travis CI support
+- Dockerized
+- Added MultiQC module
+- Much less dependencies, easier to install
+- Setup.py and uploaded PyPI (available via pip)
