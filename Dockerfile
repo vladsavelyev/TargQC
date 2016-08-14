@@ -1,4 +1,4 @@
-FROM stackbrew/ubuntu:14.04
+FROM ubuntu:14.04
 MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
 
 # Setup a base system

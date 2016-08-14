@@ -191,6 +191,8 @@ def main(args):
     for args, kwargs in options:
         parser.add_option(*args, **kwargs)
     opts, args = parser.parse_args()
+    if not args:
+        parser.error(msg='Specify at least one BAM file or a FastQ pair.')
 
     is_debug = logger.is_debug = opts.debug
     output_dir, work_dir = set_up_dirs(
