@@ -10,3 +10,4 @@ ipython-cluster-helper
 PyMonad
 gffutils
 nose
+coverage
