@@ -1,9 +1,10 @@
-FROM ubuntu:14.04
+FROM stackbrew/ubuntu:14.04
 MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
 
 # Setup a base system
 RUN apt-get update && \
-    apt-get install -y curl wget git tar gzip bzip2 python2.7-dev python-virtualenv
+    apt-get install -y curl wget git tar gzip bzip2 build-essential \
+        python2.7-dev python-pip python-virtualenv zlib1g-dev
 
 # TargQC installation
 RUN pip install --upgrade setuptools pip
