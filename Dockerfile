@@ -3,13 +3,17 @@ MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
 
 # Setup a base system
 RUN apt-get update && \
-    apt-get install -y curl wget git tar gzip bzip2 build-essential \
+    apt-get install -y curl wget git git-lfs tar gzip bzip2 build-essential \
         python2.7-dev python-pip python-virtualenv zlib1g-dev
 
 # TargQC installation
 RUN pip install --upgrade setuptools pip
 RUN git clone --depth 50 https://github.com/vladsaveliev/TargQC.git TargQC
-RUN cd TargQC && git submodule update --init --recursive && pip install -r requirements.txt && python setup.py install
+RUN cd TargQC && \
+    git submodule update --init --recursive && \
+    pip install -r requirements.txt && \
+    python setup.py install
+
 
 # clean filesystem
 #    cd /usr/local && \
