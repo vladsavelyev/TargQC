@@ -68,9 +68,7 @@ setup(
         join('scripts', script_name),
         join('GeneAnnotation', 'annotate_bed.py')],
     install_requires=setup_utils.get_reqs(),
-    setup_requires=[
-        'numpy'
-    ],
+    setup_requires=['numpy'],
     classifiers=[
         'Environment :: Console',
         'Environment :: Web Environment',

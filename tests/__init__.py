@@ -1,36 +1,22 @@
-import subprocess
-import unittest
 import os
-from genericpath import getsize, getmtime
-from os.path import dirname, join, exists, isfile, splitext, basename, isdir, relpath
-from datetime import datetime
-from time import sleep
-
-import shutil
-from nose.plugins.attrib import attr
-from collections import namedtuple
 import sys
+import shutil
+from os.path import dirname, join, exists, isfile, splitext, basename, isdir, relpath, getsize, getmtime
+from datetime import datetime
+from collections import namedtuple
+
+from Utils.testing import BaseTestCase, info, check_call
 
 
-def info(msg=''):
-    sys.stdout.write(msg + '\n')
-
-def call(cmdl):
-    info(cmdl)
-    subprocess.call(cmdl)
-
-def check_call(cmdl):
-    info(cmdl if isinstance(cmdl, basestring) else ' '.join(cmdl))
-    subprocess.check_call(cmdl, shell=isinstance(cmdl, basestring))
-
-
-class BaseTargQC(unittest.TestCase):
+class BaseTargQC(BaseTestCase):
     script = 'targqc'
+
+    data_dir = join(dirname(__file__), BaseTestCase.data_dir)
+    results_dir = join(dirname(__file__), BaseTestCase.results_dir)
+    gold_standard_dir = join(join(dirname(__file__), BaseTestCase.gold_standard_dir))
 
     syn3_url = 'http://quast.bioinf.spbau.ru/static/chr21.tar.gz'
     bwa_url = 'http://quast.bioinf.spbau.ru/static/bwa.tar.gz'
-
-    data_dir = join(dirname(__file__), 'data')
 
     syn3_dir = join(data_dir, 'chr21')
     bed3 = join(syn3_dir, 'NGv3.chr21.3col.bed')
@@ -46,14 +32,8 @@ class BaseTargQC(unittest.TestCase):
     bwa_dir = join(data_dir, 'bwa')
     bwa_path = join(bwa_dir, 'hg19-chr21.fa')
 
-    results_dir = join(dirname(__file__), 'results')
-    gold_standard_dir = join(join(dirname(__file__), 'gold_standard'))
-
-    remove_work_dir_on_success = False
-
     def setUp(self):
-        if not isdir(self.data_dir):
-            os.mkdir(self.data_dir)
+        BaseTestCase.setUp(self)
         if not isdir(self.syn3_dir):
             info(self.syn3_dir + ' does not exist, downloading test data')
             cur_dir = os.getcwd()
@@ -68,20 +48,6 @@ class BaseTargQC(unittest.TestCase):
             check_call(['wget', self.bwa_url])
             check_call(['tar', '-xzvf', basename(self.bwa_url)])
             os.chdir(cur_dir)
-        if not exists(self.results_dir):
-            os.makedirs(self.results_dir)
-
-    def _check_file(self, fpath, diff_ignore_re=''):
-        assert isfile(fpath)
-        assert getsize(fpath) > 0
-        if isdir(self.gold_standard_dir):
-            cmp_fpath = join(self.gold_standard_dir, relpath(fpath, self.results_dir))
-            if cmp_fpath and isfile(cmp_fpath):
-                if diff_ignore_re:
-                    cmdl = ['diff', '-q', '--ignore-matching-lines', diff_ignore_re, fpath, cmp_fpath]
-                else:
-                    cmdl = ['diff', '-q', fpath, cmp_fpath]
-                check_call(cmdl)
 
     def _test(self, output_dirname=None, used_samples=samples, bams=None, fastq=None, bed=None,
               debug=False, reuse_intermediate=False, reuse_output_dir=False, reannotate=False,

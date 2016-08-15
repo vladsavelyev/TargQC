@@ -16,10 +16,10 @@ install:
 script:
   - nosetests --nocapture --with-coverage tests/test_travis.py
 
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
 notifications:
   on_success: always
   email: false
   slack: astrazeneca-ngs:cP6TAiGMYU857H0Vahc42SHD
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
