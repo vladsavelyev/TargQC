@@ -3,8 +3,11 @@ MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
 
 # Setup a base system
 RUN apt-get update && \
-    apt-get install -y curl wget git git-lfs tar gzip bzip2 build-essential \
+    apt-get install -y curl wget git tar gzip bzip2 build-essential \
         python2.7-dev python-pip python-virtualenv zlib1g-dev
+RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+RUN apt-get install git-lfs
+RUN git lfs install
 
 # TargQC installation
 RUN pip install --upgrade setuptools pip
