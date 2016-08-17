@@ -11,19 +11,17 @@ script_name = 'targqc'
 package_name = 'targqc'
 
 from Utils import setup_utils
+
+if setup_utils.is_cleaning():
+    setup_utils.clean_package(package_name='multiqc_targqc', dirpath='MultiQC')
+
 version = setup_utils.init(name, package_name, __file__)
 
 
-if setup_utils.is_installing():
-    bedtools_dirpath = join(setup_utils.utils_package_name, 'bedtools', 'bedtools2')
-    success_compilation = setup_utils.compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])
-    if not success_compilation:
-        bedtools = setup_utils.which('bedtools')
-        if bedtools:
-            sys.stderr.write('Compilation failed, using bedtools in $PATH: ' + bedtools + '\n')
-        else:
-            sys.exit(1)
+setup_utils.run_cmdl('cd MultiQC; python setup.py ' + sys.argv[-1] + '; cd ..')
 
+
+if setup_utils.is_installing():
     bwa_dirpath = join(package_name, 'bwa')
     success_compilation = setup_utils.compile_tool('bwa', bwa_dirpath, ['bwa'])
     if not success_compilation: sys.stderr.write('BWA has failed to compile, cannot process FastQ without BWA')
@@ -87,7 +85,7 @@ setup(
     tests_require=['nose'],
 )
 
-if sys.argv[-1] == 'install':
+if setup_utils.is_installing():
     print("""
 --------------------------------
  {name} installation complete!

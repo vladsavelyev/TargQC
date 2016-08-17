@@ -11,3 +11,4 @@ PyMonad
 gffutils
 nose
 coverage
+pysam
