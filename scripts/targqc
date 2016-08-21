@@ -154,7 +154,8 @@ def _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir):
         s.r_fpath = r
         samples.append(s)
     for sname, bam_fpath in bam_by_sample.items():
-        s = Sample(sname, join(output_dir, sname), join(work_dir, sname), bam=bam_fpath)
+        s = Sample(sname, join(output_dir, sname),
+                   work_dir=join(work_dir, sname), bam=bam_fpath)
         samples.append(s)
     samples.sort(key=lambda _s: _s.key_to_sort())
     for s in samples:

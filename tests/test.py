@@ -69,4 +69,3 @@ class UnitTests(BaseTargQC):
 
         info()
         self._check_results(output_dir, self.samples)
-

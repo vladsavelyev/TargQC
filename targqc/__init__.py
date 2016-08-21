@@ -2,6 +2,7 @@ import os
 from os.path import join, splitext, dirname
 
 import Utils.reference_data as ref
+from Utils.Sample import BaseSample
 from Utils.file_utils import safe_mkdir, can_reuse
 from Utils.sambamba import index_bam
 from Utils.parallel import parallel_view
@@ -34,6 +35,10 @@ dedup_bam                = 'dedup'  # work/post_processing/dedup and -ready.dedu
 
 fastqc_repr              = 'FastQC'
 fastqc_report_fname      = 'fastqc_report.html'
+
+
+from targqc.general_report import get_mean_cov as get_mean_cov
+from config import depth_thresholds
 
 
 def get_version():
@@ -115,105 +120,26 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
     #             info('Region-based report: ' + path)
 
 
-class Sample:
-    def __init__(self, name, dirpath, work_dir, bam=None, l_fpath=None, r_fpath=None,
-                 genome=None, qualimap_dirpath=None, normal_match=None, read_pairs_num=None):
-        self.name = name
-        self.bam = bam
-        self.l_fpath = l_fpath
-        self.r_fpath = r_fpath
-        self.dedup_bam = None
-        self.is_wgs = False
-        self.qualimap_bed = None
-        self.dirpath = dirpath
-        self.work_dir = work_dir
-        self.phenotype = None
-        self.gender = None
-        self.genome = None
-        self.var_dirpath = None
-        self.normal_match = normal_match
-        self.min_af = None
-        self.avg_depth = None
-        self.read_pairs_num = read_pairs_num
+class Sample(BaseSample):
+    def __init__(self, name, dirpath, *args, **kwargs):
+        BaseSample.__init__(self, name, dirpath, targqc_dirpath=dirpath, *args, **kwargs)
+        self.targqc_norm_depth_vcf_txt   = None
+        self.targqc_norm_depth_vcf_tsv   = None
 
-        self.targqc_dirpath                  = None
-        self.targqc_html_fpath               = None
-        self.targqc_json_fpath               = None
-        self.targqc_region_txt               = None
-        self.targqc_region_tsv               = None
-        self.targqc_norm_depth_vcf_txt       = None
-        self.targqc_norm_depth_vcf_tsv       = None
+        self.targqc_txt_fpath            = join(self.targqc_dirpath, 'summary.txt')
+        self.targqc_html_fpath           = join(self.targqc_dirpath, 'summary.html')
+        self.targqc_json_fpath           = join(self.targqc_dirpath, 'summary.json')
+        self.targqc_region_txt           = join(self.targqc_dirpath, 'regions.txt')
+        self.targqc_region_tsv           = join(self.targqc_dirpath, 'regions.tsv')
 
-        if dirpath:
-            self.targqc_dirpath = dirpath
-            self.targqc_txt_fpath            = join(self.targqc_dirpath, 'summary.txt')
-            self.targqc_html_fpath           = join(self.targqc_dirpath, 'summary.html')
-            self.targqc_json_fpath           = join(self.targqc_dirpath, 'summary.json')
-            self.targqc_region_txt           = join(self.targqc_dirpath, 'regions.txt')
-            self.targqc_region_tsv           = join(self.targqc_dirpath, 'regions.tsv')
-            self.targqc_norm_depth_vcf_txt   = None
-            self.targqc_norm_depth_vcf_tsv   = None
-
-        self.qualimap_dirpath                = None
-        self.qualimap_html_fpath             = None
-        self.qualimap_genome_results_fpath   = None
-        self.qualimap_ins_size_hist_fpath    = None
-        self.qualimap_cov_hist_fpath         = None
-        self.qualimap_gc_hist_fpath          = None
-
-        qualimap_dirpath = qualimap_dirpath or join(self.targqc_dirpath, qualimap_name)
-        if qualimap_dirpath:
-            self.qualimap_dirpath               = qualimap_dirpath
-            self.qualimap_html_fpath            = join(self.qualimap_dirpath, qualimap_report_fname)
-            self.qualimap_genome_results_fpath  = join(self.qualimap_dirpath, qualimap_report_fname)
-            self.qualimap_raw_dirpath           = join(self.qualimap_dirpath, qualimap_raw_data_dirname)
-
-            self.qualimap_ins_size_hist_fpath   = join(self.qualimap_raw_dirpath, qualimap_ishist_fname)
-            self.qualimap_cov_hist_fpath        = join(self.qualimap_raw_dirpath, qualimap_covhist_fname)
-            self.qualimap_gc_hist_fpath         = join(self.qualimap_raw_dirpath, qualimap_gchist_fname)
+        self.qualimap_dirpath = join(self.targqc_dirpath, 'qualimap')
+        self.qualimap_html_fpath            = join(self.qualimap_dirpath, qualimap_report_fname)
+        self.qualimap_genome_results_fpath  = join(self.qualimap_dirpath, qualimap_report_fname)
+        self.qualimap_raw_dirpath           = join(self.qualimap_dirpath, qualimap_raw_data_dirname)
+        self.qualimap_ins_size_hist_fpath   = join(self.qualimap_raw_dirpath, qualimap_ishist_fname)
+        self.qualimap_cov_hist_fpath        = join(self.qualimap_raw_dirpath, qualimap_covhist_fname)
+        self.qualimap_gc_hist_fpath         = join(self.qualimap_raw_dirpath, qualimap_gchist_fname)
 
         self.picard_dirpath                 = join(self.targqc_dirpath, picard_name)
         self.picard_ins_size_hist_txt_fpath = join(self.picard_dirpath, picard_ishist_fname)
         self.picard_ins_size_hist_pdf_fpath = join(self.picard_dirpath, splitext(picard_ishist_fname)[0] + '.pdf')
-
-    def __cmp__(self, other):
-        return cmp(self.key_to_sort(), other.key_to_sort())
-
-    def key_to_sort(self):
-        parts = []
-
-        cur_part = []
-        prev_was_num = False
-
-        for c in self.name:
-            if prev_was_num == c.isdigit() and c not in ['-', '.']:  # same type of symbol, but not - or .
-                cur_part.append(c)
-            else:
-                if cur_part:
-                    part = ''.join(cur_part)
-                    if prev_was_num:
-                        part = int(part)
-                    parts.append(part)
-                    cur_part = []
-
-                if c in ['-', '.']:
-                    pass
-                else:
-                    if c.isdigit():
-                        prev_was_num = True
-                    else:
-                        prev_was_num = False
-                    cur_part.append(c)
-        if cur_part:
-            part = ''.join(cur_part)
-            if prev_was_num:
-                part = int(part)
-            parts.append(part)
-
-        return tuple(parts)
-
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        return self.name

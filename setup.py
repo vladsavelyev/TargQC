@@ -64,7 +64,9 @@ setup(
     zip_safe=False,
     scripts=[
         join('scripts', script_name),
-        join('GeneAnnotation', 'annotate_bed.py')],
+        join('GeneAnnotation', 'annotate_bed.py'),
+        join('Utils', 'tools', 'sort_bed.py'),
+    ],
     install_requires=setup_utils.get_reqs(),
     setup_requires=['numpy'],
     classifiers=[

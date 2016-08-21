@@ -85,12 +85,21 @@ class BaseTargQC(BaseTestCase):
 
         self._check_results(output_dir, used_samples)
 
+        self._run_multiqc(output_dir)
+
         if self.remove_work_dir_on_success and not reuse_intermediate and not reuse_output_dir:
             work_dir = join(output_dir, 'work')
             if not isdir(work_dir):
                 info('Work dir for run ' + output_dirname + ' does not exist under ' + work_dir)
             else:
                 shutil.rmtree(work_dir)
+        info('')
+
+    def _run_multiqc(self, output_dir):
+        cmdl = 'multiqc_targqc -f ' + output_dir + ' -o ' + output_dir
+        check_call(cmdl)
+        self._check_file(join(output_dir, 'multiqc_report.html'))
+        info('')
 
     def _default_output_dir(self):
         return join(os.getcwd(), 'targqc')
