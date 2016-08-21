@@ -4,8 +4,7 @@ import GeneAnnotation as ga
 from GeneAnnotation.annotate_bed import annotate, overlap_with_features, get_sort_key, tx_sort_key
 from Utils import reference_data
 from Utils.bedtools import BedTool
-from Utils.bed_utils import filter_bed_with_gene_set, get_gene_keys_from_bed, calc_region_number, merge_overlaps
-from Utils.bed_utils import remove_comments, sort_bed, count_bed_cols, cut, verify_bed
+from Utils.bed_utils import sort_bed, verify_bed, get_genes_from_bed
 from Utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction, verify_file, can_reuse
 from Utils.logger import debug, info, warn
 from Utils.utils import OrderedDefaultDict
@@ -100,7 +99,7 @@ class Target:
         with file_transaction(work_dir, self.capture_bed_fpath) as tx:
             self.get_capture_bed().saveas(tx)
 
-        gene_key_set, gene_key_list = get_gene_keys_from_bed(bed_fpath)
+        gene_key_set, gene_key_list = get_genes_from_bed(bed_fpath)
         self.gene_keys_set = gene_key_set
         self.gene_keys_list = gene_key_list
         self.regions_num = self.get_capture_bed().count()
