@@ -61,8 +61,7 @@ def make_region_reports(view, work_dir, samples, target, genome, depth_threshold
     debug()
     debug('Running sambamba...')
     sambamba_depth_output_fpaths = view.run(sambamba_depth,
-        [[s.work_dir, bed_fpath, s.bam, depth_thresholds_by_sample[s.name],
-          None, False, s.name]
+        [[s.work_dir, bed_fpath, s.bam, depth_thresholds_by_sample[s.name], None, s.name]
          for s in samples])
     assert len(sambamba_depth_output_fpaths) == len(samples), \
         'Number of sambamba results = ' + str(len(sambamba_depth_output_fpaths)) + \
