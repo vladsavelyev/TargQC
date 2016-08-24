@@ -1,4 +1,3 @@
-six
 setuptools>=18.5
 pip
 numpy
