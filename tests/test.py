@@ -33,16 +33,16 @@ class UnitTests(BaseTargQC):
     def test_09_debug_and_reuse(self):
         self._test('debug_and_reuse', bams=self.bams, bed=self.bed4, debug=True, reuse_intermediate=True)
 
-    def test_09_reuse_output(self):
+    def test_10_reuse_output(self):
         self._test('reuse_output_dir', bams=self.bams, bed=self.bed4, reuse_output_dir=True)
 
-    def test_10_full_hg19(self):
+    def test_11_full_hg19(self):
         raise SkipTest
 
-    def test_11_full_hg38(self):
+    def test_12_full_hg38(self):
         raise SkipTest
 
-    def test_12_api(self):
+    def test_13_api(self):
         import targqc
         import Utils.reference_data as ref
         from Utils.file_utils import safe_mkdir
