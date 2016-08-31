@@ -62,8 +62,8 @@ def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
 
     trg_name = 'target' if not is_wgs else 'genome'
     depth_section = ReportSection('section_name', ('Target' if not is_wgs else 'Genome') + ' coverage depth', [
-        Metric('Median ' + trg_name + ' coverage depth',                  short_name='Median',         multiqc=dict(title='Depth', order=6, kind='cov', min=0)),
-        Metric('Average ' + trg_name + ' coverage depth',                 short_name='Avg',            multiqc=dict(title='Avg depth', order=7, kind='cov', min=0)),
+        Metric('Median ' + trg_name + ' coverage depth',                  short_name='Median',         multiqc=dict(title='Med depth', order=6, kind='cov', min=0)),
+        Metric('Mean ' + trg_name + ' coverage depth',                    short_name='Mean',           multiqc=dict(title='Mean depth', order=7, kind='cov', min=0)),
         Metric('Std. dev. of ' + trg_name + ' coverage depth',            short_name='Std dev',        multiqc=dict(order=8, kind='cov', min=0),                                quality='Less is better'),
         Metric('Percentage of ' + trg_name + ' within 20% of med depth',  short_name='&#177;20% med',  multiqc=dict(order=9, kind='cov'),                             unit='%')
     ])
@@ -71,7 +71,7 @@ def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
         name = 'Part of ' + trg_name + ' covered at least by ' + str(depth) + 'x'
         depth_section.add_metric(Metric(name,                             short_name=str(depth) + 'x', multiqc=dict(hidden=True, kind='cov'),                         unit='%', description=name))
     depth_section.add_metric(
-        Metric('Estimated ' + trg_name + ' full coverage depth',          short_name='Est full avg',   multiqc=dict(title='Est avg depth', order=7, kind='cov', min=0), description='Estimated average coverage of full dataset. Calculated as (the total number of raw reads * downsampled mapped reads fraction / total downsampled mapped reads) * downsampled average coverage'),
+        Metric('Estimated ' + trg_name + ' full coverage depth',          short_name='Est full mean',  multiqc=dict(title='Est mean depth', order=7, kind='cov', min=0), description='Estimated mean coverage of full dataset. Calculated as (the total number of raw reads * downsampled mapped reads fraction / total downsampled mapped reads) * downsampled average coverage'),
     )
     sections.append(depth_section)
 
@@ -537,7 +537,7 @@ def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
         assert percent_usable <= 1.0 or percent_usable is None, str(percent_usable)
 
     debug()
-    _add('Average ' + trg_type + ' coverage depth', depth_stats['ave_depth'])
+    _add('Mean ' + trg_type + ' coverage depth', depth_stats['ave_depth'])
     if 'original_num_reads' in reads_stats:
         _add('Original reads', reads_stats['original_num_reads'])
         times_downsampled = 1.0 * reads_stats['original_num_reads'] / reads_stats['total']
