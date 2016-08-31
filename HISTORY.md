@@ -1,3 +1,6 @@
+# 1.2.0
+- Downsampling to 5% by default instead of 500k read pairs
+
 # 1.1.0
 - Moved code from AZ Reporting Suite.
 - Decoupled from SGE using iPython-cluster-helper (https://github.com/roryk/ipython-cluster-helper).

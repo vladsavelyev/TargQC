@@ -59,9 +59,16 @@ options = [
     (['--downsample-pairs-num', '--downsample-to'], dict(
         dest='downsample_pairs_num',
         type='int',
-        help='If input is FastQ, select N random read pairs from each input set. '
-             'Default is ' + str(config.downsample_pairs_num) + '. To turn off (align all reads), set --downsample-pairs-num off',
-        default=config.downsample_pairs_num,
+        help=('If input is FastQ, select N random read pairs from each input set '
+              '(instead of default fraction ' + str(config.downsample_fraction) + '). ')
+     )),
+    (['--downsample-fraction', '--downsample'], dict(
+        dest='downsample_fraction',
+        type='int',
+        help=('If input is FastQ, select K% random read pairs from each input set. ' +
+              'Default is ' + str(config.downsample_fraction) + '%. ' +
+              'To turn off (align all reads), set --downsample 1'),
+        default=config.downsample_fraction,
      )),
     (['-t', '--nt', '--threads'], dict(
         dest='threads',
@@ -199,22 +206,26 @@ def main(args):
     output_dir, work_dir = set_up_dirs(
             targqc.targqc_name, opts.output_dir, opts.work_dir,
             opts.log_dir, opts.reuse_intermediate)
-    debug(' '.join(sys.argv))
-    debug()
+    info(' '.join(sys.argv))
+    info()
 
     tag = ('targqc_' + opts.project_name) if opts.project_name else 'targqc'
     parallel_cfg = ParallelCfg(opts.scheduler, opts.queue, opts.resources,
                                opts.threads, tag, opts.local)
     padding = opts.padding
-    depth_thresholds = opts.depth_thresholds
-    debug('Depth thresholds: ' + str(depth_thresholds))
+    depth_threshs = opts.depth_thresholds
+    debug('Depth thresholds: ' + str(depth_threshs))
     genome = opts.genome
     dedup = not opts.no_dedup
     reannotate = opts.reannotate
+
     if opts.downsample_pairs_num == 'off':
-        downsample_pairs_num = None
+        downsample_to = 1.0
+    elif opts.downsample_pairs_num is not None:
+        downsample_to = int(opts.downsample_pairs_num)
     else:
-        downsample_pairs_num = opts.downsample_pairs_num
+        downsample_to = float(opts.downsample_fraction)
+
     bwa_prefix = adjust_path(opts.bwa_prefix)
     fai_fpath = opts.fai or ref.get_fai(genome)
 
@@ -226,8 +237,8 @@ def main(args):
     targqc.start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, bwa_prefix,
                         fai_fpath=fai_fpath,
                         genome=genome,
-                        depth_thresholds=depth_thresholds,
-                        downsample_pairs_num=downsample_pairs_num,
+                        depth_threshs=depth_threshs,
+                        downsample_to=downsample_to,
                         padding=padding,
                         dedup=dedup,
                         is_debug=is_debug,

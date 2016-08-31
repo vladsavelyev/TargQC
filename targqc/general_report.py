@@ -19,7 +19,7 @@ from Utils.logger import critical, info, err, warn, debug
 from Utils.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport
 
 
-def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
+def get_header_metric_storage(depth_threshs, is_wgs=False, padding=None):
     sections = [
         ReportSection('reads', 'Reads', [
             Metric('Original reads',                       short_name='Orig reads',   multiqc=dict(order=1, kind='reads', min=0)),
@@ -67,7 +67,7 @@ def get_header_metric_storage(depth_thresholds, is_wgs=False, padding=None):
         Metric('Std. dev. of ' + trg_name + ' coverage depth',            short_name='Std dev',        multiqc=dict(order=8, kind='cov', min=0),                                quality='Less is better'),
         Metric('Percentage of ' + trg_name + ' within 20% of med depth',  short_name='&#177;20% med',  multiqc=dict(order=9, kind='cov'),                             unit='%')
     ])
-    for depth in depth_thresholds:
+    for depth in depth_threshs:
         name = 'Part of ' + trg_name + ' covered at least by ' + str(depth) + 'x'
         depth_section.add_metric(Metric(name,                             short_name=str(depth) + 'x', multiqc=dict(hidden=True, kind='cov'),                         unit='%', description=name))
     depth_section.add_metric(
@@ -186,7 +186,7 @@ def parse_qualimap_coverage_hist(qualimap_coverage_hist_fpath):
     return bases_by_depth, median_coverage
 
 
-def parse_qualimap_results(sample, depth_thresholds):
+def parse_qualimap_results(sample):
     if not verify_file(sample.qualimap_html_fpath):
         critical('QualiMap report was not found')
 
@@ -343,7 +343,7 @@ def _qualimap_outputs(sample):
     return [v for k, v in sample.__dict__.iteritems() if k.startswith('qualimap_') and k.endswith('_fpath')]
 
 
-def make_general_reports(view, samples, target, genome, depth_thresholds, bed_padding,
+def make_general_reports(view, samples, target, genome, depth_threshs, bed_padding,
                          num_pairs_by_sample=None, reuse=False, is_debug=False, reannotate=False):
     if all(all(can_reuse(fp, [s.bam, target.qualimap_bed_fpath] if target.bed else s.bam)
                for fp in _qualimap_outputs(s))
@@ -366,13 +366,13 @@ def make_general_reports(view, samples, target, genome, depth_thresholds, bed_pa
         info(sample.name)
         debug('-'*70)
         debug('Parsing QualiMap results...')
-        depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample, depth_thresholds)
+        depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample)
 
         _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_stats,
-                          target, num_pairs_by_sample, genome, depth_thresholds)
+                          target, num_pairs_by_sample, genome, depth_threshs)
 
         r = _build_report(depth_stats, reads_stats, indels_stats, sample, target,
-                          depth_thresholds, bed_padding, sample_num=len(samples), is_debug=is_debug,
+                          depth_threshs, bed_padding, sample_num=len(samples), is_debug=is_debug,
                           reannotate=reannotate)
         summary_reports.append(r)
 
@@ -380,7 +380,7 @@ def make_general_reports(view, samples, target, genome, depth_thresholds, bed_pa
 
 
 def _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_stats,
-                      target, num_pairs_by_sample, genome, depth_thresholds):
+                      target, num_pairs_by_sample, genome, depth_threshs):
     sample.avg_depth = depth_stats['ave_depth']
 
     if num_pairs_by_sample and sample.name in num_pairs_by_sample:
@@ -396,7 +396,7 @@ def _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_sta
         depth_stats['bases_within_threshs'], depth_stats['rates_within_threshs'] = calc_bases_within_threshs(
             depth_stats['bases_by_depth'],
             target_stats['target_size'] if not target.is_wgs else target_stats['reference_size'],
-            depth_thresholds)
+            depth_threshs)
 
         if depth_stats['median_depth'] > 0:
             depth_stats['wn_20_percent'] = calc_rate_within_normal(
@@ -429,8 +429,8 @@ def _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_sta
 
 
 def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
-                  depth_thresholds, bed_padding, sample_num, is_debug=False, reannotate=False):
-    report = SampleReport(sample, metric_storage=get_header_metric_storage(depth_thresholds, is_wgs=target.bed_fpath is None, padding=bed_padding))
+                  depth_threshs, bed_padding, sample_num, is_debug=False, reannotate=False):
+    report = SampleReport(sample, metric_storage=get_header_metric_storage(depth_threshs, is_wgs=target.bed_fpath is None, padding=bed_padding))
 
     def _add(_metric_name, _val, url=None):
         return report.add_record(_metric_name, _val, silent=(sample_num > 1 and not is_debug), url=url)

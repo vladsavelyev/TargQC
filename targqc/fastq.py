@@ -21,9 +21,9 @@ def make_bam_fpath(work_dir):
     return join(work_dir, 'downsampled.bam')
 
 
-def proc_fastq(samples, parall_view, work_dir, bwa_prefix, num_downsample_pairs, num_pairs_by_sample=None, dedup=True):
+def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, num_pairs_by_sample=None, dedup=True):
     num_pairs_by_sample = num_pairs_by_sample or dict()
-    if num_downsample_pairs:
+    if downsample_to:
         # Read pairs counts
         debug()
         if all(s.name in num_pairs_by_sample for s in samples):
@@ -45,9 +45,12 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, num_downsample_pairs,
                 s.l_fpath = make_downsampled_fpath(s.work_dir, s.l_fpath)
                 s.r_fpath = make_downsampled_fpath(s.work_dir, s.r_fpath)
         else:
-            info('Downsampling FastQ to ' + str(int(num_downsample_pairs)) + ' read pairs')
+            if isinstance(downsample_to, float):
+                info('Downsampling FastQ to ' + str(float(downsample_to)) + ' fraction of reads')
+            else:
+                info('Downsampling FastQ to ' + str(int(downsample_to)) + ' read pairs')
             fastq_pairs = parall_view.run(downsample,
-                [[s.work_dir, s.name, s.l_fpath, s.r_fpath, num_downsample_pairs, num_pairs_by_sample.get(s.name)]
+                [[s.work_dir, s.name, s.l_fpath, s.r_fpath, downsample_to, num_pairs_by_sample.get(s.name)]
                  for s in samples])
             for s, (l_r, r_r) in zip(samples, fastq_pairs):
                 s.l_fpath = l_r
@@ -102,7 +105,7 @@ def _count_records_in_fastq(fastq_fpath):
     return sum(1 for _ in open_gzipsafe(fastq_fpath)) / 4
 
 
-def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, num_downsample_pairs, num_pairs=None):
+def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, downsample_to, num_pairs=None):
     """ get N random headers from a fastq file without reading the
     whole thing into memory
     modified from: http://www.biostars.org/p/6544/
@@ -115,7 +118,6 @@ def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, num_d
         return l_out_fpath, r_out_fpath
 
     info('Processing ' + sample_name)
-    num_downsample_pairs = int(num_downsample_pairs)
     if num_pairs is None:
         info(sample_name + ': counting number of reads in fastq...')
         num_pairs = _count_records_in_fastq(fastq_left_fpath)
@@ -124,6 +126,7 @@ def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, num_d
              ', sampling from only first ' + str(LIMIT))
         num_pairs = LIMIT
     info(sample_name + ': ' + str(num_pairs) + ' reads')
+    num_downsample_pairs = int(downsample_to * num_pairs) if isinstance(downsample_to, float) else downsample_to
     if num_pairs <= num_downsample_pairs:
         info(sample_name + ': and it is less than ' + str(num_downsample_pairs) + ', so no downsampling.')
         return fastq_left_fpath, fastq_right_fpath

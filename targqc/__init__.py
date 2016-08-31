@@ -57,8 +57,8 @@ def get_description():
 def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, bwa_prefix,
                  fai_fpath=None,
                  genome=config.genome,
-                 depth_thresholds=config.depth_thresholds,
-                 downsample_pairs_num=config.downsample_pairs_num,
+                 depth_threshs=config.depth_thresholds,
+                 downsample_to=config.downsample_fraction,
                  padding=config.padding,
                  dedup=config.dedup,
                  reuse=config.reuse_intermediate,
@@ -82,7 +82,7 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
             critical('--bwa-prefix is required when running from fastq')
         with parallel_view(len(fastq_samples), parallel_cfg, join(work_dir, 'sge_fastq')) as view:
             num_pairs_by_sample = proc_fastq(fastq_samples, view, work_dir, bwa_prefix,
-                 downsample_pairs_num, num_pairs_by_sample, dedup=dedup)
+                downsample_to, num_pairs_by_sample, dedup=dedup)
 
     info()
     for s in samples:
@@ -97,12 +97,12 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
             view.run(index_bam, [[s.bam] for s in samples])
 
         info('Making general reports...')
-        make_general_reports(view, samples, target, genome, depth_thresholds, padding, num_pairs_by_sample,
+        make_general_reports(view, samples, target, genome, depth_threshs, padding, num_pairs_by_sample,
                              is_debug=is_debug, reannotate=reannotate)
 
         info()
         info('Making region-level reports...')
-        make_region_reports(view, work_dir, samples, target, genome, depth_thresholds)
+        make_region_reports(view, work_dir, samples, target, genome, depth_threshs)
 
     info()
     info('*' * 70)
