@@ -25,7 +25,7 @@ def _make_targetcov_symlinks(samples):
         info('TargetCov TXT symlink saved to ' + new_link)
 
 
-def _make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=None, tag_by_sample=None):
+def make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=None, tag_by_sample=None):
     # header_storage = get_header_metric_storage(tc.depth_thresholds,
     #                                            is_wgs=bed_fpath is not None,
     #                                            padding=tc.padding)
@@ -59,7 +59,7 @@ def _make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=None, tag_b
     return tsv_fpath, html_fpath
 
 
-def _combined_regional_reports(work_dir, output_dir, samples):
+def combined_regional_reports(work_dir, output_dir, samples):
     if not any(verify_file(s.targqc_region_tsv, silent=True) for s in samples):
         return None, None
 
@@ -93,9 +93,7 @@ def _combined_regional_reports(work_dir, output_dir, samples):
     return tsv_region_rep_fpath
 
 
-def summarize_targqc(summary_threads, output_dir, work_dir, samples, bed_fpath=None, tag_by_sample=None):
-    tsv_fpath, html_fpath = _make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=bed_fpath, tag_by_sample=tag_by_sample)
-
+# def summarize_targqc(summary_threads, output_dir, work_dir, samples, bed_fpath=None, tag_by_sample=None):
     # best_for_regions_fpath = None
     # if any(verify_file(s.targqc_region_tsv, silent=True) for s in samples):
     #     best_for_regions_fpath = _save_best_details_for_each_gene(tc.depth_thresholds, samples, output_dir)
@@ -105,26 +103,6 @@ def summarize_targqc(summary_threads, output_dir, work_dir, samples, bed_fpath=N
     #     4. flagged_regions_report_fpath = _generate_flagged_regions_report(
     #          output_dir, 'Best', average_coverage, genes, depth_threshs)
     # '''
-
-    tsv_region_rep_fpath = _combined_regional_reports(work_dir, output_dir, samples)
-
-    info()
-    info('*' * 70)
-    if not html_fpath and not tsv_fpath:
-        info('TargQC summary was not generated, because there were no reports generated for individual samples.')
-    else:
-        info('TargQC summary saved in: ')
-        info('  ' + html_fpath)
-        info('  ' + tsv_fpath)
-
-    info()
-    if not tsv_region_rep_fpath:
-        info('Regional report was not generated, because there were no reports generated for individual samples.')
-    else:
-        info('Per-region coverage statistics saved into:')
-        info('  ' + tsv_region_rep_fpath)
-
-    return html_fpath
 
 
 def _prep_best_report(metric_storage, samples):

@@ -13,7 +13,7 @@ from targqc.fastq import proc_fastq
 from targqc.region_coverage import make_region_reports
 from targqc.general_report import make_general_reports
 from targqc.Target import Target
-from targqc.summarize import summarize_targqc
+from targqc.summarize import make_tarqc_html_report, combined_regional_reports
 
 targqc_repr              = 'TargQC'
 targqc_name              = 'targqc'
@@ -100,14 +100,31 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
         make_general_reports(view, samples, target, genome, depth_threshs, padding, num_pairs_by_sample,
                              is_debug=is_debug, reannotate=reannotate)
 
-        info()
+    info()
+    info('*' * 70)
+    tsv_fpath, html_fpath = make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=target_bed_fpath)
+    info('TargQC summary saved in: ')
+    info('  ' + html_fpath)
+    info('  ' + tsv_fpath)
+
+    info()
+    with parallel_view(len(samples), parallel_cfg, join(work_dir, 'sge_bam')) as view:
         info('Making region-level reports...')
         make_region_reports(view, work_dir, samples, target, genome, depth_threshs)
 
     info()
     info('*' * 70)
-    info('Summarizing TargQC coverage statistics for all samples...')
-    summarize_targqc(parallel_cfg.threads, output_dir, work_dir, samples, bed_fpath=target_bed_fpath)
+    tsv_region_rep_fpath = combined_regional_reports(work_dir, output_dir, samples)
+
+    info()
+    info('*' * 70)
+    info('TargQC summary saved in: ')
+    info('  ' + html_fpath)
+    info('  ' + tsv_fpath)
+    info('Per-region coverage statistics saved into:')
+    info('  ' + tsv_region_rep_fpath)
+
+    return html_fpath
 
     # for general_report, per_gene_report, sample in zip(general_reports, per_gene_reports, samples):
     #     info('')
