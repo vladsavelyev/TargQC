@@ -13,6 +13,7 @@ gffutils
 nose
 coverage
 pysam
+beautifulsoup4
 matplotlib   # for multiqc
 click        # for multiqc
 jinja2       # for multiqc
