@@ -50,6 +50,6 @@ targqc/version.py
 
 tests/data/bwa
 tests/data/chr21
-tests/develop_results
 tests/gold_standard
 tests/results
+tests/results_devel

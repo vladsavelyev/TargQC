@@ -5,7 +5,7 @@ from os.path import dirname, join, exists, isfile, splitext, basename, isdir, re
 from datetime import datetime
 from collections import namedtuple
 
-from Utils.testing import BaseTestCase, info, check_call
+from Utils.testing import BaseTestCase, info, check_call, swap_output
 
 
 class BaseTargQC(BaseTestCase):
@@ -73,10 +73,8 @@ class BaseTargQC(BaseTestCase):
         if keep_work_dir: cmdl.append('--keep-work-dir')
 
         output_dir = output_dir or self._default_output_dir()
-        if exists(output_dir) and reuse_output_dir is False:
-            last_changed = datetime.fromtimestamp(getmtime(output_dir))
-            prev_output_dir = output_dir + '_' + last_changed.strftime("%Y_%m_%d_%H_%M_%S")
-            os.rename(output_dir, prev_output_dir)
+        if reuse_output_dir is False:
+            swap_output(output_dir)
 
         info('-' * 100)
         check_call(cmdl)
