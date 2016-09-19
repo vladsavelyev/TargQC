@@ -1,3 +1,6 @@
+# 1.3.0
+- BED annotation: --seq2c mode
+
 # 1.2.0
 - Downsampling to 5% by default instead of 500k read pairs
 
