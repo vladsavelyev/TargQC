@@ -160,3 +160,28 @@ class Sample(BaseSample):
         self.picard_dirpath                 = join(self.targqc_dirpath, picard_name)
         self.picard_ins_size_hist_txt_fpath = join(self.picard_dirpath, picard_ishist_fname)
         self.picard_ins_size_hist_pdf_fpath = join(self.picard_dirpath, splitext(picard_ishist_fname)[0] + '.pdf')
+
+
+class OldStyleSample(BaseSample):
+    def __init__(self, name, dirpath, *args, **kwargs):
+        BaseSample.__init__(self, name, dirpath, targqc_dirpath=dirpath, *args, **kwargs)
+        self.targqc_norm_depth_vcf_txt   = None
+        self.targqc_norm_depth_vcf_tsv   = None
+
+        self.targqc_txt_fpath         = join(self.targqc_dirpath, name + '.targetSeq.txt')
+        self.targqc_html_fpath        = join(self.targqc_dirpath, name + '.targetSeq.html')
+        self.targqc_json_fpath        = join(self.targqc_dirpath, name + '.targetSeq.json')
+        self.targqc_detailed_txt      = join(self.targqc_dirpath, name + '.targetSeq.details.gene.txt')
+        self.targqc_detailed_tsv      = join(self.targqc_dirpath, name + '.targetSeq.details.gene.tsv')
+
+        self.qualimap_dirpath = join(self.targqc_dirpath, 'qualimap')
+        self.qualimap_html_fpath            = join(self.qualimap_dirpath, qualimap_report_fname)
+        self.qualimap_genome_results_fpath  = join(self.qualimap_dirpath, qualimap_report_fname)
+        self.qualimap_raw_dirpath           = join(self.qualimap_dirpath, qualimap_raw_data_dirname)
+        self.qualimap_ins_size_hist_fpath   = join(self.qualimap_raw_dirpath, qualimap_ishist_fname)
+        self.qualimap_cov_hist_fpath        = join(self.qualimap_raw_dirpath, qualimap_covhist_fname)
+        self.qualimap_gc_hist_fpath         = join(self.qualimap_raw_dirpath, qualimap_gchist_fname)
+
+        self.picard_dirpath                 = join(self.targqc_dirpath, picard_name)
+        self.picard_ins_size_hist_txt_fpath = join(self.picard_dirpath, picard_ishist_fname)
+        self.picard_ins_size_hist_pdf_fpath = join(self.picard_dirpath, splitext(picard_ishist_fname)[0] + '.pdf')
