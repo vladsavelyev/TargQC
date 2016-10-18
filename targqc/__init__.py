@@ -5,7 +5,6 @@ import Utils.reference_data as ref
 from Utils.Sample import BaseSample
 from Utils.file_utils import safe_mkdir, can_reuse
 from Utils.sambamba import index_bam
-from Utils.parallel import parallel_view
 from Utils.logger import info, critical, debug
 
 from targqc import config
@@ -77,6 +76,8 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
          reannotate=reannotate, genome=genome, is_debug=is_debug)
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
+
+    from Utils.parallel import parallel_view
     if fastq_samples:
         if not bwa_prefix:
             critical('--bwa-prefix is required when running from fastq')
