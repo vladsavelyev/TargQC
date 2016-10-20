@@ -44,7 +44,7 @@ targqc *.bam --bed target.bed -g hg19 -o targqc_results -t 3
 ### Cluster
 Run using 3 jobs, using SGE scheduler, and queue "queue":
 ```
-targqc *.bam --bed target.bed -g hg19 -o targqc_results -t 3 -s sge -q queue -r pename=smp
+targqc *.bam --bed target.bed -g hg19 -o targqc_results -t 3 -s sge -q batch.q -r pename=smp
 ```
 If the number of samples is higher than the requested number of jobs, the processes within job will be additionally parallelized using threads, so the full number of occupied cores will equal the number of requested threads (-t)
 

@@ -66,6 +66,7 @@ setup(
         join('scripts', script_name),
         join('GeneAnnotation', 'annotate_bed.py'),
         join('Utils', 'tools', 'sort_bed.py'),
+        join('Utils', 'tools', 'bed_venn.py'),
         join('Utils', 'tools', 'html_to_base64.py'),
     ],
     install_requires=setup_utils.get_reqs(),

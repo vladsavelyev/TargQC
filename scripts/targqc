@@ -19,6 +19,7 @@ import targqc
 from targqc import config
 from targqc import Sample
 
+
 options = [
     (['--test'], dict(
         dest='test',
