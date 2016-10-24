@@ -12,13 +12,13 @@ package_name = 'targqc'
 
 from Utils import setup_utils
 
-if setup_utils.is_cleaning():
-    setup_utils.clean_package(package_name='multiqc_targqc', dirpath='MultiQC')
+# if setup_utils.is_cleaning():
+#     setup_utils.clean_package(package_name='multiqc', dirpath='MultiQC')
 
 version = setup_utils.init(name, package_name, __file__)
 
 
-setup_utils.run_cmdl('cd MultiQC; python setup.py ' + sys.argv[-1] + '; cd ..')
+# setup_utils.run_cmdl('cd MultiQC; python setup.py ' + sys.argv[-1] + '; cd ..')
 
 
 if setup_utils.is_installing():

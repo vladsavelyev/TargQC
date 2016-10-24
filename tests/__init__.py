@@ -94,7 +94,7 @@ class BaseTargQC(BaseTestCase):
         info('')
 
     def _run_multiqc(self, output_dir):
-        cmdl = 'multiqc_targqc -f ' + output_dir + ' -o ' + output_dir
+        cmdl = 'multiqc -f -v ' + output_dir + ' -o ' + output_dir
         check_call(cmdl)
         self._check_file(join(output_dir, 'multiqc_report.html'))
         info('')

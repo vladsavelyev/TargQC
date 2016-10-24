@@ -7,6 +7,3 @@
 [submodule "bwa"]
 	path = bwa
 	url = https://github.com/lh3/bwa.git
-[submodule "MultiQC"]
-	path = MultiQC
-	url = https://github.com/AstraZeneca-NGS/MultiQC
