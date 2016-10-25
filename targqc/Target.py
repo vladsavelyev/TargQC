@@ -156,7 +156,7 @@ class Target:
             if r[ga.BedCols.FEATURE] != 'gene':
                 gene = r[ga.BedCols.HUGO]
                 tx = r[ga.BedCols.ENSEMBL_ID]
-                r_by_tx_by_gene[gene][tx].append(r)
+                r_by_tx_by_gene[gene][tx].append(r.fields)
 
         with file_transaction(work_dir, self.wgs_bed_fpath) as tx:
             with open(tx, 'w') as out:
