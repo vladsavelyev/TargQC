@@ -21,4 +21,3 @@ matplotlib   # for multiqc
 click        # for multiqc
 jinja2       # for multiqc
 simplejson   # for multiqc
-https://github.com/vladsaveliev/MultiQC.git
