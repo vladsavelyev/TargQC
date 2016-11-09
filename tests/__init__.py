@@ -83,7 +83,7 @@ class BaseTargQC(BaseTestCase):
 
         self._check_results(output_dir, used_samples)
 
-        self._run_multiqc(output_dir)
+        # self._run_multiqc(output_dir)
 
         if self.remove_work_dir_on_success and not reuse_intermediate and not reuse_output_dir:
             work_dir = join(output_dir, 'work')
