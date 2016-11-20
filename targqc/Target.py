@@ -2,12 +2,12 @@ from collections import defaultdict
 from os.path import isfile, join, basename
 import GeneAnnotation as ga
 from GeneAnnotation.annotate_bed import annotate, overlap_with_features, get_sort_key, tx_sort_key
-from Utils import reference_data
-from Utils.bedtools import BedTool
-from Utils.bed_utils import sort_bed, verify_bed, get_genes_from_bed
-from Utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction, verify_file, can_reuse
-from Utils.logger import debug, info, warn
-from Utils.utils import OrderedDefaultDict
+from ngs_utils import reference_data
+from ngs_utils.bedtools import BedTool
+from ngs_utils.bed_utils import sort_bed, verify_bed, get_genes_from_bed
+from ngs_utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction, verify_file, can_reuse
+from ngs_utils.logger import debug, info, warn
+from ngs_utils.utils import OrderedDefaultDict
 from targqc import config as cfg
 
 

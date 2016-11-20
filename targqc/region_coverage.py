@@ -6,13 +6,13 @@ from os.path import isfile, join
 import GeneAnnotation as ga
 from GeneAnnotation import BedCols
 from GeneAnnotation.annotate_bed import tx_sort_key, get_sort_key
-from Utils import reference_data
-from Utils.bed_utils import count_bed_cols
-from Utils.sambamba import sambamba_depth
-from Utils.call_process import run
-from Utils.file_utils import intermediate_fname, verify_file, file_transaction, can_reuse
-from Utils.logger import info, debug
-from Utils.utils import OrderedDefaultDict
+from ngs_utils import reference_data
+from ngs_utils.bed_utils import count_bed_cols
+from ngs_utils.sambamba import sambamba_depth
+from ngs_utils.call_process import run
+from ngs_utils.file_utils import intermediate_fname, verify_file, file_transaction, can_reuse
+from ngs_utils.logger import info, debug
+from ngs_utils.utils import OrderedDefaultDict
 
 
 def make_region_reports(view, work_dir, samples, target, genome, depth_thresholds):

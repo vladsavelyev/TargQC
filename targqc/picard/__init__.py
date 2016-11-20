@@ -3,9 +3,9 @@ from os.path import dirname, basename, join, abspath, isdir
 
 import shutil
 
-from Utils.call_process import run
-from Utils.file_utils import safe_mkdir, verify_file, file_transaction
-from Utils.logger import info, err
+from ngs_utils.call_process import run
+from ngs_utils.file_utils import safe_mkdir, verify_file, file_transaction
+from ngs_utils.logger import info, err
 
 
 picard = 'java -jar ' + abspath(join(dirname(__file__), 'picard', 'picard.jar'))

@@ -1,9 +1,6 @@
 [submodule "GeneAnnotation"]
 	path = GeneAnnotation
 	url = https://github.com/vladsaveliev/GeneAnnotation
-[submodule "Utils"]
-	path = Utils
-	url = https://github.com/vladsaveliev/Utils.git
 [submodule "bwa"]
 	path = bwa
 	url = https://github.com/lh3/bwa.git

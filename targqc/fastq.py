@@ -4,11 +4,11 @@ import gzip
 from itertools import izip, product
 from os.path import splitext, dirname, join, basename, isfile, abspath
 
-from Utils import sambamba
-from Utils.bam_utils import verify_bam
-from Utils.call_process import run
-from Utils.file_utils import open_gzipsafe, file_transaction, verify_file, add_suffix, safe_mkdir, which, can_reuse
-from Utils.logger import critical, debug, info, warn, err
+from ngs_utils import sambamba
+from ngs_utils.bam_utils import verify_bam
+from ngs_utils.call_process import run
+from ngs_utils.file_utils import open_gzipsafe, file_transaction, verify_file, add_suffix, safe_mkdir, which, can_reuse
+from ngs_utils.logger import critical, debug, info, warn, err
 
 
 def make_downsampled_fpath(work_dir, fastq_fpath):
@@ -87,7 +87,7 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, num_pa
 
 
 def count_read_pairs(s_name, work_dir, fastq_fpath):
-    from Utils.logger import info
+    from ngs_utils.logger import info
 
     pairs_counts_fpath = make_pair_counts_fpath(work_dir)
     if can_reuse(pairs_counts_fpath, fastq_fpath):

@@ -5,11 +5,11 @@ from os.path import getsize, dirname, join, abspath, relpath, isdir, exists, spl
 from os import listdir
 import shutil
 
-from Utils.call_process import run
-from Utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname, \
+from ngs_utils.call_process import run
+from ngs_utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname, \
     can_reuse
-from Utils.logger import info, warn, err, critical, debug
-from Utils.reporting.reporting import write_tsv_rows
+from ngs_utils.logger import info, warn, err, critical, debug
+from ngs_utils.reporting.reporting import write_tsv_rows
 
 import targqc.config as cfg
 import targqc

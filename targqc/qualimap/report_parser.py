@@ -1,4 +1,4 @@
-from Utils.logger import warn
+from ngs_utils.logger import warn
 
 metric_names = [
     'Reference size',

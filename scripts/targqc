@@ -6,14 +6,14 @@ import sys
 from optparse import OptionParser, SUPPRESS_HELP
 from os.path import isfile, join, isdir, exists, dirname, islink
 
-import Utils.reference_data as ref
-from Utils import logger
-from Utils.bed_utils import verify_bed
-from Utils.bam_utils import verify_bam
-from Utils.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
-from Utils.logger import critical, err, info, warn, debug, is_local
-from Utils.proc_args import read_samples, find_bams, find_fastq_pairs, set_up_dirs
-from Utils.parallel import ParallelCfg
+import ngs_utils.reference_data as ref
+from ngs_utils import logger
+from ngs_utils.bed_utils import verify_bed
+from ngs_utils.bam_utils import verify_bam
+from ngs_utils.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
+from ngs_utils.logger import critical, err, info, warn, debug, is_local
+from ngs_utils.proc_args import read_samples, find_bams, find_fastq_pairs, set_up_dirs
+from ngs_utils.parallel import ParallelCfg
 
 import targqc
 from targqc import config

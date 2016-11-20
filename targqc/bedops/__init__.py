@@ -1,8 +1,8 @@
 from os.path import abspath, join, dirname, isfile
 from sys import platform as _platform
 
-from Utils.file_utils import which
-from Utils.logger import warn
+from ngs_utils.file_utils import which
+from ngs_utils.logger import warn
 
 
 def get_executable():

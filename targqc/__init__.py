@@ -1,11 +1,11 @@
 import os
 from os.path import join, splitext, dirname
 
-import Utils.reference_data as ref
-from Utils.Sample import BaseSample
-from Utils.file_utils import safe_mkdir, can_reuse
-from Utils.sambamba import index_bam
-from Utils.logger import info, critical, debug
+import ngs_utils.reference_data as ref
+from ngs_utils.Sample import BaseSample
+from ngs_utils.file_utils import safe_mkdir, can_reuse
+from ngs_utils.sambamba import index_bam
+from ngs_utils.logger import info, critical, debug
 
 from targqc import config
 from targqc.fastq import proc_fastq
@@ -77,7 +77,7 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
 
-    from Utils.parallel import parallel_view
+    from ngs_utils.parallel import parallel_view
     if fastq_samples:
         if not bwa_prefix:
             critical('--bwa-prefix is required when running from fastq')

@@ -1,24 +1,19 @@
 #!/usr/bin/env python
-import os
 import sys
 from os.path import join, isfile, abspath, dirname
 
+import pip
 from setuptools import setup, find_packages
+
+pip.main(['install', 'git+git://github.com/vladsaveliev/NGS_Utils.git'])
+from ngs_utils import setup_utils
 
 
 name = 'TargQC'
 script_name = 'targqc'
 package_name = 'targqc'
 
-from Utils import setup_utils
-
-# if setup_utils.is_cleaning():
-#     setup_utils.clean_package(package_name='multiqc', dirpath='MultiQC')
-
 version = setup_utils.init(name, package_name, __file__)
-
-
-# setup_utils.run_cmdl('cd MultiQC; python setup.py ' + sys.argv[-1] + '; cd ..')
 
 
 if setup_utils.is_installing():
@@ -65,9 +60,6 @@ setup(
     scripts=[
         join('scripts', script_name),
         join('GeneAnnotation', 'annotate_bed.py'),
-        join('Utils', 'tools', 'sort_bed.py'),
-        join('Utils', 'tools', 'bed_venn.py'),
-        join('Utils', 'tools', 'html_to_base64.py'),
     ],
     install_requires=setup_utils.get_reqs(),
     setup_requires=['numpy'],
