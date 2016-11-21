@@ -44,8 +44,7 @@ setup(
             'Ensembl/hg19/ensembl.bed.gz.tbi',
             'Ensembl/hg38/ensembl.bed.gz',
             'Ensembl/hg38/ensembl.bed.gz.tbi',
-            ],
-        setup_utils.utils_package_name: setup_utils.get_utils_package_files(),
+        ],
         package_name: [
             'bedops/bedops_*',
             'qualimap/*/qualimap',
@@ -56,7 +55,7 @@ setup(
             'picard/picard/*.jar',
             'gender/*.bed',
             'bwa/bwa',
-            ],
+        ],
     },
     include_package_data=True,
     zip_safe=False,
