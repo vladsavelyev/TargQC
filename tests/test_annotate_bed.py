@@ -6,8 +6,8 @@ from datetime import datetime
 from collections import namedtuple
 from nose import SkipTest
 
-from Utils.file_utils import add_suffix
-from Utils.testing import BaseTestCase, swap_output, check_call
+from ngs_utils.file_utils import add_suffix
+from ngs_utils.testing import BaseTestCase, swap_output, check_call
 from tests import BaseTargQC, info
 
 

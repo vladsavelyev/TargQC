@@ -5,7 +5,7 @@ from os.path import dirname, join, exists, isfile, splitext, basename, isdir, re
 from datetime import datetime
 from collections import namedtuple
 
-from Utils.testing import BaseTestCase, info, check_call, swap_output
+from ngs_utils.testing import BaseTestCase, info, check_call, swap_output
 
 
 class BaseTargQC(BaseTestCase):

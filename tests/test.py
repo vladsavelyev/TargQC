@@ -44,9 +44,9 @@ class UnitTests(BaseTargQC):
 
     def test_13_api(self):
         import targqc
-        import Utils.reference_data as ref
-        from Utils.file_utils import safe_mkdir
-        from Utils.parallel import ParallelCfg
+        import ngs_utils.reference_data as ref
+        from ngs_utils.file_utils import safe_mkdir
+        from ngs_utils.parallel import ParallelCfg
 
         genome = 'hg19-chr21'
         fai_fpath = ref.get_fai(genome)
