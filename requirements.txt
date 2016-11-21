@@ -17,4 +17,3 @@ coverage
 pysam
 beautifulsoup4
 lxml
-git+git://github.com/vladsaveliev/NGS_Utils.git

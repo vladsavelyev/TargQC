@@ -5,8 +5,10 @@ from os.path import join, isfile, abspath, dirname
 import pip
 from setuptools import setup, find_packages
 
-pip.main(['install', 'git+git://github.com/vladsaveliev/NGS_Utils.git'])
-from ngs_utils import setup_utils
+try:
+    from ngs_utils import setup_utils
+except ImportError:
+    pip.main(['install', 'git+git://github.com/vladsaveliev/NGS_Utils.git'])
 
 
 name = 'TargQC'
