@@ -24,8 +24,10 @@ def make_region_reports(view, work_dir, samples, target, genome, depth_threshold
 
     info('Calculating coverage statistics for CDS and exon regions from RefSeq...')
 
-    depth_thresholds_by_sample = {s.name: sorted(depth_thresholds + [max(1, int(s.avg_depth / 2))])
-                                  for s in samples}
+    depth_thresholds_by_sample = dict()
+    for s in samples:
+        # if s.avg_depth:
+        depth_thresholds_by_sample[s.name] = depth_thresholds  #sorted(set(depth_thresholds + [max(1, int(s.avg_depth / 2))]))
 
     # debug()
     # debug('Filtering features BED to have only CDS and Exon features')

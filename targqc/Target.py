@@ -12,8 +12,8 @@ from targqc import config as cfg
 
 
 class Target:
-    def __init__(self, work_dir, output_dir, fai_fpath, padding, bed_fpath=None,
-                 reannotate=False, genome=None, is_debug=False):
+    def __init__(self, work_dir, output_dir, fai_fpath, bed_fpath=None,
+                 padding=None, reannotate=False, genome=None, is_debug=False):
         self.bed = None
         self.original_bed_fpath = None
         self.bed_fpath = None  # with genomic features
@@ -33,8 +33,8 @@ class Target:
             self.is_wgs = False
             verify_bed(bed_fpath, is_critical=True)
             self.original_bed_fpath = bed_fpath
-            self._make_target_bed(bed_fpath, work_dir, output_dir, padding=padding, is_debug=is_debug,
-                                  fai_fpath=fai_fpath, genome=genome, reannotate=reannotate)
+            self._make_target_bed(bed_fpath, work_dir, output_dir, padding=padding,
+                is_debug=is_debug, fai_fpath=fai_fpath, genome=genome, reannotate=reannotate)
         else:
             info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
             self.is_wgs = True
@@ -46,8 +46,8 @@ class Target:
         else:
             return None
 
-    def _make_target_bed(self, bed_fpath, work_dir, output_dir, padding, is_debug,
-                         fai_fpath=None, genome=None, reannotate=False):
+    def _make_target_bed(self, bed_fpath, work_dir, output_dir, is_debug,
+                         padding=None, fai_fpath=None, genome=None, reannotate=False):
         clean_target_bed_fpath = intermediate_fname(work_dir, bed_fpath, 'clean')
         if not can_reuse(clean_target_bed_fpath, bed_fpath):
             debug()
@@ -77,11 +77,11 @@ class Target:
             if BedTool(sort_target_bed_fpath).field_count() == 3 or reannotate:
                 info('Annotating target BED file and collecting overlapping genome features')
                 overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
-                     genome=genome, is_debug=is_debug, extended=True, reannotate=reannotate)
+                     genome=genome, is_debug=is_debug, extended=True, reannotate=reannotate, only_canonical=True)
             else:
                 info('Overlapping with genomic features:')
                 overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
-                     genome=genome, is_debug=is_debug, extended=True)
+                     genome=genome, is_debug=is_debug, extended=True, only_canonical=True)
             debug('Saved to ' + ann_target_bed_fpath)
             verify_file(ann_target_bed_fpath, is_critical=True)
 
@@ -105,7 +105,8 @@ class Target:
         self.regions_num = self.get_capture_bed().count()
 
         self._make_qualimap_bed(work_dir)
-        self._make_padded_bed(work_dir, fai_fpath, padding)
+        if padding:
+            self._make_padded_bed(work_dir, fai_fpath, padding)
 
     def _make_padded_bed(self, work_dir, fai_fpath, padding):
         if self.is_wgs:

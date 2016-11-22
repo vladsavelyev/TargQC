@@ -257,7 +257,7 @@ MALE_TARGET_REGIONS_FACTOR = 0.7
 AVE_DEPTH_THRESHOLD_TO_DETERMINE_SEX = 5
 FEMALE_Y_COVERAGE_FACTOR = 10.0
 
-def _determine_sex(work_dir, bam_fpath, ave_depth, genome, target_bed=None):
+def determine_sex(work_dir, bam_fpath, ave_depth, genome, target_bed=None):
     info()
     info('Determining sex')
 
@@ -388,8 +388,8 @@ def _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_sta
 
     chrom_lengths = reference_data.get_chrom_lengths(genome)
     if 'Y' in chrom_lengths or 'chrY' in chrom_lengths:
-        reads_stats['gender'] = _determine_sex(sample.work_dir, sample.bam, depth_stats['ave_depth'],
-                                               genome, target.get_capture_bed())
+        reads_stats['gender'] = determine_sex(sample.work_dir, sample.bam, depth_stats['ave_depth'],
+                                              genome, target.get_capture_bed())
         info()
 
     if 'bases_by_depth' in depth_stats:
