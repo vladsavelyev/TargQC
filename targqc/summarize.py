@@ -55,7 +55,7 @@ def make_tarqc_html_report(output_dir, work_dir, samples, bed_fpath=None, tag_by
 
     fn = splitext(basename(samples[0].targqc_txt_fpath))[0]
     tsv_fpath = targqc_full_report.save_tsv(join(output_dir, fn + '.tsv'))
-    html_fpath = targqc_full_report.save_html(join(output_dir, fn + '.html'), 'TargQC', is_debug=tc.is_debug)
+    html_fpath = targqc_full_report.save_html(join(output_dir, fn + '.html'), 'TargQC')
 
     return tsv_fpath, html_fpath
 

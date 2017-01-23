@@ -5,14 +5,14 @@ from os.path import join, abspath, realpath, dirname, relpath
 
 import GeneAnnotation
 from ngs_utils.bedtools import BedTool
-from ngs_utils import reference_data
+from ngs_utils import reference_data, logger
 from targqc.Target import Target
 from targqc.qualimap import report_parser, runner
 # from targqc.qualimap.report_parser import parse_qualimap_sample_report
 # from targqc import qualimap.runner import run_qualimap
 
 from ngs_utils.bed_utils import get_padded_bed_file, intersect_bed, calc_sum_of_regions, count_bed_cols,\
-    calc_bases_within_threshs, calc_rate_within_normal, Region, GeneInfo
+    calc_bases_within_threshs, calc_rate_within_normal
 from ngs_utils.sambamba import index_bam, number_mapped_reads_on_target, number_of_mapped_reads, sambamba_depth
 from ngs_utils.file_utils import intermediate_fname, verify_file, safe_mkdir, can_reuse
 from ngs_utils.logger import critical, info, err, warn, debug
@@ -573,7 +573,7 @@ def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
     info('Saving reports...')
     report.save_json(sample.targqc_json_fpath)
     report.save_txt(sample.targqc_txt_fpath)
-    report.save_html(sample.targqc_html_fpath, caption='Target coverage statistics for ' + sample.name, is_debug=is_debug)
+    report.save_html(sample.targqc_html_fpath, caption='Target coverage statistics for ' + sample.name)
     debug()
     debug('Saved to ' + dirname(report.txt_fpath))
     return report
