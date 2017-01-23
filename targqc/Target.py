@@ -29,14 +29,14 @@ class Target:
         self.fraction = None
 
         if bed_fpath:
-            info('Using target BED file ' + bed_fpath)
+            debug('Using target BED file ' + bed_fpath)
             self.is_wgs = False
             verify_bed(bed_fpath, is_critical=True)
             self.original_bed_fpath = bed_fpath
             self._make_target_bed(bed_fpath, work_dir, output_dir, padding=padding,
                 is_debug=is_debug, fai_fpath=fai_fpath, genome=genome, reannotate=reannotate)
         else:
-            info('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
+            debug('No input BED. Assuming whole genome. For region-based reports, analysing RefSeq CDS.')
             self.is_wgs = True
             self._make_wgs_regions_file(work_dir, genome=genome)
 
@@ -51,7 +51,7 @@ class Target:
         clean_target_bed_fpath = intermediate_fname(work_dir, bed_fpath, 'clean')
         if not can_reuse(clean_target_bed_fpath, bed_fpath):
             debug()
-            info('Cleaning target BED file...')
+            debug('Cleaning target BED file...')
             bed = BedTool(bed_fpath)
             if bed.field_count() > 4:
                 bed = bed.cut(range(4))
@@ -66,7 +66,7 @@ class Target:
         sort_target_bed_fpath = intermediate_fname(work_dir, clean_target_bed_fpath, 'sorted')
         if not can_reuse(sort_target_bed_fpath, clean_target_bed_fpath):
             debug()
-            info('Sorting target BED file...')
+            debug('Sorting target BED file...')
             sort_target_bed_fpath = sort_bed(clean_target_bed_fpath, output_bed_fpath=sort_target_bed_fpath, fai_fpath=fai_fpath)
             debug('Saved to ' + sort_target_bed_fpath)
             verify_file(sort_target_bed_fpath, is_critical=True)
@@ -75,11 +75,11 @@ class Target:
         if not can_reuse(ann_target_bed_fpath, sort_target_bed_fpath):
             debug()
             if BedTool(sort_target_bed_fpath).field_count() == 3 or reannotate:
-                info('Annotating target BED file and collecting overlapping genome features')
+                debug('Annotating target BED file and collecting overlapping genome features')
                 overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
                      genome=genome, is_debug=is_debug, extended=True, reannotate=reannotate, only_canonical=True)
             else:
-                info('Overlapping with genomic features:')
+                debug('Overlapping with genomic features:')
                 overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
                      genome=genome, is_debug=is_debug, extended=True, only_canonical=True)
             debug('Saved to ' + ann_target_bed_fpath)
@@ -152,7 +152,7 @@ class Target:
         r_by_tx_by_gene = OrderedDefaultDict(lambda: defaultdict(list))
         all_features = ga.get_all_features(genome or cfg.genome, high_confidence=True)
 
-        info('Select best transcript to report')
+        debug('Select best transcript to report')
         for r in all_features:
             if r[ga.BedCols.FEATURE] != 'gene':
                 gene = r[ga.BedCols.HUGO]

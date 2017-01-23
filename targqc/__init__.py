@@ -6,6 +6,7 @@ from ngs_utils.Sample import BaseSample
 from ngs_utils.file_utils import safe_mkdir, can_reuse
 from ngs_utils.sambamba import index_bam
 from ngs_utils.logger import info, critical, debug
+from ngs_utils import logger
 
 from targqc import config
 from targqc.fastq import proc_fastq
@@ -60,8 +61,6 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
                  downsample_to=config.downsample_fraction,
                  padding=config.padding,
                  dedup=config.dedup,
-                 reuse=config.reuse_intermediate,
-                 is_debug=config.is_debug,
                  num_pairs_by_sample=None,
                  reannotate=config.reannotate,
                  ):
@@ -73,7 +72,7 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
 
     fai_fpath = fai_fpath or ref.get_fai(genome)
     target = Target(work_dir, output_dir, fai_fpath, padding=padding, bed_fpath=target_bed_fpath,
-         reannotate=reannotate, genome=genome, is_debug=is_debug)
+         reannotate=reannotate, genome=genome, is_debug=logger.is_debug)
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
 
@@ -99,7 +98,7 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
 
         info('Making general reports...')
         make_general_reports(view, samples, target, genome, depth_threshs, padding, num_pairs_by_sample,
-                             is_debug=is_debug, reannotate=reannotate)
+                             is_debug=logger.is_debug, reannotate=reannotate)
 
     info()
     info('*' * 70)

@@ -203,12 +203,13 @@ def main(args):
     if not args:
         parser.error(msg='Specify at least one BAM file or a FastQ pair.')
 
-    is_debug = logger.is_debug = opts.debug
-    output_dir, work_dir = set_up_dirs(
+    if opts.work_dir:
+        opts.debug = True
+    logger.init(opts.debug)
+
+    output_dir, work_dir, log_dir = set_up_dirs(
             targqc.targqc_name, opts.output_dir, opts.work_dir,
-            opts.log_dir, opts.reuse_intermediate)
-    info(' '.join(sys.argv))
-    info()
+            opts.log_dir)
 
     tag = ('targqc_' + opts.project_name) if opts.project_name else 'targqc'
     parallel_cfg = ParallelCfg(opts.scheduler, opts.queue, opts.resources,
@@ -242,7 +243,6 @@ def main(args):
                         downsample_to=downsample_to,
                         padding=padding,
                         dedup=dedup,
-                        is_debug=is_debug,
                         reannotate=reannotate)
 
     # info()
@@ -254,7 +254,7 @@ def main(args):
         critical('Error: expected results not found in the output dir ' + output_dir)
 
     # removing only automatically created work_dir, unless debug, and unless --reuse
-    if all([not is_debug,
+    if all([not logger.is_debug,
             not opts.keep_work_dir,       # option set to explicitly keep work dir
             not opts.reuse_intermediate,  # reusing previous work_dir, and want to keep the dir being reused
             not opts.work_dir,            # removing only automatically created work dir
