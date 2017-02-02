@@ -41,7 +41,7 @@ def run_qualimap(work_dir, output_dir, output_fpaths, bam_fpath, genome, bed_fpa
     mem_cmdl = '--java-mem-size=' + mem
 
     cmdline = (find_executable() + ' bamqc --skip-duplicated -nt {threads} {mem_cmdl} -nr 5000 '
-        '-bam {bam_fpath} -outdir {output_dir} -c')
+        '-bam {bam_fpath} -outdir {output_dir}')
 
     if genome.startswith('hg') or genome.startswith('GRCh'):
         cmdline += ' -gd HUMAN'
