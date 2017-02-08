@@ -16,7 +16,7 @@
 git clone --recursive https://github.com/vladsaveliev/TargQC
 cd TargQC
 virtualenv venv_targqc && source venv_targqc/bin/activate  # optional, but recommended if you are not an admin
-pip install --upgrade setuptools pip
+pip install --upgrade pip setuptools
 pip install -r requirements.txt
 python setup.py install
 ```
