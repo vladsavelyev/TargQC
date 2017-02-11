@@ -4,7 +4,7 @@ from collections import OrderedDict
 from os.path import join, abspath, realpath, dirname, relpath
 
 import GeneAnnotation
-from ngs_utils.bedtools import BedTool
+from pybedtools import BedTool
 from ngs_utils import reference_data, logger
 from targqc.Target import Target
 from targqc.qualimap import report_parser, runner

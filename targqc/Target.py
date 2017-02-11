@@ -3,7 +3,7 @@ from os.path import isfile, join, basename
 import GeneAnnotation as ga
 from GeneAnnotation.annotate_bed import annotate, overlap_with_features, get_sort_key, tx_sort_key
 from ngs_utils import reference_data
-from ngs_utils.bedtools import BedTool
+from pybedtools import BedTool
 from ngs_utils.bed_utils import sort_bed, verify_bed, get_genes_from_bed
 from ngs_utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction, verify_file, can_reuse
 from ngs_utils.logger import debug, info, warn
