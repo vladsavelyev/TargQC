@@ -9,9 +9,22 @@ before_install:
   - wget -qO- http://quast.bioinf.spbau.ru/static/chr21.tar.gz | tar xvz -C tests/data
   - wget -qO- http://quast.bioinf.spbau.ru/static/bwa.tar.gz | tar xvz -C tests/data
   - pip install --upgrade setuptools pip
+  # INSTALLIG CONDA
+  # Temporal fix for networking problem: https://github.com/travis-ci/travis-ci/issues/1484
+  - echo "127.0.1.1 "`hostname` | sudo tee /etc/hosts
+  # Get and install anaconda for custom Python installation
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
+  - bash Miniconda-latest-Linux-x86_64.sh -b -p $HOME/anaconda
+  - export PATH=$HOME/anaconda/bin/:$PATH
+  # The next couple lines fix a crash with multiprocessing on Travis and
+  # are not specific to using Miniconda
+  - sudo rm -rf /dev/shm
+  - sudo ln -s /run/shm /dev/shm
+  # Install conda packages
 
 install:
   - python setup.py install
+  - conda install --yes -c bioconda -c conda-forge htslib=1.3 bedtools sambamba bwa -q
 
 script:
   - nosetests --nocapture tests/test_travis.py

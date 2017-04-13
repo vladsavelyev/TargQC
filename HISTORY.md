@@ -1,3 +1,6 @@
+# 1.4.1
+- Update BED file annotation package
+
 # 1.3.0
 - BED annotation: --seq2c mode
 

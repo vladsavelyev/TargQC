@@ -96,14 +96,14 @@ class BaseTargQC(BaseTestCase):
 
     def _check_results(self, output_dir, used_samples):
         assert isdir(output_dir)
-        self._check_file(join(output_dir, 'regions.tsv'))
-        self._check_file(join(output_dir, 'summary.tsv'))
-        self._check_file(join(output_dir, 'summary.html'), diff_ignore_re='report_date')
+        self._check_file_throws(join(output_dir, 'regions.tsv'))
+        self._check_file_throws(join(output_dir, 'summary.tsv'))
+        self._check_file_throws(join(output_dir, 'summary.html'), ignore_matching_lines='report_date')
         for s in used_samples:
             s_dir = join(output_dir, s.name)
             assert isdir(s_dir)
-            self._check_file(join(s_dir, 'regions.tsv'))
-            self._check_file(join(s_dir, 'summary.txt'))
-            self._check_file(join(s_dir, 'summary.html'), diff_ignore_re='report_date')
-            self._check_file(join(s_dir, 'summary.json'), diff_ignore_re='work_dir')
+            self._check_file_throws(join(s_dir, 'regions.tsv'))
+            self._check_file_throws(join(s_dir, 'summary.txt'))
+            self._check_file_throws(join(s_dir, 'summary.html'), ignore_matching_lines='report_date')
+            self._check_file_throws(join(s_dir, 'summary.json'), ignore_matching_lines='work_dir')
         # TODO: check line numbers and some values isntead of diff?
