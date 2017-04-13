@@ -1,13 +1,15 @@
 from collections import defaultdict
 from os.path import isfile, join, basename
-import GeneAnnotation as ga
-from GeneAnnotation.annotate_bed import annotate, overlap_with_features, get_sort_key, tx_sort_key
 from ngs_utils import reference_data
 from pybedtools import BedTool
 from ngs_utils.bed_utils import sort_bed, verify_bed, get_genes_from_bed
 from ngs_utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction, verify_file, can_reuse
 from ngs_utils.logger import debug, info, warn
 from ngs_utils.utils import OrderedDefaultDict
+
+from bed_annotation.bed_annotation import overlap_with_features, get_sort_key, tx_priority_sort_key
+import ensembl as ebl
+
 from targqc import config as cfg
 
 
@@ -42,7 +44,7 @@ class Target:
 
     def get_capture_bed(self):
         if not self.is_wgs:
-            return self.bed.filter(lambda x: x[ga.BedCols.FEATURE] == 'capture')
+            return self.bed.filter(lambda x: x[ebl.BedCols.FEATURE] == 'capture')
         else:
             return None
 
@@ -77,11 +79,11 @@ class Target:
             if BedTool(sort_target_bed_fpath).field_count() == 3 or reannotate:
                 debug('Annotating target BED file and collecting overlapping genome features')
                 overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
-                     genome=genome, is_debug=is_debug, extended=True, reannotate=reannotate, only_canonical=True)
+                     genome=genome, extended=True, reannotate=reannotate, only_canonical=True)
             else:
                 debug('Overlapping with genomic features:')
                 overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
-                     genome=genome, is_debug=is_debug, extended=True, only_canonical=True)
+                     genome=genome, extended=True, only_canonical=True)
             debug('Saved to ' + ann_target_bed_fpath)
             verify_file(ann_target_bed_fpath, is_critical=True)
 
@@ -144,26 +146,26 @@ class Target:
 
     def _make_wgs_regions_file(self, work_dir, genome=None):
         self.wgs_bed_fpath = join(work_dir, 'targqc_features_to_report.bed')
-        if can_reuse(self.wgs_bed_fpath, ga.ensembl_gtf_fpath(genome)):
+        if can_reuse(self.wgs_bed_fpath, ebl.ensembl_gtf_fpath(genome)):
             return self.wgs_bed_fpath
 
         chr_order = reference_data.get_chrom_order(genome or cfg.genome)
 
         r_by_tx_by_gene = OrderedDefaultDict(lambda: defaultdict(list))
-        all_features = ga.get_all_features(genome or cfg.genome, high_confidence=True)
+        all_features = ebl.get_all_features(genome or cfg.genome, high_confidence=True)
 
         debug('Select best transcript to report')
         for r in all_features:
-            if r[ga.BedCols.FEATURE] != 'gene':
-                gene = r[ga.BedCols.HUGO]
-                tx = r[ga.BedCols.ENSEMBL_ID]
+            if r[ebl.BedCols.FEATURE] != 'gene':
+                gene = r[ebl.BedCols.HUGO]
+                tx = r[ebl.BedCols.ENSEMBL_ID]
                 r_by_tx_by_gene[gene][tx].append(r.fields)
 
         with file_transaction(work_dir, self.wgs_bed_fpath) as tx:
             with open(tx, 'w') as out:
                 for gname, r_by_tx in r_by_tx_by_gene.iteritems():
-                    all_tx = (x for xx in r_by_tx.itervalues() for x in xx if x[ga.BedCols.FEATURE] == 'transcript')
-                    tx_sorted_list = [x[ga.BedCols.ENSEMBL_ID] for x in sorted(all_tx, key=tx_sort_key)]
+                    all_tx = (x for xx in r_by_tx.itervalues() for x in xx if x[ebl.BedCols.FEATURE] == 'transcript')
+                    tx_sorted_list = [x[ebl.BedCols.ENSEMBL_ID] for x in sorted(all_tx, key=tx_priority_sort_key)]
                     if not tx_sorted_list:
                         continue
                     tx_id = tx_sorted_list[0]

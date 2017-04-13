@@ -3,9 +3,6 @@
 from collections import defaultdict
 from os.path import isfile, join
 
-import GeneAnnotation as ga
-from GeneAnnotation import BedCols
-from GeneAnnotation.annotate_bed import tx_sort_key, get_sort_key
 from ngs_utils import reference_data
 from ngs_utils.bed_utils import count_bed_cols
 from ngs_utils.sambamba import sambamba_depth
@@ -13,6 +10,8 @@ from ngs_utils.call_process import run
 from ngs_utils.file_utils import intermediate_fname, verify_file, file_transaction, can_reuse
 from ngs_utils.logger import info, debug
 from ngs_utils.utils import OrderedDefaultDict
+
+import ensembl as ebl
 
 
 def make_region_reports(view, work_dir, samples, target, genome, depth_thresholds):
@@ -104,14 +103,14 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                 chrom = fs[0]
                 start, end = int(fs[1]), int(fs[2])
                 region_size = end - start
-                gene_name = fs[BedCols.GENE] if read_count_col != BedCols.GENE else '.'
-                exon = fs[BedCols.EXON]
-                strand = fs[BedCols.STRAND]
-                feature = fs[BedCols.FEATURE]
-                biotype = fs[BedCols.BIOTYPE]
-                transcript = fs[BedCols.ENSEMBL_ID]
-                transcript_overlap = fs[BedCols.TX_OVERLAP_PERCENTAGE]
-                exome_overlap = fs[BedCols.EXON_OVERLAPS_PERCENTAGE]
+                gene_name = fs[ebl.BedCols.GENE] if read_count_col != ebl.BedCols.GENE else '.'
+                exon = fs[ebl.BedCols.EXON]
+                strand = fs[ebl.BedCols.STRAND]
+                feature = fs[ebl.BedCols.FEATURE]
+                biotype = fs[ebl.BedCols.BIOTYPE]
+                transcript = fs[ebl.BedCols.ENSEMBL_ID]
+                transcript_overlap = fs[ebl.BedCols.TX_OVERLAP_PERCENTAGE]
+                exome_overlap = fs[ebl.BedCols.EXON_OVERLAPS_PERCENTAGE]
                 avg_depth = float(fs[mean_cov_col])
                 min_depth = int(fs[min_depth_col]) if min_depth_col is not None else '.'
                 std_dev = float(fs[std_dev_col]) if std_dev_col is not None else '.'

@@ -5,9 +5,19 @@ from os.path import join, isfile, abspath, dirname
 import pip
 from setuptools import setup, find_packages
 
+
+print('Upgrading pip and setuptools...')
+try:
+    pip.main(['install', '--upgrade', 'setuptools', 'pip'])
+except StandardError:
+    sys.stderr.write('Cannot update pip and setuptools, that might cause errors '
+                     'during the following intallation\n')
+
+
 try:
     from ngs_utils import setup_utils
 except ImportError:
+    print('Installing NGS_Utils...')
     pip.main(['install', 'git+git://github.com/vladsaveliev/NGS_Utils.git'])
     from ngs_utils import setup_utils
 
@@ -36,15 +46,12 @@ setup(
     url='https://github.com/vladsaveliev/TargQC',
     download_url='https://github.com/vladsaveliev/TargQC/releases',
     license='GPLv3',
-    packages=find_packages(),
+    packages=[
+        package_name,
+        'ensembl',
+        'bed_annotation',
+    ],
     package_data={
-        'GeneAnnotation': [
-            'Ensembl/biomart.tsv',
-            'Ensembl/hg19/ensembl.bed.gz',
-            'Ensembl/hg19/ensembl.bed.gz.tbi',
-            'Ensembl/hg38/ensembl.bed.gz',
-            'Ensembl/hg38/ensembl.bed.gz.tbi',
-        ],
         package_name: [
             'bedops/bedops_*',
             'qualimap/*/qualimap',
@@ -56,12 +63,18 @@ setup(
             'gender/*.bed',
             'bwa/bwa',
         ],
+        'ensembl': [
+            'hg19/ensembl.bed.gz',
+            'hg19/ensembl.bed.gz.tbi',
+            'hg38/ensembl.bed.gz',
+            'hg38/ensembl.bed.gz.tbi',
+        ],
     },
     include_package_data=True,
     zip_safe=False,
     scripts=[
         join('scripts', script_name),
-        join('GeneAnnotation', 'annotate_bed.py'),
+        join('scripts', 'annotate_bed.py'),
     ],
     install_requires=setup_utils.get_reqs(),
     setup_requires=['numpy'],

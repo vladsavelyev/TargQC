@@ -14,10 +14,7 @@ install:
   - python setup.py install
 
 script:
-  - nosetests --nocapture --with-coverage tests/test_travis.py
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  - nosetests --nocapture tests/test_travis.py
 
 notifications:
   on_success: always

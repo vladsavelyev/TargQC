@@ -11,7 +11,7 @@ from ngs_utils import logger
 from ngs_utils.bed_utils import verify_bed
 from ngs_utils.bam_utils import verify_bam
 from ngs_utils.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
-from ngs_utils.logger import critical, err, info, warn, debug, is_local
+from ngs_utils.logger import critical, err, info, warn, debug
 from ngs_utils.proc_args import read_samples, find_bams, find_fastq_pairs, set_up_dirs
 from ngs_utils.parallel import ParallelCfg
 
@@ -194,7 +194,7 @@ def _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir):
 #     return target
 
 
-def main(args):
+def main():
     parser = OptionParser(description=targqc.get_description(), version=targqc.get_version())
     parser.set_usage('Usage: %prog *.bam -o targqc_stats [--bed target.bed ...]')
     for args, kwargs in options:
@@ -316,6 +316,6 @@ def get_inputs(opts, args):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main()
 
 

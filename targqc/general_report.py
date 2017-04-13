@@ -2,21 +2,18 @@
 import os
 from collections import OrderedDict
 from os.path import join, abspath, realpath, dirname, relpath
-
-import GeneAnnotation
 from pybedtools import BedTool
-from ngs_utils import reference_data, logger
-from targqc.Target import Target
-from targqc.qualimap import report_parser, runner
-# from targqc.qualimap.report_parser import parse_qualimap_sample_report
-# from targqc import qualimap.runner import run_qualimap
 
+from ensembl import get_merged_cds
+from ngs_utils import reference_data, logger
 from ngs_utils.bed_utils import get_padded_bed_file, intersect_bed, calc_sum_of_regions, count_bed_cols,\
     calc_bases_within_threshs, calc_rate_within_normal
 from ngs_utils.sambamba import index_bam, number_mapped_reads_on_target, number_of_mapped_reads, sambamba_depth
 from ngs_utils.file_utils import intermediate_fname, verify_file, safe_mkdir, can_reuse
 from ngs_utils.logger import critical, info, err, warn, debug
 from ngs_utils.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport
+
+from targqc.qualimap import report_parser, runner
 
 
 def get_header_metric_storage(depth_threshs, is_wgs=False, padding=None):
@@ -420,7 +417,7 @@ def _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_sta
             sample.work_dir, target.padded_bed_fpath, sample.bam, dedup=True, target_name='padded_target') or 0
 
     else:
-        cds_bed = GeneAnnotation.get_merged_cds(genome)
+        cds_bed = get_merged_cds(genome)
         info('Using the CDS reference BED to calc "reads on CDS"')
         reads_stats['mapped_dedup_on_exome'] = number_mapped_reads_on_target(
             sample.work_dir, cds_bed, sample.bam, dedup=True, target_name='exome') or 0
