@@ -80,8 +80,11 @@ setup(
         'ensembl': [
             'hg19/ensembl.bed.gz',
             'hg19/ensembl.bed.gz.tbi',
+            'hg19/canon_transcripts_hg19_ensembl.txt',
             'hg38/ensembl.bed.gz',
             'hg38/ensembl.bed.gz.tbi',
+            'hg38/canon_transcripts_hg38_ensembl.txt',
+            'canon_cancer_replacement.txt',
         ],
     },
     include_package_data=True,
