@@ -64,7 +64,7 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, num_pa
         for s in samples:
             s.bam = make_bam_fpath(s.work_dir)
     else:
-        bwa = join(dirname(abspath(__file__)), 'bwa', 'bwa')
+        bwa = which('bwa')
         if not isfile(bwa):
             critical('BWA not found under ' + bwa)
         smb = sambamba.get_executable()
