@@ -46,11 +46,7 @@ setup(
     url='https://github.com/vladsaveliev/TargQC',
     download_url='https://github.com/vladsaveliev/TargQC/releases',
     license='GPLv3',
-    packages=[
-        package_name,
-        'ensembl',
-        'bed_annotation',
-    ],
+    packages=find_packages(),
     package_data={
         package_name: [
             'bedops/bedops_*',
