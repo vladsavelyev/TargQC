@@ -37,12 +37,16 @@ options = [
      )),
     (['-g', '--genome'], dict(
         dest='genome',
-        help='Genome build (hg19 or hg38), used to pick genome annotation BED file if not specified',
+        help='Genome build (hg19 or hg38), used to pick genome annotation BED file if not specified, or path to .fa bwa prefix ',
         default=config.genome,
     )),
-    (['--bwa-prefix'], dict(
+    (['--bwa' '--bwa-prefix'], dict(
         dest='bwa_prefix',
         help='Path to BWA index prefix to align if input is FastQ',
+     )),
+    (['--fai'], dict(
+        dest='fai',
+        help='Path to fai fasta index - sort BAM and BED files, and to get chromosome lengths for proper padding BED files; optional'
      )),
     (['--padding'], dict(
         dest='padding',
@@ -113,10 +117,6 @@ options = [
     (['-1'], dict(dest='l_fpath', help=SUPPRESS_HELP,)),  # help='fastq left reads, optional instead of BAM')),
     (['-2'], dict(dest='r_fpath', help=SUPPRESS_HELP,)),  # help='fastq right reads, optional instead of BAM')),
     (['--sample', '--name'], dict(dest='sample', help=SUPPRESS_HELP,)),  # help='Sample name (default is part of name of the first parameter prior to the first - or .',)),
-    (['--fai'], dict(
-        dest='fai',
-        help=SUPPRESS_HELP,  # Path to FAI file - to sort BAM and BED files, and to get chromosome lengths for proper padding BED files; optional
-     )),
     (['-e', '--extended'], dict(
         dest='extended',
         action='store_true',
@@ -228,9 +228,19 @@ def main():
     else:
         downsample_to = float(opts.downsample_fraction)
 
-    bwa_prefix = adjust_path(opts.bwa_prefix)
-    fai_fpath = opts.fai or ref.get_fai(genome)
-
+    fai_fpath = bwa_prefix = None
+    if genome.endswith('.fa') or genome.endswith('.fasta'):
+        bwa_prefix = adjust_path(opts.genome)
+        fai_fpath = opts.genome + '.fai'
+    if opts.bwa_prefix:
+        bwa_prefix = adjust_path(opts.bwa_prefix)
+    if opts.fai:
+        fai_fpath = opts.fai
+    if fai_fpath:
+        verify_file(fai_fpath, is_critical=True, description='Fasta index (.fai) file')
+    else:
+        fai_fpath = ref.get_fai(genome)
+    
     bam_by_sample, fastqs_by_sample, target_bed_fpath = get_inputs(opts, args)
 
     samples = _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir)

@@ -66,8 +66,10 @@ class BaseTargQC(BaseTestCase):
             reuse_output_dir = True
             cmdl.append('--reuse')
         if reannotate: cmdl.append('--reannotate')
-        if genome: cmdl.extend(['-g', genome])
-        if bwa: cmdl.extend(['--bwa', bwa])
+        if genome: 
+            cmdl.extend(['-g', genome])
+        if bwa:
+            cmdl.extend(['--bwa', bwa])
         if threads: cmdl.extend(['-t', str(threads)])
         if ipython: cmdl.extend('-s sge -q queue -r pename=smp -r --local'.split())
         if keep_work_dir: cmdl.append('--keep-work-dir')

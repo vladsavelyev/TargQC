@@ -44,7 +44,10 @@ class Target:
 
     def get_capture_bed(self):
         if not self.is_wgs:
-            return self.bed.filter(lambda x: x[ebl.BedCols.FEATURE] == 'capture')
+            if self.bed.field_count() > ebl.BedCols.FEATURE:
+                return self.bed.filter(lambda x: x[ebl.BedCols.FEATURE] == 'capture')
+            else:
+                return self.bed
         else:
             return None
 
@@ -73,19 +76,22 @@ class Target:
             debug('Saved to ' + sort_target_bed_fpath)
             verify_file(sort_target_bed_fpath, is_critical=True)
 
-        ann_target_bed_fpath = intermediate_fname(work_dir, sort_target_bed_fpath, 'ann_plus_features')
-        if not can_reuse(ann_target_bed_fpath, sort_target_bed_fpath):
-            debug()
-            if BedTool(sort_target_bed_fpath).field_count() == 3 or reannotate:
-                debug('Annotating target BED file and collecting overlapping genome features')
-                overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
-                     genome=genome, extended=True, reannotate=reannotate, only_canonical=True)
-            else:
-                debug('Overlapping with genomic features:')
-                overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
-                     genome=genome, extended=True, only_canonical=True)
-            debug('Saved to ' + ann_target_bed_fpath)
-            verify_file(ann_target_bed_fpath, is_critical=True)
+        if genome in ebl.SUPPORTED_GENOMES:
+            ann_target_bed_fpath = intermediate_fname(work_dir, sort_target_bed_fpath, 'ann_plus_features')
+            if not can_reuse(ann_target_bed_fpath, sort_target_bed_fpath):
+                debug()
+                if BedTool(sort_target_bed_fpath).field_count() == 3 or reannotate:
+                        debug('Annotating target BED file and collecting overlapping genome features')
+                        overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
+                             genome=genome, extended=True, reannotate=reannotate, only_canonical=True)
+                else:
+                    debug('Overlapping with genomic features:')
+                    overlap_with_features(sort_target_bed_fpath, ann_target_bed_fpath, work_dir=work_dir,
+                         genome=genome, extended=True, only_canonical=True)
+                debug('Saved to ' + ann_target_bed_fpath)
+                verify_file(ann_target_bed_fpath, is_critical=True)
+        else:
+            ann_target_bed_fpath = sort_target_bed_fpath
 
         final_clean_target_bed_fpath = intermediate_fname(work_dir, ann_target_bed_fpath, 'clean')
         if not can_reuse(final_clean_target_bed_fpath, ann_target_bed_fpath):

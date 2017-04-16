@@ -8,7 +8,7 @@ from ngs_utils.file_utils import which, open_gzipsafe, verify_file
 from ngs_utils.logger import debug, critical
 
 
-SUPPORTED_GENOMES = ['hg19', 'hg19-noalt', 'hg38', 'hg38-noalt', 'mm10']
+SUPPORTED_GENOMES = ['hg19', 'hg19-noalt', 'hg38', 'hg38-noalt']
 
 class BedCols:
     CHROM, \

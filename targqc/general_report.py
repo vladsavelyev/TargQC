@@ -154,9 +154,10 @@ def parse_qualimap_gc_content(qualimap_gc_content_fpath):
             sections = l.split(None, 3)
             gc = int(round(float(sections[0])))         # %
             content = float(sections[1]) / 100.0        # share of reads with this GC %
-            human_content = float(sections[2]) / 100.0  # share of human reference with this GC %
             avg_gc += gc * content
-            avg_human_gc += gc * human_content
+            if len(sections) > 2:
+                human_content = float(sections[2]) / 100.0  # share of human reference with this GC %
+                avg_human_gc += gc * human_content
     return avg_gc, avg_human_gc
 
 
@@ -341,7 +342,7 @@ def _qualimap_outputs(sample):
 
 
 def make_general_reports(view, samples, target, genome, depth_threshs, bed_padding,
-                         num_pairs_by_sample=None, reuse=False, is_debug=False, reannotate=False):
+                         num_pairs_by_sample=None, reuse=False, is_debug=False, reannotate=False, fai_fpath=None):
     if all(all(can_reuse(fp, [s.bam, target.qualimap_bed_fpath] if target.bed else s.bam)
                for fp in _qualimap_outputs(s))
            for s in samples):
@@ -366,7 +367,7 @@ def make_general_reports(view, samples, target, genome, depth_threshs, bed_paddi
         depth_stats, reads_stats, indels_stats, target_stats = parse_qualimap_results(sample)
 
         _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_stats,
-                          target, num_pairs_by_sample, genome, depth_threshs)
+                          target, num_pairs_by_sample, genome, depth_threshs, fai_fpath=fai_fpath)
 
         r = _build_report(depth_stats, reads_stats, indels_stats, sample, target,
                           depth_threshs, bed_padding, sample_num=len(samples), is_debug=is_debug,
@@ -377,13 +378,13 @@ def make_general_reports(view, samples, target, genome, depth_threshs, bed_paddi
 
 
 def _prep_report_data(sample, depth_stats, reads_stats, indels_stats, target_stats,
-                      target, num_pairs_by_sample, genome, depth_threshs):
+                      target, num_pairs_by_sample, genome, depth_threshs, fai_fpath=None):
     sample.avg_depth = depth_stats['ave_depth']
 
     if num_pairs_by_sample and sample.name in num_pairs_by_sample:
         reads_stats['original_num_reads'] = num_pairs_by_sample[sample.name] * 2
 
-    chrom_lengths = reference_data.get_chrom_lengths(genome)
+    chrom_lengths = reference_data.get_chrom_lengths(genome=genome, fai_fpath=fai_fpath)
     if 'Y' in chrom_lengths or 'chrY' in chrom_lengths:
         reads_stats['gender'] = determine_sex(sample.work_dir, sample.bam, depth_stats['ave_depth'],
                                               genome, target.get_capture_bed())

@@ -98,7 +98,7 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
 
         info('Making general reports...')
         make_general_reports(view, samples, target, genome, depth_threshs, padding, num_pairs_by_sample,
-                             is_debug=logger.is_debug, reannotate=reannotate)
+                             is_debug=logger.is_debug, reannotate=reannotate, fai_fpath=fai_fpath)
 
     info()
     info('*' * 70)
