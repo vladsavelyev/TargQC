@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import subprocess
 import sys
 from os.path import join, isfile, abspath, dirname
 import pip
@@ -17,7 +18,9 @@ try:
     import ngs_utils
 except ImportError:
     print('Installing NGS_Utils...')
-    pip.main(['install', 'git+git://github.com/vladsaveliev/NGS_Utils.git'])
+    subprocess.call('git clone git://github.com/vladsaveliev/NGS_Utils.git && '
+                    'cd NGS_Utils && python setup.py install && cd .. && '
+                    'rm -rf NGS_Utils', shell=True)
 finally:
     from ngs_utils import setup_utils
     from ngs_utils.file_utils import which
