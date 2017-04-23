@@ -23,7 +23,7 @@ def get_qualimap_max_mem(bam):
 def find_executable():
     executable = which('qualimap')
     if not executable:
-        critical('Error: QualiMap executable is not found in PATH')
+        critical('Error: "qualimap" executable is not found in PATH')
     return executable
 
 
