@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-import subprocess
 import sys
+import subprocess
 from os.path import join, isfile, abspath, dirname
 import pip
 from setuptools import setup, find_packages
@@ -14,36 +14,12 @@ except StandardError:
                      'during the following intallation\n')
 
 
-try:
-    import ngs_utils
-except ImportError:
-    print('Installing NGS_Utils...')
-    subprocess.call('git clone git://github.com/vladsaveliev/NGS_Utils.git && '
-                    'cd NGS_Utils && python setup.py install && cd .. && '
-                    'rm -rf NGS_Utils', shell=True)
-finally:
-    from ngs_utils import setup_utils
-    from ngs_utils.file_utils import which
-    from ngs_utils.setup_utils import run_cmdl
-
-
-# if not all(which(tool) for tool in ['bedtools', 'sambamba', 'bwa']):
-#     conda_path = join(os.getcwd(), 'anaconda')
-#     from sys import platform
-#     if platform == "darwin":
-#         run_cmdl('wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh')
-#         run_cmdl('bash Miniconda2-latest-MacOSX-x86_64.sh -b -p ' + conda_path)
-#     else:
-#         run_cmdl('wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh')
-#         run_cmdl('bash Miniconda-latest-Linux-x86_64.sh -b -p ' + conda_path)
-#     run_cmdl('PATH=' + join(conda_path, 'bin') + ':$PATH conda install --yes -c bioconda -c conda-forge htslib=1.3 bedtools sambamba bwa -q')
-
-
 name = 'TargQC'
 script_name = 'targqc'
 package_name = 'targqc'
 
 
+from ngs_utils import setup_utils
 version = setup_utils.init(name, package_name, __file__)
 
 
@@ -72,6 +48,9 @@ setup(
             'hg38/canon_transcripts_hg38_ensembl.txt',
             'canon_cancer_replacement.txt',
         ],
+        'ngs_utils': [
+        ] + setup_utils.find_package_files('reporting', package_name, skip_exts=['.sass', '.coffee'])
+          + setup_utils.find_package_files('reference_data', package_name)
     },
     include_package_data=True,
     zip_safe=False,
