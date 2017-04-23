@@ -7,12 +7,11 @@ import shutil
 
 from ngs_utils.call_process import run
 from ngs_utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname, \
-    can_reuse
+    can_reuse, which
 from ngs_utils.logger import info, warn, err, critical, debug
 from ngs_utils.reporting.reporting import write_tsv_rows
 
 import targqc.config as cfg
-import targqc
 
 
 def get_qualimap_max_mem(bam):
@@ -22,11 +21,10 @@ def get_qualimap_max_mem(bam):
 
 
 def find_executable():
-    root_dirpath = abspath(join(dirname(__file__)))
-    for dname in listdir(abspath(join(dirname(__file__)))):
-        if isdir(join(root_dirpath, dname)) and dname.startswith('qualimap') and file_exists(join(root_dirpath, dname, 'qualimap')):
-            return join(root_dirpath, dname, 'qualimap')
-    critical('Error: could not find Qualimap executable')
+    executable = which('qualimap')
+    if not executable:
+        critical('Error: QualiMap executable is not found in PATH')
+    return executable
 
 
 def run_qualimap(work_dir, output_dir, output_fpaths, bam_fpath, genome, bed_fpath=None, threads=1):

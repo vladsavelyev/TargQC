@@ -1,0 +1,21 @@
+recursive-include targqc *
+recursive-include scripts *
+recursive-include bed_annotation *
+
+#recursive-include ensembl *
+include ensembl/__init__.py
+include ensembl/canon_cancer_replacement.txt
+include ensembl/*/ensembl.bed.gz
+include ensembl/*/ensembl.bed.gz.tbi
+include ensembl/*/canon_transcripts_*_ensembl.txt
+
+include *.py
+include *.html
+include *.txt
+include *.md
+include Dockerfile
+include workflow.cwl
+include ensembl
+
+global-exclude *.pyc
+global-exclude make.*

@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 import sys
-
-import os
 from os.path import join, isfile, abspath, dirname
-
 import pip
 from setuptools import setup, find_packages
 
@@ -43,6 +40,7 @@ except ImportError:
 name = 'TargQC'
 script_name = 'targqc'
 package_name = 'targqc'
+
 
 version = setup_utils.init(name, package_name, __file__)
 
