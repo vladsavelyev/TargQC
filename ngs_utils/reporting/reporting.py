@@ -11,12 +11,12 @@ import traceback
 import datetime
 
 import itertools
-import jsontemplate
 
 from ngs_utils.file_utils import file_transaction, verify_file, safe_mkdir
 from ngs_utils import logger
 from ngs_utils.logger import critical, info, err, warn, debug
 from ngs_utils.utils import mean
+from ngs_utils import jsontemplate
 
 
 def get_int_val(v):
