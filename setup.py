@@ -14,12 +14,11 @@ except StandardError:
 
 
 try:
-    from ngs_utils import setup_utils
-    from ngs_utils.file_utils import which
-    from ngs_utils.setup_utils import run_cmdl
+    import ngs_utils
 except ImportError:
     print('Installing NGS_Utils...')
     pip.main(['install', 'git+git://github.com/vladsaveliev/NGS_Utils.git'])
+finally:
     from ngs_utils import setup_utils
     from ngs_utils.file_utils import which
     from ngs_utils.setup_utils import run_cmdl
@@ -59,15 +58,7 @@ setup(
     packages=find_packages(),
     package_data={
         package_name: [
-            'bedops/bedops_*',
-            'qualimap/*/qualimap',
-            'qualimap/*/qualimap.jar',
-            'qualimap/*/lib/*.jar',
-            'qualimap/*/scripts/*.jar',
-            'qualimap/*/species/*.jar',
-            'picard/picard/*.jar',
             'gender/*.bed',
-            'bwa/bwa',
         ],
         'ensembl': [
             'hg19/ensembl.bed.gz',

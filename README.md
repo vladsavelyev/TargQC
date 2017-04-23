@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/vladsaveliev/TargQC.svg?branch=master)](https://travis-ci.org/vladsaveliev/TargQC)
 
-# Alignment target coverage analysis tool 
+# Target read coverage QC
 
 ## Input
 - BAM file(s) (or FastQ files).
