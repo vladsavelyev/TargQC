@@ -8,7 +8,6 @@ before_install:
   - mkdir -p tests/data
   - wget -qO- http://quast.bioinf.spbau.ru/static/chr21.tar.gz | tar xvz -C tests/data
   - wget -qO- http://quast.bioinf.spbau.ru/static/bwa.tar.gz | tar xvz -C tests/data
-  - pip install --upgrade setuptools pip
   # INSTALLIG CONDA
   # Temporal fix for networking problem: https://github.com/travis-ci/travis-ci/issues/1484
   - echo "127.0.1.1 "`hostname` | sudo tee /etc/hosts
@@ -24,7 +23,7 @@ before_install:
 
 install:
   - python setup.py install
-  - conda install --yes -c bioconda -c conda-forge qualimap htslib=1.3 bedtools sambamba bwa -q
+  - conda install --yes -c bioconda targqc -q
 
 script:
   - nosetests --nocapture tests/test_travis.py
