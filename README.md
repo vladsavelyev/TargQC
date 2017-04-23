@@ -60,3 +60,9 @@ If the number of samples is higher than the requested number of jobs, the proces
 
 Other supported schedulers: Platform LSF ("lsf"), Sun Grid Engine ("sge"), Torque ("torque"), SLURM ("slurm") (see details at https://github.com/roryk/ipython-cluster-helper)
 
+
+# Venn diagrams for BED files
+Build a web-page with size-proportional Venn diagrams for an unlimited set of BED files:
+```
+bed_venn.py *.bed -o res_dir
+```

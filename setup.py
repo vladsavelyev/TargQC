@@ -86,6 +86,7 @@ setup(
     scripts=[
         join('scripts', script_name),
         join('scripts', 'annotate_bed.py'),
+        join('scripts', 'bed_venn.py'),
     ],
     install_requires=get_reqs(),
     setup_requires=['numpy'],

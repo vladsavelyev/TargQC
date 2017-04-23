@@ -1,5 +1,9 @@
-# 1.4.2
+# 1.4.4
 - Created bioconda package
+- Add script to build Venn diagram for a set of BED files:
+```
+bed_venn.py *.bed -o res_dir
+```
 
 # 1.4.1
 - Support custom genomes. Provide a path to indexed fasta file with `-g`:
