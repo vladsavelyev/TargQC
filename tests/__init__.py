@@ -93,7 +93,8 @@ class BaseTargQC(BaseTestCase):
                 shutil.rmtree(work_dir)
         info('')
 
-    def _default_output_dir(self):
+    @staticmethod
+    def _default_output_dir():
         return join(os.getcwd(), 'targqc')
 
     def _check_results(self, output_dir, used_samples):

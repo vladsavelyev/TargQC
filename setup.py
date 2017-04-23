@@ -28,16 +28,16 @@ except ImportError:
     from ngs_utils.setup_utils import run_cmdl
 
 
-if not all(which(tool) for tool in ['bedtools', 'sambamba', 'bwa', 'o']):
-    conda_path = join(os.getcwd(), 'anaconda')
-    from sys import platform
-    if platform == "darwin":
-        run_cmdl('wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh')
-        run_cmdl('bash Miniconda2-latest-MacOSX-x86_64.sh -b -p ' + conda_path)
-    else:
-        run_cmdl('wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh')
-        run_cmdl('bash Miniconda-latest-Linux-x86_64.sh -b -p ' + conda_path)
-    run_cmdl('PATH=' + join(conda_path, 'bin') + ':$PATH conda install --yes -c bioconda -c conda-forge htslib=1.3 bedtools sambamba bwa -q')
+# if not all(which(tool) for tool in ['bedtools', 'sambamba', 'bwa']):
+#     conda_path = join(os.getcwd(), 'anaconda')
+#     from sys import platform
+#     if platform == "darwin":
+#         run_cmdl('wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh')
+#         run_cmdl('bash Miniconda2-latest-MacOSX-x86_64.sh -b -p ' + conda_path)
+#     else:
+#         run_cmdl('wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh')
+#         run_cmdl('bash Miniconda-latest-Linux-x86_64.sh -b -p ' + conda_path)
+#     run_cmdl('PATH=' + join(conda_path, 'bin') + ':$PATH conda install --yes -c bioconda -c conda-forge htslib=1.3 bedtools sambamba bwa -q')
 
 
 name = 'TargQC'
@@ -45,12 +45,6 @@ script_name = 'targqc'
 package_name = 'targqc'
 
 version = setup_utils.init(name, package_name, __file__)
-
-
-# if setup_utils.is_installing():
-#     bwa_dirpath = join(package_name, 'bwa')
-#     success_compilation = setup_utils.compile_tool('bwa', bwa_dirpath, ['bwa'])
-#     if not success_compilation: sys.stderr.write('BWA has failed to compile, cannot process FastQ without BWA')
 
 
 setup(

@@ -29,11 +29,21 @@ The results will be written to `targqc_results` folder.
 
 The BED file may be omitted. In this case statistics reported will be based of off the whole genome.
 
-## FastQ and downsampled coverage
-Instead of the BAM files, input FastQ are also allowed. The reads will be aligned by BWA to the reference genome specified by `--bwa-prefix`. Option `--downsample-to N` (default value `5e5`) specifies the number ofread pairs will be randomly selected from each input set. This feature allows to quickly estimate approximate coverage quality before full alignment. To turn downsampling off and align all reads, set `--downsample-to off`.
+The accepted values for `-g` are `hg19`, `hg38`, or a full path to any indexed reference fasta file:
+```
+targqc *.bam --bed target.bed -g /path/to/genomes/some_genome.fa -o targqc_results
+```
+When running from BAMs, only the `.fai` index is used, and the fasta file itself can be non-existent.
+
+Instead of the BAM files, input FastQ are also allowed. The reads will be aligned by BWA to the reference 
+genome specified by `--bwa-prefix` (unless `-g` is already a fasta path bwa-indexed).
 ```
 targqc *.fastq --bed target.bed -g hg19 -o targqc_results --bwa-prefix /path/to/ref.bwa
 ```
+Option `--downsample-to <N>` (default value `5e5`) specifies the number of 
+read pairs will be randomly selected from each input set. This feature allows to quickly estimate approximate 
+coverage quality before full alignment. To turn downsampling off and align all reads, set `--downsample-to off`.
+
 
 ## Parallel running
 ### Threads
@@ -50,8 +60,3 @@ If the number of samples is higher than the requested number of jobs, the proces
 
 Other supported schedulers: Platform LSF ("lsf"), Sun Grid Engine ("sge"), Torque ("torque"), SLURM ("slurm") (see details at https://github.com/roryk/ipython-cluster-helper)
 
-## For HPC users
-```
-module load python
-export PATH=/group/ngs/src/TargQC/venv/bin:$PATH
-```
