@@ -1,27 +1,56 @@
 #!/usr/bin/env python
 import sys
 import subprocess
+
+import os
 from os.path import join, isfile, abspath, dirname
-import pip
 from setuptools import setup, find_packages
-
-
-print('Upgrading pip and setuptools...')
-try:
-    pip.main(['install', '--upgrade', 'setuptools', 'pip'])
-except StandardError:
-    sys.stderr.write('Cannot update pip and setuptools, that might cause errors '
-                     'during the following intallation\n')
-
+from ngs_utils.setup_utils import write_version_py, run_cmdl, clean_package, find_package_files, get_reqs
 
 name = 'TargQC'
 script_name = 'targqc'
 package_name = 'targqc'
 
+if abspath(dirname(__file__)) != abspath(os.getcwd()):
+    sys.stderr.write('Please, change to ' + dirname(__file__) + ' before running setup.py\n')
+    sys.exit()
+    
 
-from ngs_utils import setup_utils
-version = setup_utils.init(name, package_name, __file__)
+cmd = [a for a in sys.argv if not a.startswith('-')][-1]
 
+is_installing = cmd not in ['tag', 'up', 'clean']
+if is_installing:
+    print('Upgrading pip and setuptools...')
+    try:
+        subprocess.call('pip install --upgrade pip', shell=True)
+        subprocess.call('pip install --upgrade --ignore-installed setuptools', shell=True)
+    except StandardError:
+        sys.stderr.write('Cannot update pip and setuptools, that might cause errors '
+                         'during the following intallation\n')
+
+version = write_version_py(package_name)
+
+if cmd == 'tag':
+    run_cmdl("git tag -a %s -m \"Version %s\"" % (version, version))
+    run_cmdl('git push --tags')
+    sys.exit()
+
+if cmd == 'publish':
+    run_cmdl('python setup.py sdist upload')
+    sys.exit()
+
+if cmd == 'up':
+    run_cmdl('git pull --recurse-submodules --rebase')
+    # if first time: $ git submodule update --init --recursive
+    run_cmdl('git submodule foreach "(git checkout master; git pull --rebase)"')
+    sys.exit()
+
+if cmd == 'clean':
+    clean_package(package_name, '.')
+    sys.exit()
+    
+print('Installing ' + name + ((' version ' + str(version)) if version else ''))
+print('')
 
 setup(
     name=name,
@@ -49,8 +78,8 @@ setup(
             'canon_cancer_replacement.txt',
         ],
         'ngs_utils': [
-        ] + setup_utils.find_package_files('reporting', package_name, skip_exts=['.sass', '.coffee'])
-          + setup_utils.find_package_files('reference_data', package_name)
+        ] + find_package_files('reporting', package_name, skip_exts=['.sass', '.coffee'])
+          + find_package_files('reference_data', package_name)
     },
     include_package_data=True,
     zip_safe=False,
@@ -58,7 +87,7 @@ setup(
         join('scripts', script_name),
         join('scripts', 'annotate_bed.py'),
     ],
-    install_requires=setup_utils.get_reqs(),
+    install_requires=get_reqs(),
     setup_requires=['numpy'],
     classifiers=[
         'Environment :: Console',
@@ -78,8 +107,7 @@ setup(
     tests_require=['nose'],
 )
 
-if setup_utils.is_installing():
-    print("""
+print("""
 --------------------------------
  {name} installation complete!
 --------------------------------
