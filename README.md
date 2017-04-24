@@ -12,6 +12,17 @@
 - `regions.txt` – region-level coverage statistics.
 
 ## Installation
+### From bioconda
+```
+conda install -c bioconda targqc
+```
+
+### From PyPI
+```
+pip install targqc
+```
+
+### From source
 ```
 git clone --recursive https://github.com/vladsaveliev/TargQC
 cd TargQC
