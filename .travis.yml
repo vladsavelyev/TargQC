@@ -22,9 +22,8 @@ before_install:
   # Install conda packages
 
 install:
+  - conda install --yes -c bioconda targqc -q
   - python setup.py install
-  # - conda install --yes -c bioconda targqc -q
-  - conda install --yes -c bioconda -c conda-forge htslib=1.3 qualimap bedtools sambamba bwa -q
 
 script:
   - nosetests --nocapture tests/test_travis.py
