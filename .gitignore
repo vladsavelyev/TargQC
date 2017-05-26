@@ -54,3 +54,5 @@ tests/gold_standard
 tests/results
 tests/results_devel
 tests/bed_annotation/*.anno_*
+
+ensembl/*/gtf/*.gtf.db
