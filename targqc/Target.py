@@ -1,15 +1,15 @@
 from collections import defaultdict
-from os.path import isfile, join, basename
+
 from ngs_utils import reference_data
-from pybedtools import BedTool
 from ngs_utils.bed_utils import sort_bed, verify_bed, get_genes_from_bed
-from ngs_utils.file_utils import iterate_file, add_suffix, intermediate_fname, file_transaction, verify_file, can_reuse
-from ngs_utils.logger import debug, info, warn
+from ngs_utils.file_utils import add_suffix, intermediate_fname, file_transaction, verify_file, can_reuse
+from ngs_utils.logger import debug
 from ngs_utils.utils import OrderedDefaultDict
+from os.path import join, basename
+from pybedtools import BedTool
 
-from bed_annotation.bed_annotation import overlap_with_features, get_sort_key, tx_priority_sort_key
 import ensembl as ebl
-
+from ensembl.bed_annotation import overlap_with_features, get_sort_key, tx_priority_sort_key
 from targqc import config as cfg
 
 

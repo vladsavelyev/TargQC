@@ -1,18 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import sys
-from optparse import OptionParser
 import subprocess
+import json
 
-from ngs_utils.reporting import reporting
 from ngs_utils.reporting.reporting import write_static_html_report
 from os.path import dirname, basename, join, splitext, isfile, abspath, pardir
-import json
-import itertools
-
-from ngs_utils.bed_utils import verify_bed
-from ngs_utils.file_utils import adjust_path, safe_mkdir
-from ngs_utils.logger import critical
 
 
 def call(cmdl):

@@ -1,57 +1,22 @@
 #!/usr/bin/env python
 import sys
-import subprocess
+py_v = sys.version_info[:2]
+if not (py_v == (2, 7) or py_v >= (3, 3)):
+    sys.exit('Only Python 2.7 or 3.3 and up are supported. Current version: ' + '.'.join(py_v))
 
-import os
 from os.path import join, isfile, abspath, dirname
-from setuptools import setup, find_packages
-from ngs_utils.setup_utils import write_version_py, run_cmdl, clean_package, find_package_files, get_reqs
+from ngs_utils.setup_utils import write_version_py, find_package_files, get_reqs
+from ngs_utils import setup_utils
 
 name = 'TargQC'
 script_name = 'targqc'
 package_name = 'targqc'
 
-if abspath(dirname(__file__)) != abspath(os.getcwd()):
-    sys.stderr.write('Please, change to ' + dirname(__file__) + ' before running setup.py\n')
-    sys.exit()
-    
 
-cmd = [a for a in sys.argv if not a.startswith('-')][-1]
+version = setup_utils.init(package_name, package_name, __file__)
 
-is_installing = cmd not in ['tag', 'up', 'clean']
-if is_installing:
-    print('Upgrading pip and setuptools...')
-    try:
-        subprocess.call('pip install --upgrade pip', shell=True)
-        subprocess.call('pip install --upgrade --ignore-installed setuptools', shell=True)
-    except Exception:
-        sys.stderr.write('Cannot update pip and setuptools, that might cause errors '
-                         'during the following intallation\n')
 
-version = write_version_py(package_name)
-
-if cmd == 'tag':
-    run_cmdl("git tag -a %s -m \"Version %s\"" % (version, version))
-    run_cmdl('git push --tags')
-    sys.exit()
-
-if cmd == 'publish':
-    run_cmdl('python setup.py sdist upload')
-    sys.exit()
-
-if cmd == 'up':
-    run_cmdl('git pull --recurse-submodules --rebase')
-    # if first time: $ git submodule update --init --recursive
-    run_cmdl('git submodule foreach "(git checkout master; git pull --rebase)"')
-    sys.exit()
-
-if cmd == 'clean':
-    clean_package(package_name, '.')
-    sys.exit()
-    
-print('Installing ' + name + ((' version ' + str(version)) if version else ''))
-print('')
-
+from setuptools import setup, find_packages
 setup(
     name=name,
     version=version,
@@ -77,9 +42,9 @@ setup(
             'hg38/canon_transcripts_hg38_ensembl.txt',
             'canon_cancer_replacement.txt',
         ],
-        'ngs_utils': [
-        ] + find_package_files('reporting', package_name, skip_exts=['.sass', '.coffee'])
-          + find_package_files('reference_data', package_name)
+        'bed_venn': [
+            '*.html'
+        ]
     },
     include_package_data=True,
     zip_safe=False,

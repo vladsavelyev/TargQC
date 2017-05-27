@@ -2,27 +2,45 @@ sudo: required
 
 language: python
 python:
+  # We don't actually use the Travis Python (since we are on conda), but this keeps it organized.
   - "2.7"
+  - "3.6"
 
 before_install:
-  - mkdir -p tests/data
-  - wget -qO- http://quast.bioinf.spbau.ru/static/chr21.tar.gz | tar xvz -C tests/data
-  - wget -qO- http://quast.bioinf.spbau.ru/static/bwa.tar.gz | tar xvz -C tests/data
-  # INSTALLIG CONDA
   # Temporal fix for networking problem: https://github.com/travis-ci/travis-ci/issues/1484
   - echo "127.0.1.1 "`hostname` | sudo tee /etc/hosts
-  # Get and install anaconda for custom Python installation
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
-  - bash Miniconda-latest-Linux-x86_64.sh -b -p $HOME/anaconda
-  - export PATH=$HOME/anaconda/bin/:$PATH
+
   # The next couple lines fix a crash with multiprocessing on Travis and
   # are not specific to using Miniconda
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
-  # Install conda packages
+
+  # Get and install anaconda (https://conda.io/docs/travis.html)
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH=$HOME/miniconda/bin:$PATH
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a  # Useful for debugging any issues with conda
+
+  # Downloading the test data
+  - mkdir -p tests/data
+  - wget -qO- http://quast.bioinf.spbau.ru/static/chr21.tar.gz | tar xvz -C tests/data
+  - wget -qO- http://quast.bioinf.spbau.ru/static/bwa.tar.gz | tar xvz -C tests/data
 
 install:
-  - conda install --yes -c bioconda targqc -q
+  # Install conda packages
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c bioconda targqc
+  - source activate test-environment
+  # Updating pip and setuptools
+  - pip install --upgrade pip
+  - pip install --upgrade --ignore-installed setuptools
+  # Installing
   - python setup.py install
 
 script:

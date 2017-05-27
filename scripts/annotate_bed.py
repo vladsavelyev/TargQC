@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 
-import os
 import shutil
 from optparse import OptionParser, SUPPRESS_HELP
-from collections import defaultdict, OrderedDict
-from os.path import isfile, join, basename
 from tempfile import mkdtemp
 
-from ngs_utils.logger import debug
-from ngs_utils.bed_utils import verify_bed, SortableByChrom, count_bed_cols, sort_bed, clean_bed
-from ngs_utils.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file
-from ngs_utils.logger import critical, info
+import os
 from ngs_utils import logger
+from ngs_utils.bed_utils import verify_bed, clean_bed
+from ngs_utils.file_utils import adjust_path, safe_mkdir, verify_file
+from ngs_utils.logger import critical, info
+from ngs_utils.logger import debug
+from os.path import join, basename
 
 import ensembl as ebl
-from bed_annotation.bed_annotation import annotate
+from ensembl.bed_annotation import annotate
 
 
 # TODO: prefer consecutive annotations

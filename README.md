@@ -153,4 +153,3 @@ Build a web-page with size-proportional Venn diagrams for an unlimited set of BE
 ```
 bed_venn.py *.bed -o res_dir
 ```
-
