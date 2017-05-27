@@ -38,7 +38,7 @@ fastqc_report_fname      = 'fastqc_report.html'
 
 
 from targqc.general_report import get_mean_cov as get_mean_cov
-from config import depth_thresholds
+from .config import depth_thresholds
 
 
 def get_version():
@@ -132,7 +132,7 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
     #     if general_report.txt_fpath and verify_file(general_report.txt_fpath):
     #         info('Summary report: ' + general_report.txt_fpath)
     #     if per_gene_report:
-    #         path = per_gene_report if isinstance(per_gene_report, basestring) else per_gene_report.txt_fpath
+    #         path = per_gene_report if isinstance(per_gene_report, str) else per_gene_report.txt_fpath
     #         if path and verify_file(path):
     #             info('Region-based report: ' + path)
 

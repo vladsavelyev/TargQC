@@ -1,1 +1,1 @@
-from _jsontemplate import *
+from ._jsontemplate import *

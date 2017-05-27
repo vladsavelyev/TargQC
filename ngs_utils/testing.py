@@ -14,22 +14,22 @@ def info(msg=''):
     sys.stdout.write(msg + '\n')
 
 def call(cmdl):
-    info(cmdl if isinstance(cmdl, basestring) else subprocess.list2cmdline(cmdl))
-    if isinstance(cmdl, basestring):
+    info(cmdl if isinstance(cmdl, str) else subprocess.list2cmdline(cmdl))
+    if isinstance(cmdl, str):
         return subprocess.call(cmdl, shell=True, executable='/bin/bash')
     else:
         return subprocess.call(cmdl)
 
 def check_call(cmdl):
-    info(cmdl if isinstance(cmdl, basestring) else subprocess.list2cmdline(cmdl))
-    if isinstance(cmdl, basestring):
+    info(cmdl if isinstance(cmdl, str) else subprocess.list2cmdline(cmdl))
+    if isinstance(cmdl, str):
         subprocess.check_call(cmdl, shell=True, executable='/bin/bash')
     else:
         subprocess.check_call(cmdl)
 
 def check_output(cmdl):
-    info(cmdl if isinstance(cmdl, basestring) else subprocess.list2cmdline(cmdl))
-    if isinstance(cmdl, basestring):
+    info(cmdl if isinstance(cmdl, str) else subprocess.list2cmdline(cmdl))
+    if isinstance(cmdl, str):
         return subprocess.check_output(cmdl, shell=True, executable='/bin/bash', stderr=subprocess.STDOUT)
     else:
         return subprocess.check_output(cmdl, stderr=subprocess.STDOUT)
@@ -83,12 +83,12 @@ class BaseTestCase(unittest.TestCase):
             if cmp_fpath and isfile(cmp_fpath):
                 cmdl = 'diff'
                 if ignore_matching_lines:
-                    if isinstance(ignore_matching_lines, basestring):
+                    if isinstance(ignore_matching_lines, str):
                         ignore_matching_lines = [ignore_matching_lines]
                     for r in ignore_matching_lines:
                         cmdl += ' -I ' + subprocess.list2cmdline([r])
                 if wrapper:
-                    if isinstance(ignore_matching_lines, basestring):
+                    if isinstance(ignore_matching_lines, str):
                         wrapper.split()
                     wrapper = subprocess.list2cmdline(wrapper)
                     if not fpath.endswith('.gz'):

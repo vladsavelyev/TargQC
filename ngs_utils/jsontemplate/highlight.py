@@ -7,7 +7,7 @@ __author__ = 'Andy Chu'
 
 
 import cgi
-import _jsontemplate as jsontemplate
+from ._jsontemplate import Template, SplitMeta, MakeTokenRegex
 
 
 _TEMPLATE = None
@@ -19,11 +19,11 @@ def AsHtml(template_str, meta='{}', format_char='|'):
 
   global _TEMPLATE
   if not _TEMPLATE:
-    _TEMPLATE = jsontemplate.Template(
+    _TEMPLATE = Template(
         '<span style="color: {color|htmltag};">{token|html}</span>')
 
-  meta_left, meta_right = jsontemplate.SplitMeta(meta)
-  token_re = jsontemplate.MakeTokenRegex(meta_left, meta_right)
+  meta_left, meta_right = SplitMeta(meta)
+  token_re = MakeTokenRegex(meta_left, meta_right)
   tokens = token_re.split(template_str)
 
   html = []

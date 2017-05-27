@@ -35,7 +35,7 @@ def run(cmd, output_fpath=None, input_fpath=None, checks=None, stdout_to_outputf
 
     def _try_run(_cmd, _output_fpath, _input_fpath, _stderr_fpath):
         try:
-            info(' '.join(str(x) for x in _cmd) if not isinstance(_cmd, basestring) else _cmd)
+            info(' '.join(str(x) for x in _cmd) if not isinstance(_cmd, str) else _cmd)
             _do_run(_cmd, checks, env, _output_fpath, _input_fpath, _stderr_fpath)
         except:
             raise
@@ -84,7 +84,7 @@ def _normalize_cmd_args(cmd):
     Piped commands set pipefail and require use of bash to help with debugging
     intermediate errors.
     """
-    if isinstance(cmd, basestring):
+    if isinstance(cmd, str):
         # check for standard or anonymous named pipes
         if cmd.find(" | ") > 0 or cmd.find(">(") or cmd.find("<("):
             return "set -o pipefail; " + cmd, True, find_bash()
@@ -112,7 +112,7 @@ def _do_run(cmd, checks, env=None, output_fpath=None, input_fpath=None, _stderr_
             for line in s.stdout:
                 debug_stdout.append(line)
             if exitcode is not None and exitcode != 0:
-                error_msg = " ".join(cmd) if not isinstance(cmd, basestring) else cmd
+                error_msg = " ".join(cmd) if not isinstance(cmd, str) else cmd
                 error_msg += "\n"
                 error_msg += "".join(debug_stdout)
                 s.communicate()

@@ -180,7 +180,7 @@ def _format_field(value):
 #     for tx_region in all_transcripts:
 #         tx_by_gene[tx_region.name].append(tx_region)
 #     unique_tx_by_gene = dict()
-#     for g, txs in tx_by_gene.iteritems():
+#     for g, txs in tx_by_gene.items():
 #         tsl1_txs = [tx for tx in txs if tx[ebl.BedCols.TSL] in ['1', 'NA']]
 #         if tsl1_txs:
 #             txs = tsl1_txs[:]
@@ -243,16 +243,16 @@ def _resolve_ambiguities(overlaps_by_tx_by_gene_by_loc, chrom_order,
     # (will be useful further when interating exons)
     # annotated_by_tx_by_gene_by_loc = OrderedDict([
     #     (loc, OrderedDict([
-    #         (gname, sorted(annotated_by_tx.itervalues(), key=tx_sort_key))
-    #             for gname, annotated_by_tx in annotated_by_tx_by_gene.iteritems()
-    #     ])) for loc, annotated_by_tx_by_gene in annotated_by_tx_by_gene_by_loc.iteritems()
+    #         (gname, sorted(annotated_by_tx.values(), key=tx_sort_key))
+    #             for gname, annotated_by_tx in annotated_by_tx_by_gene.items()
+    #     ])) for loc, annotated_by_tx_by_gene in annotated_by_tx_by_gene_by_loc.items()
     # ])
 
     annotated = []
-    for (chrom, start, end), overlaps_by_tx_by_gene in overlaps_by_tx_by_gene_by_loc.iteritems():
+    for (chrom, start, end), overlaps_by_tx_by_gene in overlaps_by_tx_by_gene_by_loc.items():
         features = dict()
         annotation_alternatives = []
-        for gname, overlaps_by_tx in overlaps_by_tx_by_gene.iteritems():
+        for gname, overlaps_by_tx in overlaps_by_tx_by_gene.items():
             consensus = [None for _ in ebl.BedCols.cols]
             consensus[:3] = chrom, start, end
             if gname:
@@ -341,7 +341,7 @@ def _resolve_ambiguities(overlaps_by_tx_by_gene_by_loc, chrom_order,
                 else:
                     annotation_alternatives = [a for a in annotation_alternatives if tx_priority_sort_key(a) == tx_priority_sort_key(best_alt)]
             if len(annotation_alternatives) > 1 and ambiguities_method in '_ask':
-                choice_indices = raw_input('Please choose alternative (sorted by confidence):\n' +
+                choice_indices = input('Please choose alternative (sorted by confidence):\n' +
                     ''.join([str(i) + ': ' + '\t'.join(str(f) for f in a) + '\n' for i, a in enumerate(annotation_alternatives)]))
                 choice_indices = choice_indices.split(',')
                 annotation_alternatives = [annotation_alternatives[int(i)] for i in choice_indices]

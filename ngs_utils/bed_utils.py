@@ -273,7 +273,7 @@ def bedtools_version(bedtools):
     v = check_output([bedtools, '--version'])  # bedtools v2.24.0
     try:
         v = int(v.split(' ')[1].split('.')[1])
-    except StandardError:
+    except Exception:
         return None
     else:
         return v
@@ -398,7 +398,7 @@ class BedFile:
         try:
             # Parses each line and checks that there are at least 3 fields, the two on the right containing integer values and being the right one
             # greater than the left one
-            while line <> '' and len(fields) > 2 and int(fields[1]) <= int(fields[2]):
+            while line != '' and len(fields) > 2 and int(fields[1]) <= int(fields[2]):
                 lc += 1
                 line = fd.readline()
                 fields = line.split('\t')
@@ -411,7 +411,7 @@ class BedFile:
             return error
 
         # If it get to this point means that either the file ended or there is a line with less than 3 fields
-        if line <> '':
+        if line != '':
             error += 'Incorrect line format at line ' + str(lc) + '\n'
             error += 'At least three columns are expected in each line\n'
             error += 'The right value must be greater than the left value.\n'
@@ -440,7 +440,7 @@ def calc_bases_within_threshs(bases_by_depth, total_size, depth_thresholds):
     bases_within_threshs = OrderedDict((depth, 0) for depth in depth_thresholds)
     rates_within_threshs = OrderedDict((depth, None) for depth in depth_thresholds)
 
-    for depth, bases in bases_by_depth.iteritems():
+    for depth, bases in bases_by_depth.items():
         for t in depth_thresholds:
             if depth >= t:
                 bases_within_threshs[t] += bases

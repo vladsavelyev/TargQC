@@ -338,7 +338,7 @@ def get_mean_cov(bedcov_output_fpath):
 
 
 def _qualimap_outputs(sample):
-    return [v for k, v in sample.__dict__.iteritems() if k.startswith('qualimap_') and k.endswith('_fpath')]
+    return [v for k, v in sample.__dict__.items() if k.startswith('qualimap_') and k.endswith('_fpath')]
 
 
 def make_general_reports(view, samples, target, genome, depth_threshs, bed_padding,

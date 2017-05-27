@@ -1,3 +1,6 @@
+# 1.5
+- Python 3 support
+
 # 1.4.4
 - Created bioconda package
 - Add script to build Venn diagram for a set of BED files:

@@ -14,12 +14,6 @@ def verify_bam(fpath, description='', is_critical=False, silent=False):
             'extension. Please, make sure you pass proper file.')
         return None
 
-    textchars = ''.join(map(chr, [7, 8, 9, 10, 12, 13, 27] + range(0x20, 0x100)))
-    is_binary_string = lambda baitiki: bool(baitiki.translate(None, textchars))
-    if not is_binary_string(open(fpath).read(3)):
-        logfn('The BAM file ' + fpath + ' must be a binary file.')
-        return None
-
     return fpath
 
 

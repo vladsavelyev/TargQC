@@ -191,7 +191,7 @@ def tx2genefile(gtf, out_file=None):
         return out_file
     with file_transaction(out_file) as tx_out_file:
         with open(tx_out_file, "w") as out_handle:
-            for k, v in transcript_to_gene(gtf).iteritems():
+            for k, v in transcript_to_gene(gtf).items():
                 out_handle.write(",".join([k, v]) + "\n")
     return out_file
 

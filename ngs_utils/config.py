@@ -11,7 +11,7 @@ def load_yaml_config(fpath):
     verify_file(fpath, is_critical=True)
     try:
         dic = load_yaml(open(fpath))
-    except StandardError:
+    except Exception:
         err(format_exc())
         critical('Could not parse bcbio YAML ' + fpath)
     else:

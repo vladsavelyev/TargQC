@@ -1,9 +1,6 @@
-# coding: utf-8
-
-import os
 import shutil
 from collections import OrderedDict
-from itertools import repeat, izip
+from itertools import repeat
 from os.path import join, relpath, dirname, abspath, basename
 from json import load, dump
 from math import floor
@@ -12,11 +9,16 @@ import datetime
 
 import itertools
 
+from ngs_utils import jsontemplate
 from ngs_utils.file_utils import file_transaction, verify_file, safe_mkdir
 from ngs_utils import logger
 from ngs_utils.logger import critical, info, err, warn, debug
 from ngs_utils.utils import mean
-from ngs_utils import jsontemplate
+
+try:
+    from itertools import izip as zip
+except ImportError:
+    pass
 
 
 def get_int_val(v):
@@ -65,10 +67,7 @@ class Record:
             rowspan=None):  # TODO: get rid of those
 
         self.metric = metric
-        if self.metric.parse:
-            self.set_value(value)
-        else:
-            self.value = value
+        self.set_value(value)
         self.meta = meta or dict()
         self.html_fpath = html_fpath
         self.url = url
@@ -90,13 +89,13 @@ class Record:
         # self.text_color = lambda: self._text_color
 
     def get_value(self):
-        return self.value
+        return self.__value
 
     def set_value(self, value):
         if value is None:
             pass
-        else:
-            if isinstance(value, basestring):
+        elif self.metric.parse:
+            if isinstance(value, str):
                 try:
                     value = int(value)
                 except ValueError:
@@ -104,10 +103,10 @@ class Record:
                         value = float(value)
                     except ValueError:
                         pass
-        self.value = value
+        self.__value = value
 
     def del_value(self):
-        del self.value
+        del self.__value
 
     value = property(get_value, set_value, del_value, 'value')
 
@@ -250,7 +249,7 @@ class Metric:
         if unit and is_html:
             unit_str = '<span class=\'rhs\'>&nbsp;</span>' + unit
 
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             if human_readable:
                 return '{value}{unit_str}'.format(**locals())
             else:
@@ -316,7 +315,7 @@ class BaseReport:
         self.display_name = display_name
         if not display_name:
             if sample:
-                if isinstance(sample, basestring):
+                if isinstance(sample, str):
                     self.display_name = sample
                 else:
                     self.display_name = sample.name
@@ -928,7 +927,8 @@ def load_records(json_fpath):
 #             for sample_name, fpaths in report_fpath_by_sample.items()])
 
 
-def write_txt_rows((header_rows, rows), output_fpath):
+def write_txt_rows(rows, output_fpath):
+    (header_rows, rows) = rows
     if not rows:
         return None
 
@@ -940,14 +940,15 @@ def write_txt_rows((header_rows, rows), output_fpath):
             out.write(r[0] + '\n')
 
         for row in itertools.chain(header_rows, rows):
-            for val, w in izip(row, col_widths):
+            for val, w in zip(row, col_widths):
                 out.write(val + (' ' * (w - len(val) + 2)))
             out.write('\n')
 
     return output_fpath
 
 
-def write_tsv_rows((header_rows, rows), output_fpath):
+def write_tsv_rows(rows, output_fpath):
+    (header_rows, rows) = rows
     if not rows:
         return None
 
@@ -962,7 +963,7 @@ def get_col_widths(rows):
     col_widths = None
     for row in rows:
         if not row[0].startswith('##'):
-            col_widths = [max(len(v), w) for v, w in izip(row, col_widths or repeat(0))]
+            col_widths = [max(len(v), w) for v, w in zip(row, col_widths or repeat(0))]
 
     return col_widths
 
@@ -1015,6 +1016,7 @@ css_files = [
 ]
 js_files = [
     'jquery-2.2.0.min.js',
+    'flot/jquery.flot.js',
     # 'flot/jquery.flot.dashes.js',
     # 'scripts/hsvToRgb.js',
     'scripts/utils.js',
@@ -1206,7 +1208,7 @@ def make_cell_td(rec, class_=''):
         padding_style = ''
 
     if rec.url:
-        if isinstance(rec.url, basestring):
+        if isinstance(rec.url, str):
             html += '<a href="' + rec.url + '">' + rec.cell_contents + '</a>'
         else:  # varQC -- several variant callers for one sample are possible
             if len(rec.url) == 0:
@@ -1434,7 +1436,9 @@ def calc_cell_contents(report, rows):
         for rec in row.records:
             # if rec.metric.name in section.metrics_by_name:
             if rec.metric.name not in max_frac_widths_by_metric or \
-                            rec.frac_width > max_frac_widths_by_metric[rec.metric.name]:
+                    (rec.frac_width is not None and
+                     max_frac_widths_by_metric[rec.metric.name] is not None and
+                     rec.frac_width > max_frac_widths_by_metric[rec.metric.name]):
                 max_frac_widths_by_metric[rec.metric.name] = rec.frac_width
             if rec.num is not None:
                 row.numbers.append(rec.num)
@@ -1510,11 +1514,12 @@ def calc_cell_contents(report, rows):
                     # Normal values
                     elif rec.num < heatmap_stats.med:
                         try:
-                            k = (MEDIAN_BRT - MIN_NORMAL_BRT) / (heatmap_stats.med - heatmap_stats.low_inner_fence)
+                            k = float(MEDIAN_BRT - MIN_NORMAL_BRT) / (heatmap_stats.med - heatmap_stats.low_inner_fence)
                         except:
                             pass
-                        brt = round(MEDIAN_BRT - (heatmap_stats.med - rec.num) * k)
-                        rec.color = get_color(low_hue, brt)
+                        else:
+                            brt = round(MEDIAN_BRT - (heatmap_stats.med - rec.num) * k)
+                            rec.color = get_color(low_hue, brt)
 
                     # High outliers
                     elif rec.num > heatmap_stats.top_inner_fence and rec.num > heatmap_stats.med:
@@ -1525,7 +1530,7 @@ def calc_cell_contents(report, rows):
                         rec.text_color = 'white'
 
                     elif rec.num > heatmap_stats.med:
-                        k = (MEDIAN_BRT - MIN_NORMAL_BRT) / (heatmap_stats.top_inner_fence - heatmap_stats.med)
+                        k = float(MEDIAN_BRT - MIN_NORMAL_BRT) / (heatmap_stats.top_inner_fence - heatmap_stats.med)
                         brt = round(MEDIAN_BRT - (rec.num - heatmap_stats.med) * k)
                         rec.color = get_color(top_hue, brt)
 
@@ -1533,7 +1538,7 @@ def calc_cell_contents(report, rows):
             metric = rec.metric
 
             if metric.ok_threshold is not None:
-                if isinstance(metric.ok_threshold, basestring):
+                if isinstance(metric.ok_threshold, str):
                     rec_to_align_with = BaseReport.find_record(row.records, metric.ok_threshold)
                     if rec_to_align_with:
                         rec.text_color = rec_to_align_with.text_color
@@ -1566,7 +1571,7 @@ def write_html_report(report, html_fpath, caption='',
                     l = _insert_into_html(l, report_html, 'report')
                     l = _insert_into_html(l, plots_html, 'plots')
                     if data_dict:
-                        for keyword, text in data_dict.iteritems():
+                        for keyword, text in data_dict.items():
                             l = _insert_into_html(l, text, keyword)
                     try:
                         u = unicode(l, 'utf-8')
@@ -1577,25 +1582,17 @@ def write_html_report(report, html_fpath, caption='',
 
 
 def calc_heatmap_stats(metric):
-    def _cmp(a, b):  # None is always less than anything
-        if a and b:
-            return cmp(a, b)
-        elif a:
-            return 1
-        else:
-            return -1
-    numbers = sorted(
-        [v for v in metric.numbers],
-        cmp=_cmp)
+    numbers = sorted([v for v in metric.numbers],
+                     key=lambda a: a if a is not None else -1)  # None is always less than anything
     l = len(numbers)
 
     metric.min = numbers[0]
     metric.max = numbers[l - 1]
     metric.all_values_equal = metric.min == metric.max
     if metric.med is None:
-        metric.med = numbers[(l - 1) / 2] if l % 2 != 0 else mean([numbers[l / 2], numbers[(l / 2) - 1]])
-    q1 = numbers[int(floor((l - 1) / 4))]
-    q3 = numbers[int(floor((l - 1) * 3 / 4))]
+        metric.med = numbers[(l - 1) // 2] if l % 2 != 0 else mean([numbers[l // 2], numbers[(l // 2) - 1]])
+    q1 = numbers[int(floor((l - 1) // 4))]
+    q3 = numbers[int(floor((l - 1) * 3 // 4))]
 
     d = q3 - q1
     metric.low_outer_fence = metric.low_outer_fence if metric.low_outer_fence is not None else q1 - 3   * d
@@ -1727,7 +1724,7 @@ def _embed_css_and_scripts(html, report_dirpath, extra_js_fpaths=None, extra_css
                         if line in html:
                             debug('Embedding ' + rel_fpath + '...', ending=' ')
                             html = html.replace(line, l_tag_formatted + '\n' + contents + '\n' + r_tag)
-                    except StandardError:
+                    except Exception:
                         err()
                         # print contents
                         err()
@@ -1780,6 +1777,8 @@ def __write_html(html, html_fpath, extra_js_fpaths, extra_css_fpaths, image_by_k
                 u = unicode(html, 'utf-8')
             except TypeError:
                 u = unicode(html)
+            except NameError:  # py3
+                u = html
             f.write(u)
 
     return html_fpath

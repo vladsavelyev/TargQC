@@ -169,8 +169,8 @@ class Target:
 
         with file_transaction(work_dir, self.wgs_bed_fpath) as tx:
             with open(tx, 'w') as out:
-                for gname, r_by_tx in r_by_tx_by_gene.iteritems():
-                    all_tx = (x for xx in r_by_tx.itervalues() for x in xx if x[ebl.BedCols.FEATURE] == 'transcript')
+                for gname, r_by_tx in r_by_tx_by_gene.items():
+                    all_tx = (x for xx in r_by_tx.values() for x in xx if x[ebl.BedCols.FEATURE] == 'transcript')
                     tx_sorted_list = [x[ebl.BedCols.ENSEMBL_ID] for x in sorted(all_tx, key=tx_priority_sort_key)]
                     if not tx_sorted_list:
                         continue

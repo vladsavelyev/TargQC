@@ -96,7 +96,7 @@ error = err
 
 
 def critical(msg=''):
-    if isinstance(msg, basestring):
+    if isinstance(msg, str):
         err(msg, severity='critical')
     else:
         if not msg:
@@ -189,14 +189,14 @@ def send_email(msg_other='', subj='', only_me=False, addr_by_username=None, addr
             try_send(smtp_host, msg)
         except smtplib.SMTPException:
             warn('Could not send email using the sever "' + smtp_host + '" with exception: ')
-            warn('  ' + '; '.join(traceback.format_exception_only(sys.exc_type, sys.exc_value)))
+            warn('  ' + '; '.join(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])))
             if smtp_host != 'localhost':
                 warn('Trying "localhost" as a server...')
                 try:
                     try_send('localhost', msg)
                 except smtplib.SMTPException:
                     warn('Could not send email using the sever "localhost" with exception: ')
-                    warn('  ' + '; '.join(traceback.format_exception_only(sys.exc_type, sys.exc_value)))
+                    warn('  ' + '; '.join(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])))
                     print_msg()
             else:
                 print_msg()

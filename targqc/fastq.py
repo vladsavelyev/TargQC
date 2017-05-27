@@ -1,7 +1,6 @@
 import os
 import random
 import gzip
-from itertools import izip, product
 from os.path import splitext, dirname, join, basename, isfile, abspath
 
 from ngs_utils import sambamba
@@ -9,6 +8,11 @@ from ngs_utils.bam_utils import verify_bam
 from ngs_utils.call_process import run
 from ngs_utils.file_utils import open_gzipsafe, file_transaction, verify_file, add_suffix, safe_mkdir, which, can_reuse
 from ngs_utils.logger import critical, debug, info, warn, err
+
+try:
+    from itertools import izip as zip
+except ImportError:
+    pass
 
 
 def make_downsampled_fpath(work_dir, fastq_fpath):
@@ -110,7 +114,7 @@ def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, downs
     whole thing into memory
     modified from: http://www.biostars.org/p/6544/
     """
-    sample_name = sample_name or splitext(''.join(lc if lc == rc else '' for lc, rc in izip(fastq_left_fpath, fastq_right_fpath)))[0]
+    sample_name = sample_name or splitext(''.join(lc if lc == rc else '' for lc, rc in zip(fastq_left_fpath, fastq_right_fpath)))[0]
 
     l_out_fpath = make_downsampled_fpath(work_dir, fastq_left_fpath)
     r_out_fpath = make_downsampled_fpath(work_dir, fastq_right_fpath)
@@ -132,7 +136,7 @@ def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, downs
         return fastq_left_fpath, fastq_right_fpath
     else:
         info(sample_name + ': downsampling to ' + str(num_downsample_pairs))
-        rand_records = sorted(random.sample(xrange(num_pairs), num_downsample_pairs))
+        rand_records = sorted(random.sample(range(num_pairs), num_downsample_pairs))
 
     info('Opening ' + fastq_left_fpath)
     fh1 = open_gzipsafe(fastq_left_fpath)
@@ -143,7 +147,7 @@ def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, downs
 
     written_records = 0
     with file_transaction(work_dir, out_files) as tx_out_files:
-        if isinstance(tx_out_files, basestring):
+        if isinstance(tx_out_files, str):
             tx_out_f1 = tx_out_files
         else:
             tx_out_f1, tx_out_f2 = tx_out_files

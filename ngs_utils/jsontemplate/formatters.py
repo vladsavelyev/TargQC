@@ -15,14 +15,13 @@ e.g.:
 If anyone has any better names for the two types of chaining, let the mailing
 list know.
 """
-
 __author__ = 'Andy Chu'
 
 
 import os
 import sys
 
-import _jsontemplate as jsontemplate  # For TemplateFileInclude
+from ._jsontemplate import FromFile
 
 
 class Error(Exception):
@@ -85,7 +84,7 @@ class TemplateFileInclude(object):
 
       if full_path not in _compiled_template_cache:
         f = _open(full_path)
-        _compiled_template_cache[full_path] = jsontemplate.FromFile(f)
+        _compiled_template_cache[full_path] = FromFile(f)
         f.close()
 
       return _compiled_template_cache[full_path].expand  # a 'bound method'

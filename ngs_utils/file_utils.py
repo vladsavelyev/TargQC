@@ -14,6 +14,7 @@ import random
 import collections
 import fnmatch
 import time
+from functools import reduce
 
 from ngs_utils.logger import info, err, warn, critical, debug
 
@@ -231,10 +232,10 @@ def symlink_plus(orig, new):
             with chdir(os.path.dirname(new_noext)):
                 os.symlink(os.path.relpath(orig_noext + sub_ext), os.path.basename(new_noext + sub_ext))
 
-def open_gzipsafe(f, mode='rb'):
+def open_gzipsafe(f, mode='r'):
+    # mode_t = mode.replace('b', '')
+    # mode_b = mode if 'b' in mode else mode + 'b'
     if f.endswith('.gz') or f.endswith('.gzip') or f.endswith('.gz.tx') or f.endswith('.gzip.tx'):
-        if 'b' not in mode:
-            mode += 'b'
         try:
             h = gzip.open(f, mode=mode)
         except IOError as e:
@@ -313,7 +314,10 @@ def partition(pred, iterable):
     'Use a predicate to partition entries into false entries and true entries'
     # partition(is_odd, range(10)) --> 0 2 4 6 8   and  1 3 5 7 9
     t1, t2 = itertools.tee(iterable)
-    return itertools.ifilterfalse(pred, t1), itertools.ifilter(pred, t2)
+    try:
+        return itertools.ifilterfalse(pred, t1), itertools.ifilter(pred, t2)
+    except:
+        return itertools.filterfalse(pred, t1), filter(pred, t2)
 
 # ## Dealing with configuration files
 
@@ -328,8 +332,8 @@ def merge_config_files(fnames):
     out = _load_yaml(fnames[0])
     for fname in fnames[1:]:
         cur = _load_yaml(fname)
-        for k, v in cur.iteritems():
-            if out.has_key(k) and isinstance(out[k], dict):
+        for k, v in cur.items():
+            if k in out and isinstance(out[k], dict):
                 out[k].update(v)
             else:
                 out[k] = v
@@ -360,7 +364,7 @@ def flatten(l):
     """
     for el in l:
         if isinstance(el, collections.Iterable) and not isinstance(el,
-                                                                   basestring):
+                                                                   str):
             for sub in flatten(el):
                 yield sub
         else:
@@ -388,7 +392,7 @@ def is_pair(arg):
     return is_sequence(arg) and len(arg) == 2
 
 def is_string(arg):
-    return isinstance(arg, basestring)
+    return isinstance(arg, str)
 
 
 def locate(pattern, root=os.curdir):
@@ -666,7 +670,7 @@ def verify_file(fpath, description='', silent=False, is_critical=False, verify_s
         return None
 
     if cmp_f:
-        if isinstance(cmp_f, basestring):
+        if isinstance(cmp_f, str):
             cmp_f = [cmp_f]
         try:
             for cmp_f in cmp_f:
@@ -870,7 +874,7 @@ def dots_to_empty_cells(config, tsv_fpath):
 
 
 def __remove_tmpdirs(fnames):
-    if isinstance(fnames, basestring):
+    if isinstance(fnames, str):
         fnames = [fnames]
     for x in fnames:
         xdir = os.path.dirname(os.path.abspath(x))
@@ -879,7 +883,7 @@ def __remove_tmpdirs(fnames):
 
 
 def __remove_files(fnames):
-    if isinstance(fnames, basestring):
+    if isinstance(fnames, str):
         fnames = [fnames]
 
     for x in fnames:
@@ -911,7 +915,7 @@ def file_transaction(work_dir, *rollback_files):
         for safe, orig in zip(safe_fpaths, orig_names):
             if exists(safe):
                 shutil.move(safe, orig)
-                for check_ext, check_idx in exts.iteritems():
+                for check_ext, check_idx in exts.items():
                     if safe.endswith(check_ext):
                         safe_idx = safe + check_idx
                         if exists(safe_idx):
@@ -952,7 +956,7 @@ def _flatten_plus_safe(tmp_dir, rollback_files):
     """
     tx_fpaths, orig_files = [], []
     for fnames in rollback_files:
-        if isinstance(fnames, basestring):
+        if isinstance(fnames, str):
             fnames = [fnames]
         for fname in fnames:
             tx_file = fname + '.tx'

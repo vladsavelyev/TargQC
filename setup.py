@@ -24,7 +24,7 @@ if is_installing:
     try:
         subprocess.call('pip install --upgrade pip', shell=True)
         subprocess.call('pip install --upgrade --ignore-installed setuptools', shell=True)
-    except StandardError:
+    except Exception:
         sys.stderr.write('Cannot update pip and setuptools, that might cause errors '
                          'during the following intallation\n')
 

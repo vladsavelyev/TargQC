@@ -20,6 +20,24 @@ def main():
 
     bed_fpaths = [verify_bed(bed) for bed in args]
     names_map = dict()
+    
+    ''' Example:
+    bed_fpaths = tuple([join(beds_dirpath, bed) for bed in [
+        'AZ.bed',
+        'CRE.bed',
+        'IDT.bed',
+        'Med.bed',
+        # 'One.bed',
+        # 'One.hg38tohg19.bed',
+        'V6.bed',
+    ]])
+    names_map = {
+        'AZ': 'AZ Exome',
+        'CRE': 'B',
+        'V6': 'A',
+        'IDT': 'D',
+        'Med': 'C'}
+    '''
 
     if not opts.__dict__.get('output_dir'):
         critical('Please, provide output dir with -o')
