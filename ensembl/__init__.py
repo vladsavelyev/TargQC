@@ -205,13 +205,8 @@ def _get(relative_path, genome=None):
             bedtools = which('bedtools')
             if not bedtools:
                 critical('bedtools not found in PATH: ' + str(os.environ['PATH']))
-            bedtools_v = bedtools_version(bedtools)
-            if bedtools_v > 25:
-                debug('BED is compressed, creating BedTool')
-                bed = BedTool(path)
-            else:
-                debug('BedTools version is < ' + str(bedtools_v) + ', extracting BED file')
-                bed = BedTool(open_gzipsafe(path))
+            debug('BED is compressed, creating BedTool')
+            bed = BedTool(path)
         else:
             debug('BED is uncompressed, creating BedTool')
             bed = BedTool(path)
