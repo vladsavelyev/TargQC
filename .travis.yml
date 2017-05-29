@@ -35,7 +35,7 @@ before_install:
 
 install:
   # Install conda packages
-  - conda create -q -n test-environment -c vladsaveliev python=$TRAVIS_PYTHON_VERSION targqc
+  - conda create -q -n test-environment -c vladsaveliev -c bcbio -c bioconda -c conga-forge python=$TRAVIS_PYTHON_VERSION targqc
   - source activate test-environment
   # Installing
   - python setup.py develop
