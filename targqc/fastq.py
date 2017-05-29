@@ -106,7 +106,7 @@ def count_read_pairs(s_name, work_dir, fastq_fpath):
 
 
 def _count_records_in_fastq(fastq_fpath):
-    return sum(1 for _ in open_gzipsafe(fastq_fpath)) / 4
+    return sum(1 for _ in open_gzipsafe(fastq_fpath)) // 4
 
 
 def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, downsample_to, num_pairs=None):
