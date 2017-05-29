@@ -81,7 +81,7 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, num_pa
             [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, smb, bwa_prefix, dedup, parall_view.cores_per_job]
              for s in samples])
 
-        bam_fpaths = map(verify_bam, bam_fpaths)
+        bam_fpaths = [verify_bam(b) for b in bam_fpaths]
         if len(bam_fpaths) < len(samples):
             critical('Some samples were not aligned successfully.')
         for bam, s in zip(bam_fpaths, samples):
