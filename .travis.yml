@@ -35,13 +35,10 @@ before_install:
 
 install:
   # Install conda packages
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c bioconda targqc
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c vladsaveliev targqc
   - source activate test-environment
-  # Updating pip and setuptools
-  - pip install --upgrade pip
-  - pip install --upgrade --ignore-installed setuptools
   # Installing
-  - python setup.py install
+  - python setup.py develop
 
 script:
   - nosetests --nocapture tests/test_travis.py

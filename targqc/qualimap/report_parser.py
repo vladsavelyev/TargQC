@@ -58,7 +58,11 @@ def parse_qualimap_sample_report(report_fpath):
     def __fill_record(metric_name, line):
         val = __get_td_tag_contents(line)
         val = val.replace(' ', '').replace(',', '')
-        val = val.replace(b'\xc2\xa0', '')
+        try:
+            val = val.replace(b'\xc2\xa0', '')
+        except:
+            val = val.replace(b'\xc2\xa0'.decode(), '')
+
         if metric_name == 'Read min/max/mean length':  # special case
             for metric_infix, value in zip(['min', 'max', 'mean'], val.split('/')):
                 value_by_metric['Read ' + metric_infix + ' length'] = value

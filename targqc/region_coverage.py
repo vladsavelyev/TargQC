@@ -116,7 +116,7 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                 std_dev = float(fs[std_dev_col]) if std_dev_col is not None else '.'
                 median_depth = int(fs[median_cov_col]) if median_cov_col is not None else '.'
                 rate_within_normal = float(fs[wn_20_pcnt_col]) if wn_20_pcnt_col is not None else '.'
-                last_cov_col = max(mean_cov_col, median_cov_col, std_dev_col, wn_20_pcnt_col)
+                last_cov_col = max(mean_cov_col or 0, median_cov_col or 0, std_dev_col or 0, wn_20_pcnt_col or 0)
                 rates_within_threshs = fs[last_cov_col + 1:-1]
 
                 write_line(out, map(str, [

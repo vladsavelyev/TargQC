@@ -1,3 +1,4 @@
+[![Anaconda-Server Badge](https://anaconda.org/vladsaveliev/targqc/badges/installer/conda.svg)](https://conda.anaconda.org/vladsaveliev)
 [![Build Status](https://travis-ci.org/vladsaveliev/TargQC.svg?branch=master)](https://travis-ci.org/vladsaveliev/TargQC)
 
 # TargQC - target capture coverage QC tool

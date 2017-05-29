@@ -2,7 +2,7 @@ from os.path import dirname, join, exists, isfile, splitext, basename, isdir, re
 
 from nose import SkipTest
 
-from tests import BaseTargQC, info
+from . import BaseTargQC, info
 
 
 class UnitTests(BaseTargQC):
@@ -42,30 +42,30 @@ class UnitTests(BaseTargQC):
     def test_12_full_hg38(self):
         raise SkipTest
 
-    def test_13_api(self):
-        import targqc
-        import ngs_utils.reference_data as ref
-        from ngs_utils.file_utils import safe_mkdir
-        from ngs_utils.parallel import ParallelCfg
-
-        genome = 'hg19-chr21'
-        fai_fpath = ref.get_fai(genome)
-        output_dirname = 'api'
-        output_dir = join(self.results_dir, output_dirname)
-        work_dir = join(output_dir, 'work')
-        samples = sorted([targqc.Sample(s.name,
-             dirpath=safe_mkdir(join(output_dir, s.name)),
-             work_dir=safe_mkdir(join(work_dir, s.name)),
-             bam=join(self.syn3_dir, s.bam))
-                   for s in self.samples], key=lambda _s: _s.key_to_sort())
-        parallel_cfg = ParallelCfg(None, None, None, 1, None)
-        info('-' * 100)
-        targqc.start_targqc(work_dir, output_dir, samples, self.bed4,
-                            parallel_cfg, self.bwa_path,
-                            fai_fpath=fai_fpath,
-                            genome=genome)
-        info('-' * 100)
-        info('')
-
-        info()
-        self._check_results(output_dir, self.samples)
+    # def test_13_api(self):
+    #     import targqc
+    #     import ngs_utils.reference_data as ref
+    #     from ngs_utils.file_utils import safe_mkdir
+    #     from ngs_utils.parallel import ParallelCfg
+    #
+    #     genome = 'hg19-chr21'
+    #     fai_fpath = ref.get_fai(genome)
+    #     output_dirname = 'api'
+    #     output_dir = join(self.results_dir, output_dirname)
+    #     work_dir = join(output_dir, 'work')
+    #     samples = sorted([targqc.Sample(s.name,
+    #          dirpath=safe_mkdir(join(output_dir, s.name)),
+    #          work_dir=safe_mkdir(join(work_dir, s.name)),
+    #          bam=join(self.syn3_dir, s.bam))
+    #                for s in self.samples], key=lambda _s: _s.key_to_sort())
+    #     parallel_cfg = ParallelCfg(None, None, None, 1, None)
+    #     info('-' * 100)
+    #     targqc.start_targqc(work_dir, output_dir, samples, self.bed4,
+    #                         parallel_cfg, self.bwa_path,
+    #                         fai_fpath=fai_fpath,
+    #                         genome=genome)
+    #     info('-' * 100)
+    #     info('')
+    #
+    #     info()
+    #     self._check_results(output_dir, self.samples)

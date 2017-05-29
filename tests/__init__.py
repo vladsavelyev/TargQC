@@ -18,22 +18,25 @@ class BaseTargQC(BaseTestCase):
     syn3_url = 'http://quast.bioinf.spbau.ru/static/chr21.tar.gz'
     bwa_url = 'http://quast.bioinf.spbau.ru/static/bwa.tar.gz'
 
-    syn3_dir = join(data_dir, 'chr21')
-    bed3 = join(syn3_dir, 'NGv3.chr21.3col.bed')
-    bed4 = join(syn3_dir, 'NGv3.chr21.4col.bed')
     Sample = namedtuple('Sample', 'name bam l_fastq r_fastq')
     samples = [
         Sample('syn3-tumor', 'syn3-tumor.bam', 'syn3-tumor_R1.fq.gz', 'syn3-tumor_R2.fq.gz'),
         Sample('syn3-normal', 'syn3-normal.bam', 'syn3-normal_R1.fq.gz', 'syn3-normal_R2.fq.gz'),
     ]
 
-    bams = [join(syn3_dir, s.bam) for s in samples]
-    fastqs = [join(syn3_dir, s.l_fastq) for s in samples] + [join(syn3_dir, s.r_fastq) for s in samples]
     bwa_dir = join(data_dir, 'bwa')
     bwa_path = join(bwa_dir, 'hg19-chr21.fa')
 
     def setUp(self):
         BaseTestCase.setUp(self)
+
+        self.syn3_dir = join(BaseTargQC.data_dir, 'chr21')
+        self.bed3 = join(self.syn3_dir, 'NGv3.chr21.3col.bed')
+        self.bed4 = join(self.syn3_dir, 'NGv3.chr21.4col.bed')
+        self.bams = [join(self.syn3_dir, s.bam) for s in BaseTargQC.samples]
+        self.fastqs = [join(self.syn3_dir, s.l_fastq) for s in BaseTargQC.samples] + \
+                      [join(self.syn3_dir, s.r_fastq) for s in BaseTargQC.samples]
+
         if not isdir(self.syn3_dir):
             info(self.syn3_dir + ' does not exist, downloading test data')
             cur_dir = os.getcwd()

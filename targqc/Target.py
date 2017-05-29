@@ -102,10 +102,11 @@ class Target:
 
         self.bed_fpath = final_clean_target_bed_fpath
         self.bed = BedTool(self.bed_fpath)
-
+        
         self.capture_bed_fpath = add_suffix(join(output_dir, basename(bed_fpath)), 'clean_sorted_ann')
-        with file_transaction(work_dir, self.capture_bed_fpath) as tx:
-            self.get_capture_bed().saveas(tx)
+        if not can_reuse(self.capture_bed_fpath, self.bed_fpath):
+            with file_transaction(work_dir, self.capture_bed_fpath) as tx:
+                self.get_capture_bed().saveas(tx)
 
         gene_key_set, gene_key_list = get_genes_from_bed(bed_fpath)
         self.gene_keys_set = gene_key_set

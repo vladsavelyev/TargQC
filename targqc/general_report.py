@@ -487,7 +487,7 @@ def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
 
     if 'bases_within_threshs' in depth_stats:
         bases_within_threshs = depth_stats['bases_within_threshs']
-        v_covered_bases_in_targ = bases_within_threshs.items()[0][1]
+        v_covered_bases_in_targ = list(bases_within_threshs.items())[0][1]
         v_percent_covered_bases_in_targ = 1.0 * (v_covered_bases_in_targ or 0) / target.bases_num if target.bases_num else None
         assert v_percent_covered_bases_in_targ <= 1.0 or v_percent_covered_bases_in_targ is None, str(v_percent_covered_bases_in_targ)
 
