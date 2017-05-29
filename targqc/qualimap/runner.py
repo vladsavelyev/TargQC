@@ -99,7 +99,7 @@ def run_multisample_qualimap(output_dir, work_dir, samples, targqc_full_report):
     else:
         # Qualimap2 run for multi-sample plots
         if len([s.qualimap_html_fpath for s in samples if s.qualimap_html_fpath]) > 0:
-            if find_executable() is not None and get_qualimap_type(find_executable()) == 'full':
+            if find_executable() is not None:  # and get_qualimap_type(find_executable()) == 'full':
                 qualimap_output_dir = join(work_dir, 'qualimap_multi_bamqc')
 
                 _correct_qualimap_genome_results(samples)
