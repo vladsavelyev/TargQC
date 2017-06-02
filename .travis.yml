@@ -35,10 +35,11 @@ before_install:
 
 install:
   # Install conda packages
-  - conda create -q -n test-environment -c vladsaveliev -c bioconda -c conga-forge python=$TRAVIS_PYTHON_VERSION targqc
+  - conda create -q -n test-environment -c vladsaveliev -c bioconda -c conga-forge
+                 python=$TRAVIS_PYTHON_VERSION targqc
   - source activate test-environment
   # Installing
-  - python setup.py develop
+  - python setup.py develop  # or `install --single-version-externally-managed --root=/`
 
 script:
   - nosetests --nocapture tests/test_travis.py

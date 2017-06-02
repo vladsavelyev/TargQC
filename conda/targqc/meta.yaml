@@ -9,17 +9,17 @@ source:
   git_rev: master
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
     - python
     - pip
-    - setuptools >=18.5
     - numpy
     - ngs_utils
   run:
     - python
+    - six
     - qualimap
     - sambamba
     - bwa
