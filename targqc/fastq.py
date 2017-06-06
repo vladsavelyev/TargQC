@@ -2,6 +2,7 @@ import os
 import random
 import gzip
 from os.path import splitext, dirname, join, basename, isfile, abspath
+import six
 
 from ngs_utils import sambamba
 from ngs_utils.bam_utils import verify_bam
@@ -147,7 +148,7 @@ def downsample(work_dir, sample_name, fastq_left_fpath, fastq_right_fpath, downs
 
     written_records = 0
     with file_transaction(work_dir, out_files) as tx_out_files:
-        if isinstance(tx_out_files, str):
+        if isinstance(tx_out_files, six.string_types):
             tx_out_f1 = tx_out_files
         else:
             tx_out_f1, tx_out_f2 = tx_out_files

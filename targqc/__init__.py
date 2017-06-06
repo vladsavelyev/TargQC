@@ -126,16 +126,6 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
 
     return html_fpath
 
-    # for general_report, per_gene_report, sample in zip(general_reports, per_gene_reports, samples):
-    #     info('')
-    #     info('*' * 70)
-    #     if general_report.txt_fpath and verify_file(general_report.txt_fpath):
-    #         info('Summary report: ' + general_report.txt_fpath)
-    #     if per_gene_report:
-    #         path = per_gene_report if isinstance(per_gene_report, str) else per_gene_report.txt_fpath
-    #         if path and verify_file(path):
-    #             info('Region-based report: ' + path)
-
 
 class Sample(BaseSample):
     def __init__(self, name, dirpath, *args, **kwargs):

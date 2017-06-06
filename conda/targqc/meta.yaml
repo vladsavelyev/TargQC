@@ -9,12 +9,11 @@ source:
   git_rev: master
 
 build:
-  number: 2
+  number: 3
 
 requirements:
   build:
     - python
-    - pip
     - numpy
     - ngs_utils
   run:
