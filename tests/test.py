@@ -27,19 +27,16 @@ class UnitTests(BaseTargQC):
     def test_07_ipython(self):
         self._test('ipython', bams=self.bams, bed=self.bed4, ipython=True, threads='2')
 
-    def test_08_fastq(self):
-        self._test('fastq', fastq=self.fastqs, bwa=self.bwa_path, bed=self.bed4)
-
-    def test_09_debug_and_reuse(self):
+    def test_08_debug_and_reuse(self):
         self._test('debug_and_reuse', bams=self.bams, bed=self.bed4, debug=True, reuse_intermediate=True)
 
-    def test_10_reuse_output(self):
+    def test_09_reuse_output(self):
         self._test('reuse_output_dir', bams=self.bams, bed=self.bed4, reuse_output_dir=True)
 
-    def test_11_full_hg19(self):
+    def test_10_full_hg19(self):
         raise SkipTest
 
-    def test_12_full_hg38(self):
+    def test_11_full_hg38(self):
         raise SkipTest
 
     # def test_13_api(self):
