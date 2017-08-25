@@ -33,29 +33,29 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, num_pa
         debug()
         if all(s.name in num_pairs_by_sample for s in samples):
             debug('Using read pairs counts extracted from FastQC reports')
-        elif all(can_reuse(make_pair_counts_fpath(s.work_dir), s.l_fpath) for s in samples):
+        elif all(can_reuse(make_pair_counts_fpath(join(work_dir, s.name)), s.l_fpath) for s in samples):
             debug('Reusing pairs counts, reading from files')
-            num_pairs_by_sample = {s.name: int(open(make_pair_counts_fpath(s.work_dir)).read().strip()) for s in samples}
+            num_pairs_by_sample = {s.name: int(open(make_pair_counts_fpath(join(work_dir, s.name))).read().strip()) for s in samples}
         else:
             info('Counting read pairs')
-            num_pairs = parall_view.run(count_read_pairs, [[s.name, s.work_dir, s.l_fpath] for s in samples])
+            num_pairs = parall_view.run(count_read_pairs, [[s.name, safe_mkdir(join(work_dir, s.name)), s.l_fpath] for s in samples])
             num_pairs_by_sample = {s.name: pairs_count for s, pairs_count in zip(samples, num_pairs)}
 
         # Downsampling
         debug()
-        if all(can_reuse(make_downsampled_fpath(s.work_dir, s.l_fpath), s.l_fpath) and
-               can_reuse(make_downsampled_fpath(s.work_dir, s.r_fpath), s.r_fpath) for s in samples):
+        if all(can_reuse(make_downsampled_fpath(join(work_dir, s.name), s.l_fpath), s.l_fpath) and
+               can_reuse(make_downsampled_fpath(join(work_dir, s.name), s.r_fpath), s.r_fpath) for s in samples):
             debug('Reusing downsampled FastQ')
             for s in samples:
-                s.l_fpath = make_downsampled_fpath(s.work_dir, s.l_fpath)
-                s.r_fpath = make_downsampled_fpath(s.work_dir, s.r_fpath)
+                s.l_fpath = make_downsampled_fpath(join(work_dir, s.name), s.l_fpath)
+                s.r_fpath = make_downsampled_fpath(join(work_dir, s.name), s.r_fpath)
         else:
             if isinstance(downsample_to, float):
                 info('Downsampling FastQ to ' + str(float(downsample_to)) + ' fraction of reads')
             else:
                 info('Downsampling FastQ to ' + str(int(downsample_to)) + ' read pairs')
             fastq_pairs = parall_view.run(downsample,
-                [[s.work_dir, s.name, s.l_fpath, s.r_fpath, downsample_to, num_pairs_by_sample.get(s.name)]
+                [[join(work_dir, s.name), s.name, s.l_fpath, s.r_fpath, downsample_to, num_pairs_by_sample.get(s.name)]
                  for s in samples])
             for s, (l_r, r_r) in zip(samples, fastq_pairs):
                 s.l_fpath = l_r
@@ -64,10 +64,10 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, num_pa
         info('Skipping downsampling')
 
     debug()
-    if all(can_reuse(make_bam_fpath(s.work_dir), [s.l_fpath, s.r_fpath]) for s in samples):
+    if all(can_reuse(make_bam_fpath(join(work_dir, s.name)), [s.l_fpath, s.r_fpath]) for s in samples):
         debug('All downsampled BAM exists, reusing')
         for s in samples:
-            s.bam = make_bam_fpath(s.work_dir)
+            s.bam = make_bam_fpath(join(work_dir, s.name))
     else:
         bwa = which('bwa')
         if not isfile(bwa):
@@ -79,7 +79,7 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, num_pa
             critical('Tools required for alignment not found')
         info('Aligning reads to the reference')
         bam_fpaths = parall_view.run(align,
-            [[s.work_dir, s.name, s.l_fpath, s.r_fpath, bwa, smb, bwa_prefix, dedup, parall_view.cores_per_job]
+            [[join(work_dir, s.name), s.name, s.l_fpath, s.r_fpath, bwa, smb, bwa_prefix, dedup, parall_view.cores_per_job]
              for s in samples])
 
         bam_fpaths = [verify_bam(b) for b in bam_fpaths]

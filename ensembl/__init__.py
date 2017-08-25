@@ -170,14 +170,17 @@ def get_canonical_transcripts_ids(genome):
     canon_fpath = _get(join('{genome}', 'canon_transcripts_{genome}_ensembl.txt'), genome)
     replacement_fpath = _get('canon_cancer_replacement.txt')
 
-    canon_fpath = verify_file(canon_fpath, is_critical=True, description='Canonical transcripts path')
-    replacement_fpath = verify_file(replacement_fpath, is_critical=True, description='Canonical cancer transcripts replacement path')
+    canon_fpath = verify_file(canon_fpath, description='Canonical transcripts path')
+    replacement_fpath = verify_file(replacement_fpath, description='Canonical cancer transcripts replacement path')
 
+    if not canon_fpath:
+        return None
     with open(canon_fpath) as f:
         canon_tx_by_gname = dict(l.strip('\n').split('\t') for l in f)
-    with open(replacement_fpath) as f:
-        for gname, tx_id in (l.strip('\n').split('\t') for l in f):
-            canon_tx_by_gname[gname] = tx_id
+    if replacement_fpath:
+        with open(replacement_fpath) as f:
+            for gname, tx_id in (l.strip('\n').split('\t') for l in f):
+                canon_tx_by_gname[gname] = tx_id
 
     return canon_tx_by_gname
 

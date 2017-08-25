@@ -8,7 +8,7 @@ from ngs_utils.bed_utils import verify_bed
 from ngs_utils.file_utils import adjust_path, safe_mkdir
 from ngs_utils.logger import critical
 
-from bed_venn.venn import run, save_venn_diagram_data, write_html
+from venn_bed import venn
 
 
 def main():
@@ -43,11 +43,11 @@ def main():
     safe_mkdir(output_dir)
     work_dirpath = safe_mkdir(join(output_dir, 'intersections'))
 
-    intersection_size_by_subset = run(work_dirpath, bed_fpaths)
+    intersection_size_by_subset = venn.run(work_dirpath, bed_fpaths)
 
-    json_txt = save_venn_diagram_data(intersection_size_by_subset, names_map)
+    json_txt = venn.save_venn_diagram_data(intersection_size_by_subset, names_map)
     
-    html_file = write_html(output_dir, json_txt, bed_fpaths)
+    html_file = venn.write_html(output_dir, json_txt, bed_fpaths)
 
     print('-----------------------')
     print('')

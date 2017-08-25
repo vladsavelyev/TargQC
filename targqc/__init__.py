@@ -75,7 +75,6 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
          reannotate=reannotate, genome=genome, is_debug=logger.is_debug)
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
-
     from ngs_utils.parallel import parallel_view
     if fastq_samples:
         if not bwa_prefix:

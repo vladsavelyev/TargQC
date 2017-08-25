@@ -3,6 +3,7 @@ from __future__ import print_function
 import subprocess
 import json
 
+import six
 from ngs_utils.reporting.reporting import write_static_html_report
 from os.path import dirname, basename, join, splitext, isfile, abspath, pardir
 
@@ -19,6 +20,8 @@ def check_output(cmdl):
 
 def bedsize(bed):
     size = check_output("cat " + bed + " | awk -F'\\t' 'BEGIN{ SUM=0 }{ SUM+=$3-$2 }END{ print SUM }'")
+    if six.PY3:
+        size = size.decode()
     print('Size of ' + basename(bed) + ': ' + size)
     return int(size)
 

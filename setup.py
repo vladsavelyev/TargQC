@@ -47,7 +47,7 @@ else:
                 'hg38/canon_transcripts_hg38_ensembl.txt',
                 'canon_cancer_replacement.txt',
             ],
-            'bed_venn': [
+            'venn_bed': [
                 '*.html'
             ]
         },
