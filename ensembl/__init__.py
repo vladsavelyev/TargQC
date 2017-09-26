@@ -72,6 +72,7 @@ def get_all_features(genome, high_confidence=False, features=None, gene_names=No
             if not _canon_filt(x):
                 return False
         return True
+    debug('Filtering BEDTool for: HUGO annotation, specific features, specific genes, canonical')
     bed = bed.filter(_filter)
     return bed
 
@@ -82,6 +83,7 @@ def get_merged_cds(genome):
     - for Seq2C CNV calling when no capture BED available
     """
     bed = get_all_features(genome)
+    debug('Filtering BEDTool for high confidence CDS and stop codons')
     return bed\
         .filter(lambda r: r.fields[BedCols.FEATURE] in ['CDS', 'stop_codon'])\
         .filter(high_confidence_filter)\
@@ -215,6 +217,7 @@ def _get(relative_path, genome=None):
             bed = BedTool(path)
 
         if chrom:
+            debug('Filtering BEDTool for chrom ' + chrom)
             bed = bed.filter(lambda r: r.chrom == chrom)
         return bed
     else:
