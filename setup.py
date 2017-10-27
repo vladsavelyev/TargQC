@@ -46,9 +46,6 @@ else:
                 'hg38/ensembl.bed.gz.tbi',
                 'hg38/canon_transcripts_hg38_ensembl.txt',
                 'canon_cancer_replacement.txt',
-            ],
-            'venn_bed': [
-                '*.html'
             ]
         },
         include_package_data=True,
@@ -56,7 +53,6 @@ else:
         scripts=[
             join('scripts', script_name),
             join('scripts', 'annotate_bed.py'),
-            join('scripts', 'bed_venn.py'),
         ],
         install_requires=get_reqs(),
         setup_requires=['numpy'],
