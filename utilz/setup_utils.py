@@ -23,7 +23,7 @@ def init(name, package_name, setup_py_fpath, kwargs=None):
             sys.exit()
     
         if cmd == 'publish':
-            run_cmdl('git clean -dfx && python setup.py sdist && twine upload dist/*')
+            run_cmdl('python setup.py sdist && twine upload dist/*')
             sys.exit()
     
         if cmd == 'up':
