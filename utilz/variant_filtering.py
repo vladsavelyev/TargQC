@@ -1,0 +1,5 @@
+mut_file_ext = 'txt'
+mut_pass_suffix = 'PASS'
+mut_reject_suffix = 'REJECT'
+mut_single_suffix = 'single'
+mut_paired_suffix = 'paired'

@@ -1,0 +1,273 @@
+// REPORT TABLE
+
+#report
+    margin: 0 100px 50px 0
+    min-width: 532px
+    font-size: 1em
+
+    .table_name
+        margin-bottom: 5px
+
+    table
+        max-width: 100%
+
+    table.common_table
+        padding-right: 50px !important
+        //margin-bottom: 30px
+
+        span.metric_name
+            font-weight: bold
+
+    table.report_table.table_full
+        display: none
+
+    table.report_table
+        padding-right: 50px !important
+        margin-bottom: 30px
+        border-width: 0
+        border-spacing: 0
+        //border-collapse: collapse
+        *
+            border-spacing: 0
+            //border-collapse: collapse
+
+        td, th
+            white-space: nowrap
+            text-align: left
+            padding: 2px 6px 2px 4px
+
+        th
+            vertical-align: bottom
+            border-bottom: 1px solid #bbb
+
+        td.shifted_column, th.shifted_column
+            padding-left: 0
+            border-left: 20px solid white
+            //border-collapse: separate
+
+        td.stick_to_left, th.stick_to_left
+            padding-left: 0 !important
+
+        td.left_column_td, th.left_column_td, tr.td:first-child, tr.th:first-child
+            padding-left: 0 !important
+            a
+                padding-left: 0 !important
+
+        a.metric_name
+            border-bottom: none
+            color: black
+
+        tr.top_row_tr, tr.group_header
+            td, th
+                font-weight: bold
+
+        tr.group_header
+            td, th
+                height: 20px
+
+        tr.row_hidden, tr.group_empty
+            display: none
+
+        tr.highlighted_row td
+            background-color: #f5ffa3
+
+        tr.highlighted_green_row
+            td:last-child
+                border-right: 1px solid #bbb
+            td
+                background-color: #daffde
+
+        //.report-table-header
+        //    font-weight: bold
+
+        //thead td
+        //    border-bottom: 1px solid #bbb
+
+    //table.static_report
+    //    td, th
+    //        padding-right: 10px
+
+//#report_legend
+//    padding-left: 15px  // compensate drag handles
+tr.af_less_threshold
+    display: none
+
+#contigs_are_ordered
+    z-index: 0
+    position: relative
+
+.three-col-layout
+    column-count: 3
+    -moz-column-count: 3
+    -webkit-column-count: 3
+    table
+        margin-bottom: 0 !important
+
+.three-col-layout.header
+    th
+        display: inline-block
+
+.three-col-layout.without_header
+    thead
+        height: 0
+        opacity: 0
+
+///////////////
+// Draggable //
+table.moving_table
+    box-shadow: -0px 0 5px 1px #888888
+    -moz-box-shadow: -0px 0 5px 1px #888888
+    -webkit-box-shadow: -0px 0 5px 1px #888888
+    //outline: 1px solid #888888
+    background-color: white
+    z-index: 3 !important
+
+    border-width: 0
+    border-spacing: 0
+    border-collapse: collapse
+
+table.draggable
+    border-width: 0
+    border-spacing: 0
+    border-collapse: collapse
+
+    .drag_handle
+        padding: 2px 0 0 0
+        margin: 0 0 0 1px
+
+        cursor: grab
+        cursor: -moz-grab
+        cursor: -webkit-grab
+
+    .drag_handle .drag_image
+        height: 9px
+        width: 9px
+        display: inline-block
+        background: url("img/draggable.png") no-repeat
+
+    .drag_handle:active, td.cell_of_moving_table .drag_handle
+        cursor: grabbing !important
+        cursor: -moz-grabbing !important
+        cursor: -webkit-grabbing !important
+
+    // Override the styles for the first and the last columns of the table#report.
+    // The cloned table contains a single column which is both first and last,
+    // and we don't need it to inherit those styles.
+
+    td.cell_of_moving_table
+        padding-left: 14px !important
+        padding-right: 0.6em !important
+
+    td.hovered_column_td
+        background-color: #cccccc
+
+    td.cell_of_empty_space *
+        visibility: hidden
+
+    td.cell_of_empty_space
+        border: none !important
+
+    td.top_cell_of_empty_space
+        border-top: 1px solid #888888 !important
+
+//////////////
+// PLOTTING //
+//.plot-switch
+//    margin-left: 10px
+//
+//.plot-wrapper
+//    padding-right: 80px
+//
+//.plot-header
+//    margin-left: 0
+//    font-weight: bold
+//    height: 1.5em
+//    display: block
+//
+//.plots
+//    margin-top: 2px
+//    margin-bottom: 0
+//    td
+//        vertical-align: top
+//        white-space: nowrap
+
+.json_code
+    display: none
+
+.legend_placeholder
+    margin-top: -2px
+    margin-left: -5px
+    position: relative
+    z-index: 0
+
+.legendColorBox div
+    display: none
+
+.legend_placeholder td
+    vertical-align: top
+    white-space: nowrap
+
+.plot_placeholder
+    // for auto sizing plots when resizing the page
+    //width:
+    width: 1300px
+
+    margin-left: -125px
+
+    z-index: 2
+
+.gene_plot_placeholder
+    min-height: 400px
+
+.detailed_gene_plot_placeholder
+    display: none
+    height: 120px
+
+.mut_plot_placeholder
+    min-height: 400px
+
+.substitutions_plot_placeholder
+    min-height: 150px
+    width: 500px
+
+.seq2c_plot_placeholder
+    min-height: 200px
+
+
+///////////////
+// Plot tips //
+.plot_tip
+    position: absolute
+    opacity: 1
+    padding: 2px 5px 2px 5px
+
+    z-index: 1
+
+.plot_tip_vertical_rule, .plot_tip_horizontal_rule
+    position: absolute
+    border: 1px solid #BBB
+    z-index: -2
+    display: none
+
+.plot_tip_vertical_rule
+    border-left: 1px
+
+.plot_tip_horizontal_rule
+    border-top: 1px
+
+.white_stroked
+    color: black
+    background-color: white
+    text-shadow: -3px -3px 0 white, 3px -3px 0 white, -3px 3px 0 white, 3px 3px 0 white
+
+#extended_link
+    display: block
+
+.meta_info_span
+    height: 100%
+    width: 100%
+    display: inline-block
+
+.qc_meta_table
+    td
+        padding-right: 5px

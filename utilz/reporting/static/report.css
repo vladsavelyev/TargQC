@@ -1,0 +1,188 @@
+#report {
+  margin: 0 100px 50px 0;
+  min-width: 532px;
+  font-size: 1em; }
+  #report .table_name {
+    margin-bottom: 5px; }
+  #report table {
+    max-width: 100%; }
+  #report table.common_table {
+    padding-right: 50px !important; }
+    #report table.common_table span.metric_name {
+      font-weight: bold; }
+  #report table.report_table.table_full {
+    display: none; }
+  #report table.report_table {
+    padding-right: 50px !important;
+    margin-bottom: 30px;
+    border-width: 0;
+    border-spacing: 0; }
+    #report table.report_table * {
+      border-spacing: 0; }
+    #report table.report_table td, #report table.report_table th {
+      white-space: nowrap;
+      text-align: left;
+      padding: 2px 6px 2px 4px; }
+    #report table.report_table th {
+      vertical-align: bottom;
+      border-bottom: 1px solid #bbb; }
+    #report table.report_table td.shifted_column, #report table.report_table th.shifted_column {
+      padding-left: 0;
+      border-left: 20px solid white; }
+    #report table.report_table td.stick_to_left, #report table.report_table th.stick_to_left {
+      padding-left: 0 !important; }
+    #report table.report_table td.left_column_td, #report table.report_table th.left_column_td, #report table.report_table tr.td:first-child, #report table.report_table tr.th:first-child {
+      padding-left: 0 !important; }
+      #report table.report_table td.left_column_td a, #report table.report_table th.left_column_td a, #report table.report_table tr.td:first-child a, #report table.report_table tr.th:first-child a {
+        padding-left: 0 !important; }
+    #report table.report_table a.metric_name {
+      border-bottom: none;
+      color: black; }
+    #report table.report_table tr.top_row_tr td, #report table.report_table tr.top_row_tr th, #report table.report_table tr.group_header td, #report table.report_table tr.group_header th {
+      font-weight: bold; }
+    #report table.report_table tr.group_header td, #report table.report_table tr.group_header th {
+      height: 20px; }
+    #report table.report_table tr.row_hidden, #report table.report_table tr.group_empty {
+      display: none; }
+    #report table.report_table tr.highlighted_row td {
+      background-color: #f5ffa3; }
+    #report table.report_table tr.highlighted_green_row td:last-child {
+      border-right: 1px solid #bbb; }
+    #report table.report_table tr.highlighted_green_row td {
+      background-color: #daffde; }
+
+tr.af_less_threshold {
+  display: none; }
+
+#contigs_are_ordered {
+  z-index: 0;
+  position: relative; }
+
+.three-col-layout {
+  column-count: 3;
+  -moz-column-count: 3;
+  -webkit-column-count: 3; }
+  .three-col-layout table {
+    margin-bottom: 0 !important; }
+
+.three-col-layout.header th {
+  display: inline-block; }
+
+.three-col-layout.without_header thead {
+  height: 0;
+  opacity: 0; }
+
+table.moving_table {
+  box-shadow: 0px 0 5px 1px #888888;
+  -moz-box-shadow: 0px 0 5px 1px #888888;
+  -webkit-box-shadow: 0px 0 5px 1px #888888;
+  background-color: white;
+  z-index: 3 !important;
+  border-width: 0;
+  border-spacing: 0;
+  border-collapse: collapse; }
+
+table.draggable {
+  border-width: 0;
+  border-spacing: 0;
+  border-collapse: collapse; }
+  table.draggable .drag_handle {
+    padding: 2px 0 0 0;
+    margin: 0 0 0 1px;
+    cursor: grab;
+    cursor: -moz-grab;
+    cursor: -webkit-grab; }
+  table.draggable .drag_handle .drag_image {
+    height: 9px;
+    width: 9px;
+    display: inline-block;
+    background: url("img/draggable.png") no-repeat; }
+  table.draggable .drag_handle:active, table.draggable td.cell_of_moving_table .drag_handle {
+    cursor: grabbing !important;
+    cursor: -moz-grabbing !important;
+    cursor: -webkit-grabbing !important; }
+  table.draggable td.cell_of_moving_table {
+    padding-left: 14px !important;
+    padding-right: 0.6em !important; }
+  table.draggable td.hovered_column_td {
+    background-color: #cccccc; }
+  table.draggable td.cell_of_empty_space * {
+    visibility: hidden; }
+  table.draggable td.cell_of_empty_space {
+    border: none !important; }
+  table.draggable td.top_cell_of_empty_space {
+    border-top: 1px solid #888888 !important; }
+
+.json_code {
+  display: none; }
+
+.legend_placeholder {
+  margin-top: -2px;
+  margin-left: -5px;
+  position: relative;
+  z-index: 0; }
+
+.legendColorBox div {
+  display: none; }
+
+.legend_placeholder td {
+  vertical-align: top;
+  white-space: nowrap; }
+
+.plot_placeholder {
+  width: 1300px;
+  margin-left: -125px;
+  z-index: 2; }
+
+.gene_plot_placeholder {
+  min-height: 400px; }
+
+.detailed_gene_plot_placeholder {
+  display: none;
+  height: 120px; }
+
+.mut_plot_placeholder {
+  min-height: 400px; }
+
+.substitutions_plot_placeholder {
+  min-height: 150px;
+  width: 500px; }
+
+.seq2c_plot_placeholder {
+  min-height: 200px; }
+
+.plot_tip {
+  position: absolute;
+  opacity: 1;
+  padding: 2px 5px 2px 5px;
+  z-index: 1; }
+
+.plot_tip_vertical_rule, .plot_tip_horizontal_rule {
+  position: absolute;
+  border: 1px solid #BBB;
+  z-index: -2;
+  display: none; }
+
+.plot_tip_vertical_rule {
+  border-left: 1px; }
+
+.plot_tip_horizontal_rule {
+  border-top: 1px; }
+
+.white_stroked {
+  color: black;
+  background-color: white;
+  text-shadow: -3px -3px 0 white, 3px -3px 0 white, -3px 3px 0 white, 3px 3px 0 white; }
+
+#extended_link {
+  display: block; }
+
+.meta_info_span {
+  height: 100%;
+  width: 100%;
+  display: inline-block; }
+
+.qc_meta_table td {
+  padding-right: 5px; }
+
+/*# sourceMappingURL=report.css.map */
