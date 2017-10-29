@@ -9,7 +9,7 @@ from os.path import dirname, join, exists, isfile, splitext, basename, isdir, re
     expanduser, \
     realpath
 from targqc.utilz.utils import is_travis
-from utilz.file_utils import verify_dir, verify_file
+from targqc.utilz.file_utils import verify_dir, verify_file
 
 
 def info(msg=''):

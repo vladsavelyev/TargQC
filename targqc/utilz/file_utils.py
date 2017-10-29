@@ -18,6 +18,7 @@ from datetime import datetime
 from functools import reduce
 from os.path import isfile, isdir, getsize, exists, basename, join, abspath, splitext, \
     islink, dirname, realpath, getmtime, getctime
+
 from targqc.utilz.logger import info, err, warn, critical, debug
 
 try:

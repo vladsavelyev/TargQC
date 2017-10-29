@@ -11,11 +11,12 @@ from itertools import repeat
 from json import load, dump
 from math import floor
 from os.path import join, relpath, dirname, abspath, basename
+
 from targqc.utilz import jsontemplate
-from utilz import logger
-from utilz.file_utils import file_transaction, verify_file, safe_mkdir
-from utilz.logger import critical, info, err, warn, debug
-from utilz.utils import mean
+from targqc.utilz import logger
+from targqc.utilz.file_utils import file_transaction, verify_file, safe_mkdir
+from targqc.utilz.logger import critical, info, err, warn, debug
+from targqc.utilz.utils import mean
 
 try:
     from itertools import izip as zip

@@ -5,8 +5,8 @@ import traceback
 from os.path import join, dirname, abspath, basename, isfile, getmtime
 from pybedtools import BedTool
 from targqc.utilz.logger import debug, warn, err, critical
-from utilz.call_process import run
-from utilz.file_utils import verify_file, splitext_plus, which, can_reuse, intermediate_fname
+from targqc.utilz.call_process import run
+from targqc.utilz.file_utils import verify_file, splitext_plus, which, can_reuse, intermediate_fname
 
 
 def get_executable():

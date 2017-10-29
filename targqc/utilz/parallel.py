@@ -3,8 +3,8 @@ import os
 import subprocess
 from joblib import Parallel, delayed
 from targqc.utilz.utils import is_cluster
-from utilz.file_utils import safe_mkdir
-from utilz.logger import debug, err
+from targqc.utilz.file_utils import safe_mkdir
+from targqc.utilz.logger import debug, err
 
 
 class ParallelCfg:

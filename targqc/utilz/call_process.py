@@ -7,8 +7,9 @@ import os
 import six
 import subprocess
 from os.path import isfile
+
 from targqc.utilz.logger import info, err
-from utilz.file_utils import file_transaction, verify_file
+from targqc.utilz.file_utils import file_transaction, verify_file
 
 
 def run(cmd, output_fpath=None, input_fpath=None, checks=None, stdout_to_outputfile=True,

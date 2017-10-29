@@ -1,6 +1,6 @@
 from os.path import dirname, join, abspath, splitext, isfile
 from targqc.utilz.logger import critical, debug
-from utilz.file_utils import verify_file, adjust_path, verify_dir
+from targqc.utilz.file_utils import verify_file, adjust_path, verify_dir
 
 SUPPORTED_GENOMES = ['hg19', 'hg19-noalt', 'hg38', 'hg38-noalt', 'hg19-chr21', 'GRCh37', 'mm10']
 

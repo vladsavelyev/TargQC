@@ -7,8 +7,8 @@ from os.path import splitext, basename, join, isfile, isdir, abspath, realpath, 
 from random import random
 from targqc.utilz import logger
 from targqc.utilz.logger import info, critical, err, debug
-from utilz.bam_utils import verify_bam
-from utilz.file_utils import verify_file, adjust_path, splitext_plus, safe_mkdir, file_exists
+from targqc.utilz.bam_utils import verify_bam
+from targqc.utilz.file_utils import verify_file, adjust_path, splitext_plus, safe_mkdir, file_exists
 
 
 def read_samples(args):

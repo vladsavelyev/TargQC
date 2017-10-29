@@ -1,8 +1,9 @@
 from contextlib import contextmanager
-from targqc.utilz.logger import info, err, critical, debug, warn
 from traceback import format_exc
-from utilz.file_utils import verify_file, verify_module, adjust_path
 from yaml import load as load_yaml
+
+from targqc.utilz.logger import info, err, critical, debug, warn
+from targqc.utilz.file_utils import verify_file, verify_module, adjust_path
 
 
 def load_yaml_config(fpath):
