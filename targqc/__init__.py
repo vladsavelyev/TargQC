@@ -89,15 +89,16 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
             info(s.name + ': using alignment ' + s.bam)
 
     with parallel_view(len(samples), parallel_cfg, join(work_dir, 'sge_bam')) as view:
+        info('Sorting BAMs...')
+        sorted_bams = view.run(sort_bam, [[s.bam, safe_mkdir(join(work_dir, s.name))] for s in samples])
+        for s, sorted_bam in zip(samples, sorted_bams):
+            s.bam = sorted_bam
+
         if all(can_reuse(s.bam + '.bai', s.bam) for s in samples):
             debug('BAM indexes exists')
         else:
             info('Indexing BAMs...')
             view.run(index_bam, [[s.bam] for s in samples])
-        info('Sorting BAMs...')
-        sorted_bams = view.run(sort_bam, [[s.bam, safe_mkdir(join(work_dir, s.name))] for s in samples])
-        for s, sorted_bam in zip(samples, sorted_bams):
-            s.bam = sorted_bam
 
         info('Making general reports...')
         make_general_reports(view, samples, target, genome, depth_threshs, padding, num_pairs_by_sample,
