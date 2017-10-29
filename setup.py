@@ -12,9 +12,9 @@ package_name = 'targqc'
 
 
 from setuptools import setup, find_packages
-from targqc.utilz.setup_utils import init, write_version_py, find_package_files, get_reqs
+from targqc.utilz import setup_utils
 
-version = init(package_name, package_name, __file__)
+version = setup_utils.init(package_name, package_name, __file__)
 setup(
     name=name,
     version=version,
@@ -45,7 +45,7 @@ setup(
         join('scripts', script_name),
         join('scripts', 'annotate_bed.py'),
     ],
-    install_requires=get_reqs(),
+    install_requires=setup_utils.get_reqs(),
     setup_requires=['numpy'],
     classifiers=[
         'Environment :: Console',
