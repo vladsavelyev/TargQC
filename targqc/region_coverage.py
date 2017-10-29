@@ -3,13 +3,13 @@
 from collections import defaultdict
 from os.path import isfile, join
 
-from ngs_utils import reference_data
-from ngs_utils.bed_utils import count_bed_cols
-from ngs_utils.sambamba import sambamba_depth
-from ngs_utils.call_process import run
-from ngs_utils.file_utils import intermediate_fname, verify_file, file_transaction, can_reuse
-from ngs_utils.logger import info, debug
-from ngs_utils.utils import OrderedDefaultDict
+from utilz import reference_data
+from utilz.bed_utils import count_bed_cols
+from utilz.sambamba import sambamba_depth
+from utilz.call_process import run
+from utilz.file_utils import intermediate_fname, verify_file, file_transaction, can_reuse
+from utilz.logger import info, debug
+from utilz.utils import OrderedDefaultDict
 
 import ensembl as ebl
 

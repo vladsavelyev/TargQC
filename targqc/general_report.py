@@ -5,13 +5,13 @@ from os.path import join, abspath, realpath, dirname, relpath
 from pybedtools import BedTool
 
 from ensembl import get_merged_cds
-from ngs_utils import reference_data, logger
-from ngs_utils.bed_utils import get_padded_bed_file, intersect_bed, calc_sum_of_regions, count_bed_cols,\
+from utilz import reference_data, logger
+from utilz.bed_utils import get_padded_bed_file, intersect_bed, calc_sum_of_regions, count_bed_cols,\
     calc_bases_within_threshs, calc_rate_within_normal
-from ngs_utils.sambamba import index_bam, number_mapped_reads_on_target, number_of_mapped_reads, sambamba_depth
-from ngs_utils.file_utils import intermediate_fname, verify_file, safe_mkdir, can_reuse
-from ngs_utils.logger import critical, info, err, warn, debug
-from ngs_utils.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport
+from utilz.sambamba import index_bam, number_mapped_reads_on_target, number_of_mapped_reads, sambamba_depth
+from utilz.file_utils import intermediate_fname, verify_file, safe_mkdir, can_reuse
+from utilz.logger import critical, info, err, warn, debug
+from utilz.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport
 
 from targqc.qualimap import report_parser, runner
 

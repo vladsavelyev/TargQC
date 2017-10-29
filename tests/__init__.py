@@ -5,7 +5,7 @@ from os.path import dirname, join, exists, isfile, splitext, basename, isdir, re
 from datetime import datetime
 from collections import namedtuple
 
-from ngs_utils.testing import BaseTestCase, info, check_call, swap_output
+from utilz.testing import BaseTestCase, info, check_call, swap_output
 
 
 class BaseTargQC(BaseTestCase):
@@ -43,13 +43,6 @@ class BaseTargQC(BaseTestCase):
             os.chdir(self.data_dir)
             check_call(['wget', self.syn3_url])
             check_call(['tar', '-xzvf', basename(self.syn3_url)])
-            os.chdir(cur_dir)
-        if not isdir(self.bwa_dir):
-            info(self.bwa_dir + ' does not exist, downloading bwa reference data')
-            cur_dir = os.getcwd()
-            os.chdir(self.data_dir)
-            check_call(['wget', self.bwa_url])
-            check_call(['tar', '-xzvf', basename(self.bwa_url)])
             os.chdir(cur_dir)
 
     def _test(self, output_dirname=None, used_samples=samples, bams=None, fastq=None, bed=None,

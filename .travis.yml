@@ -4,7 +4,6 @@ language: python
 python:
   # We don't actually use the Travis Python (since we are on conda), but this keeps it organized.
   - "2.7"
-  - "3.5""
   - "3.6"
 
 before_install:
@@ -32,7 +31,6 @@ before_install:
   # Downloading the test data
   - mkdir -p tests/data
   - wget -qO- http://quast.bioinf.spbau.ru/static/chr21.tar.gz | tar xvz -C tests/data
-  - wget -qO- http://quast.bioinf.spbau.ru/static/bwa.tar.gz | tar xvz -C tests/data
 
 install:
   # Install conda packages

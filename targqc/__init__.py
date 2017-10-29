@@ -1,12 +1,12 @@
 import os
 from os.path import join, splitext, dirname
 
-import ngs_utils.reference_data as ref
-from ngs_utils.Sample import BaseSample
-from ngs_utils.file_utils import safe_mkdir, can_reuse
-from ngs_utils.sambamba import index_bam
-from ngs_utils.logger import info, critical, debug
-from ngs_utils import logger
+import utilz.reference_data as ref
+from utilz.Sample import BaseSample
+from utilz.file_utils import safe_mkdir, can_reuse
+from utilz.sambamba import index_bam, sort_bam
+from utilz.logger import info, critical, debug
+from utilz import logger
 
 from targqc import config
 from targqc.fastq import proc_fastq
@@ -75,7 +75,7 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
          reannotate=reannotate, genome=genome, is_debug=logger.is_debug)
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
-    from ngs_utils.parallel import parallel_view
+    from utilz.parallel import parallel_view
     if fastq_samples:
         if not bwa_prefix:
             critical('--bwa-prefix is required when running from fastq')
@@ -94,6 +94,10 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
         else:
             info('Indexing BAMs...')
             view.run(index_bam, [[s.bam] for s in samples])
+        info('Sorting BAMs...')
+        sorted_bams = view.run(sort_bam, [[s.bam, safe_mkdir(join(work_dir, s.name))] for s in samples])
+        for s, sorted_bam in zip(samples, sorted_bams):
+            s.bam = sorted_bam
 
         info('Making general reports...')
         make_general_reports(view, samples, target, genome, depth_threshs, padding, num_pairs_by_sample,

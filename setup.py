@@ -14,14 +14,14 @@ package_name = 'targqc'
 from setuptools import setup, find_packages
 
 try:
-    from ngs_utils import setup_utils
+    from utilz import setup_utils
 except:
     version = open('VERSION.txt').read().strip().split('\n')[0]
     setup(version=version)  # For conda-build jinja context to read the version
 else:
     version = setup_utils.init(package_name, package_name, __file__)
-    from ngs_utils.setup_utils import write_version_py, find_package_files, get_reqs
-    from ngs_utils import setup_utils
+    from utilz.setup_utils import write_version_py, find_package_files, get_reqs
+    from utilz import setup_utils
     setup(
         name=name,
         version=version,

@@ -6,9 +6,9 @@ from collections import OrderedDict, defaultdict
 
 import targqc
 import targqc.config as tc
-from ngs_utils.file_utils import verify_dir, verify_file, adjust_path, symlink_plus, file_transaction, add_suffix
-from ngs_utils.logger import info, err, debug
-from ngs_utils.reporting.reporting import PerRegionSampleReport, BaseReport, Metric, ReportSection, MetricStorage, \
+from utilz.file_utils import verify_dir, verify_file, adjust_path, symlink_plus, file_transaction, add_suffix
+from utilz.logger import info, err, debug
+from utilz.reporting.reporting import PerRegionSampleReport, BaseReport, Metric, ReportSection, MetricStorage, \
     FullReport
 from targqc.general_report import get_header_metric_storage
 from targqc.qualimap.runner import run_multisample_qualimap

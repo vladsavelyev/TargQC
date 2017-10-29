@@ -3,14 +3,14 @@
 import shutil
 from optparse import OptionParser, SUPPRESS_HELP
 from tempfile import mkdtemp
-
 import os
-from ngs_utils import logger
-from ngs_utils.bed_utils import verify_bed, clean_bed
-from ngs_utils.file_utils import adjust_path, safe_mkdir, verify_file
-from ngs_utils.logger import critical, info
-from ngs_utils.logger import debug
 from os.path import join, basename
+
+from utilz import logger
+from utilz.bed_utils import verify_bed, clean_bed
+from utilz.file_utils import adjust_path, safe_mkdir, verify_file
+from utilz.logger import critical, info
+from utilz.logger import debug
 
 import ensembl as ebl
 from ensembl.bed_annotation import annotate

@@ -5,10 +5,10 @@ import shutil
 from optparse import OptionParser, SUPPRESS_HELP
 from os.path import isfile, join, basename, dirname, pardir
 
-from ngs_utils.logger import debug
-from ngs_utils.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file
-from ngs_utils.logger import critical, info
-from ngs_utils import logger
+from utilz.logger import debug
+from utilz.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file
+from utilz.logger import critical, info
+from utilz import logger
 
 import ensembl as ebl
 

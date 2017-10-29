@@ -5,11 +5,12 @@ from os.path import getsize, dirname, join, abspath, relpath, isdir, exists, spl
 from os import listdir
 import shutil
 
-from ngs_utils.call_process import run
-from ngs_utils.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname, \
+from utilz.call_process import run
+from utilz.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname, \
     can_reuse, which
-from ngs_utils.logger import info, warn, err, critical, debug
-from ngs_utils.reporting.reporting import write_tsv_rows
+from utilz.logger import info, warn, err, critical, debug
+from utilz.reporting.reporting import write_tsv_rows
+from utilz.sambamba import sort_bam
 
 import targqc.config as cfg
 
@@ -55,7 +56,16 @@ def run_qualimap(work_dir, output_dir, output_fpaths, bam_fpath, genome, bed_fpa
         for fp in output_fpaths:
             if isfile(fp):
                 os.remove(fp)
-        run(cmdline, env_vars=dict(DISPLAY=None))
+        try:
+            run(cmdline, env_vars=dict(DISPLAY=None))
+        except subprocess.CalledProcessError as e:
+            if 'The alignment file is unsorted.' in e.output:
+                info()
+                info('BAM file is unsorted; trying to sort and rerun QualiMap')
+                sorted_bam_fpath = sort_bam(bam_fpath)
+                cmdline = cmdline.replace(bam_fpath, sorted_bam_fpath)
+                run(cmdline, env_vars=dict(DISPLAY=None))
+
     if not all(verify_file(fp, cmp_f=[bam_fpath, bed_fpath] if bed_fpath else [bam_fpath]) for fp in output_fpaths):
         critical('Some of the QualiMap results were not generated')
 

@@ -8,12 +8,12 @@ from contextlib import contextmanager
 import pybedtools
 from pybedtools import BedTool
 
-from ngs_utils import reference_data
-from ngs_utils.logger import debug
-from ngs_utils.utils import OrderedDefaultDict
-from ngs_utils.bed_utils import verify_bed, SortableByChrom, count_bed_cols, sort_bed, clean_bed
-from ngs_utils.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file, tx_tmpdir
-from ngs_utils.logger import critical, info, is_debug
+from utilz import reference_data
+from utilz.logger import debug
+from utilz.utils import OrderedDefaultDict
+from utilz.bed_utils import verify_bed, SortableByChrom, count_bed_cols, sort_bed, clean_bed
+from utilz.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file, tx_tmpdir
+from utilz.logger import critical, info, is_debug
 
 import ensembl as ebl
 

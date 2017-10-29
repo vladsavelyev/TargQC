@@ -9,23 +9,29 @@ source:
   git_rev: master
 
 build:
-  number: 3
+  number: 1
 
 requirements:
   build:
     - python
     - numpy
-    - ngs_utils
+    - six
   run:
     - python
     - six
     - qualimap
     - sambamba
-    - bwa
     - bedtools >=2.25
     - pybedtools
     - nose
-    - ngs_utils
+    - cython
+    - numpy
+    - joblib
+    - gffutils
+    - beautifulsoup4
+    - lxml
+    - xlsxwriter >=0.5.5
+    - natsort
 
 test:
   imports:

@@ -4,12 +4,12 @@ from os.path import join, isfile, dirname
 from optparse import OptionParser
 import csv
 
-import ngs_utils.reference_data as ref
-from ngs_utils import gtf
-from ngs_utils import logger
-from ngs_utils.bed_utils import bgzip_and_tabix, sort_bed
-from ngs_utils.file_utils import verify_file, add_suffix
-from ngs_utils.logger import debug, warn, critical
+import utilz.reference_data as ref
+from utilz import gtf
+from utilz import logger
+from utilz.bed_utils import bgzip_and_tabix, sort_bed
+from utilz.file_utils import verify_file, add_suffix
+from utilz.logger import debug, warn, critical
 
 import ensembl as ebl
 
