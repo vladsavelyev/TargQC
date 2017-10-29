@@ -7,12 +7,12 @@ import subprocess
 from os.path import isfile
 import six
 
-from ngs_utils.file_utils import file_transaction, verify_file
-from ngs_utils.logger import info, err
+from utilz.file_utils import file_transaction, verify_file
+from utilz.logger import info, err
 
 
 def run(cmd, output_fpath=None, input_fpath=None, checks=None, stdout_to_outputfile=True,
-        stdout_tx=True, reuse=False, stderr_fpath=None, env_vars=None):
+        stdout_tx=True, reuse=False, env_vars=None):
     """Run the provided command, logging details and checking for errors.
     """
     if output_fpath and reuse:
@@ -35,10 +35,10 @@ def run(cmd, output_fpath=None, input_fpath=None, checks=None, stdout_to_outputf
     if checks is None:
         checks = [file_nonempty_check]
 
-    def _try_run(_cmd, _output_fpath, _input_fpath, _stderr_fpath):
+    def _try_run(_cmd, _output_fpath, _input_fpath):
         try:
             info(' '.join(str(x) for x in _cmd) if not isinstance(_cmd, six.string_types) else _cmd)
-            _do_run(_cmd, checks, env, _output_fpath, _input_fpath, _stderr_fpath)
+            _do_run(_cmd, checks, env, _output_fpath, _input_fpath)
         except:
             raise
 
@@ -59,12 +59,12 @@ def run(cmd, output_fpath=None, input_fpath=None, checks=None, stdout_to_outputf
                              .replace(' "' + output_fpath + '"\n', ' ' + tx_out_file + '"') \
                              .replace(' \'' + output_fpath + '\'\n', ' ' + tx_out_file + '\'') \
                              .replace('\n', '')
-                _try_run(cmd, tx_out_file, input_fpath, stderr_fpath)
+                _try_run(cmd, tx_out_file, input_fpath)
         else:
-            _try_run(cmd, output_fpath, input_fpath, stderr_fpath)
+            _try_run(cmd, output_fpath, input_fpath)
 
     else:
-        _try_run(cmd, None, input_fpath, stderr_fpath)
+        _try_run(cmd, None, input_fpath)
 
 
 def find_bash():
@@ -96,7 +96,7 @@ def _normalize_cmd_args(cmd):
         return [str(x) for x in cmd], False, None
 
 
-def _do_run(cmd, checks, env=None, output_fpath=None, input_fpath=None, _stderr_fpath=None):
+def _do_run(cmd, checks, env=None, output_fpath=None, input_fpath=None):
     """Perform running and check results, raising errors for issues.
     """
     cmd, shell_arg, executable_arg = _normalize_cmd_args(cmd)
@@ -121,7 +121,7 @@ def _do_run(cmd, checks, env=None, output_fpath=None, input_fpath=None, _stderr_
                 error_msg += "".join(debug_stdout)
                 s.communicate()
                 s.stdout.close()
-                raise subprocess.CalledProcessError(exitcode, error_msg)
+                raise subprocess.CalledProcessError(exitcode, cmd=cmd, output=error_msg)
             else:
                 break
     s.communicate()
