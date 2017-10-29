@@ -9,11 +9,11 @@ from contextlib import contextmanager
 from os.path import isfile, join, basename
 from pybedtools import BedTool
 from targqc.utilz.bed_utils import verify_bed, SortableByChrom, count_bed_cols, sort_bed, clean_bed
-from utilz import reference_data
-from utilz.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file, tx_tmpdir
-from utilz.logger import critical, info, is_debug
-from utilz.logger import debug
-from utilz.utils import OrderedDefaultDict
+from targqc.utilz import reference_data
+from targqc.utilz.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file, tx_tmpdir
+from targqc.utilz.logger import critical, info, is_debug
+from targqc.utilz.logger import debug
+from targqc.utilz.utils import OrderedDefaultDict
 
 
 def bed_chrom_order(bed_fpath):

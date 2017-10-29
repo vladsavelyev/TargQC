@@ -8,8 +8,8 @@ from os.path import relpath, join, exists, dirname, basename, abspath, splitext
 from targqc.general_report import get_header_metric_storage
 from targqc.qualimap.runner import run_multisample_qualimap
 from targqc.utilz.logger import info, err, debug
-from utilz.file_utils import verify_dir, verify_file, adjust_path, symlink_plus, file_transaction, add_suffix
-from utilz.reporting.reporting import PerRegionSampleReport, BaseReport, Metric, ReportSection, MetricStorage, \
+from targqc.utilz.file_utils import verify_dir, verify_file, adjust_path, symlink_plus, file_transaction, add_suffix
+from targqc.utilz.reporting.reporting import PerRegionSampleReport, BaseReport, Metric, ReportSection, MetricStorage, \
     FullReport
 
 

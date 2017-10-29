@@ -1,5 +1,5 @@
 import os
-import utilz.reference_data as ref
+import targqc.utilz.reference_data as ref
 from os.path import join, splitext, dirname
 from targqc import config
 from targqc.Target import Target
@@ -8,10 +8,10 @@ from targqc.general_report import make_general_reports
 from targqc.region_coverage import make_region_reports
 from targqc.summarize import make_tarqc_html_report, combined_regional_reports
 from targqc.utilz.Sample import BaseSample
-from utilz import logger
-from utilz.file_utils import safe_mkdir, can_reuse
-from utilz.logger import info, critical, debug
-from utilz.sambamba import index_bam, sort_bam
+from targqc.utilz import logger
+from targqc.utilz.file_utils import safe_mkdir, can_reuse
+from targqc.utilz.logger import info, critical, debug
+from targqc.utilz.sambamba import index_bam, sort_bam
 
 targqc_repr              = 'TargQC'
 targqc_name              = 'targqc'
@@ -73,7 +73,7 @@ def start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, 
          reannotate=reannotate, genome=genome, is_debug=logger.is_debug)
 
     fastq_samples = [s for s in samples if not s.bam and s.l_fpath and s.r_fpath]
-    from utilz.parallel import parallel_view
+    from targqc.utilz.parallel import parallel_view
     if fastq_samples:
         if not bwa_prefix:
             critical('--bwa-prefix is required when running from fastq')

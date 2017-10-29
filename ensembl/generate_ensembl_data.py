@@ -2,14 +2,14 @@
 import csv
 import ensembl as ebl
 import os
-import utilz.reference_data as ref
+import targqc.utilz.reference_data as ref
 from optparse import OptionParser
 from os.path import join, isfile, dirname
 from targqc.utilz.bed_utils import bgzip_and_tabix, sort_bed
-from utilz import gtf
-from utilz import logger
-from utilz.file_utils import verify_file, add_suffix
-from utilz.logger import debug, warn, critical
+from targqc.utilz import gtf
+from targqc.utilz import logger
+from targqc.utilz.file_utils import verify_file, add_suffix
+from targqc.utilz.logger import debug, warn, critical
 
 
 def main():

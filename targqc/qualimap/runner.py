@@ -6,11 +6,11 @@ from distutils.version import LooseVersion
 from os import listdir
 from os.path import getsize, dirname, join, abspath, relpath, isdir, exists, splitext, basename, isfile
 from targqc.utilz.logger import info, warn, err, critical, debug
-from utilz.call_process import run
-from utilz.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname, \
+from targqc.utilz.call_process import run
+from targqc.utilz.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname, \
     can_reuse, which
-from utilz.reporting.reporting import write_tsv_rows
-from utilz.sambamba import sort_bam
+from targqc.utilz.reporting.reporting import write_tsv_rows
+from targqc.utilz.sambamba import sort_bam
 
 
 def get_qualimap_max_mem(bam):

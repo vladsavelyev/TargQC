@@ -4,18 +4,18 @@ import os
 import shutil
 import sys
 import targqc
-import utilz.reference_data as ref
+import targqc.utilz.reference_data as ref
 from optparse import OptionParser, SUPPRESS_HELP
 from os.path import isfile, join, isdir, exists, dirname, islink
 from targqc import Sample
 from targqc import config
 from targqc.utilz.proc_args import read_samples, find_bams, find_fastq_pairs, set_up_dirs
-from utilz import logger
-from utilz.bam_utils import verify_bam
-from utilz.bed_utils import verify_bed
-from utilz.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
-from utilz.logger import critical, err, info, warn, debug
-from utilz.parallel import ParallelCfg
+from targqc.utilz import logger
+from targqc.utilz.bam_utils import verify_bam
+from targqc.utilz.bed_utils import verify_bed
+from targqc.utilz.file_utils import adjust_path, safe_mkdir, verify_file, remove_quotes, file_exists, which
+from targqc.utilz.logger import critical, err, info, warn, debug
+from targqc.utilz.parallel import ParallelCfg
 
 options = [
     (['--test'], dict(

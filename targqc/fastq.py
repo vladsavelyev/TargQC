@@ -4,10 +4,10 @@ import random
 import six
 from os.path import splitext, dirname, join, basename, isfile, abspath
 from targqc.utilz.logger import critical, debug, info, warn, err
-from utilz import sambamba
-from utilz.bam_utils import verify_bam
-from utilz.call_process import run
-from utilz.file_utils import open_gzipsafe, file_transaction, verify_file, add_suffix, safe_mkdir, which, can_reuse
+from targqc.utilz import sambamba
+from targqc.utilz.bam_utils import verify_bam
+from targqc.utilz.call_process import run
+from targqc.utilz.file_utils import open_gzipsafe, file_transaction, verify_file, add_suffix, safe_mkdir, which, can_reuse
 
 try:
     from itertools import izip as zip

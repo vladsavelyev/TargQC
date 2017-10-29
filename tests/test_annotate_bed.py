@@ -6,7 +6,7 @@ from nose import SkipTest
 from os.path import dirname, join, exists, isfile, splitext, basename, isdir, relpath
 from targqc.utilz.testing import BaseTestCase, swap_output, check_call
 from tests import BaseTargQC, info
-from utilz.file_utils import add_suffix
+from targqc.utilz.file_utils import add_suffix
 
 
 class AnnotateBedTests(BaseTestCase):

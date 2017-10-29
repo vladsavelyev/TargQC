@@ -8,10 +8,10 @@ from optparse import OptionParser, SUPPRESS_HELP
 from os.path import join, basename
 from targqc.utilz.bed_utils import verify_bed, clean_bed
 from tempfile import mkdtemp
-from utilz import logger
-from utilz.file_utils import adjust_path, safe_mkdir, verify_file
-from utilz.logger import critical, info
-from utilz.logger import debug
+from targqc.utilz import logger
+from targqc.utilz.file_utils import adjust_path, safe_mkdir, verify_file
+from targqc.utilz.logger import critical, info
+from targqc.utilz.logger import debug
 
 
 # TODO: prefer consecutive annotations

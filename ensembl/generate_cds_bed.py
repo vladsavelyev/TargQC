@@ -8,7 +8,7 @@ from os.path import isfile, join, basename, dirname, pardir
 from targqc.utilz import logger
 from targqc.utilz.logger import critical, info
 from targqc.utilz.logger import debug
-from utilz.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file
+from targqc.utilz.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file
 
 
 def main():

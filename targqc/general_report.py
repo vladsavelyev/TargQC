@@ -7,11 +7,11 @@ from pybedtools import BedTool
 from targqc.qualimap import report_parser, runner
 from targqc.utilz.bed_utils import get_padded_bed_file, intersect_bed, calc_sum_of_regions, count_bed_cols, \
     calc_bases_within_threshs, calc_rate_within_normal
-from utilz import reference_data, logger
-from utilz.file_utils import intermediate_fname, verify_file, safe_mkdir, can_reuse
-from utilz.logger import critical, info, err, warn, debug
-from utilz.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport
-from utilz.sambamba import index_bam, number_mapped_reads_on_target, number_of_mapped_reads, sambamba_depth
+from targqc.utilz import reference_data, logger
+from targqc.utilz.file_utils import intermediate_fname, verify_file, safe_mkdir, can_reuse
+from targqc.utilz.logger import critical, info, err, warn, debug
+from targqc.utilz.reporting.reporting import ReportSection, Metric, MetricStorage, SampleReport
+from targqc.utilz.sambamba import index_bam, number_mapped_reads_on_target, number_of_mapped_reads, sambamba_depth
 
 
 def get_header_metric_storage(depth_threshs, is_wgs=False, padding=None):
