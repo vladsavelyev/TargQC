@@ -3,12 +3,12 @@
 import os
 import shutil
 import sys
-import targqc
-import targqc.utilz.reference_data as ref
 from optparse import OptionParser, SUPPRESS_HELP
 from os.path import isfile, join, isdir, exists, dirname, islink
-from targqc import Sample
+
+import targqc.utilz.reference_data as ref
 from targqc import config
+from targqc import main
 from targqc.utilz.proc_args import read_samples, find_bams, find_fastq_pairs, set_up_dirs
 from targqc.utilz import logger
 from targqc.utilz.bam_utils import verify_bam
@@ -154,13 +154,13 @@ options = [
 def _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir):
     samples = []
     for sname, (l, r) in fastqs_by_sample.items():
-        s = Sample(sname, join(output_dir, sname), join(work_dir, sname))
+        s = main.Sample(sname, join(output_dir, sname), join(work_dir, sname))
         s.l_fpath = l
         s.r_fpath = r
         samples.append(s)
     for sname, bam_fpath in bam_by_sample.items():
-        s = Sample(sname, join(output_dir, sname),
-                   work_dir=join(work_dir, sname), bam=bam_fpath)
+        s = main.Sample(sname, join(output_dir, sname),
+                        work_dir=join(work_dir, sname), bam=bam_fpath)
         samples.append(s)
     samples.sort(key=lambda _s: _s.key_to_sort())
     for s in samples:
@@ -192,7 +192,7 @@ def _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir):
 
 
 def main():
-    parser = OptionParser(description=targqc.get_description(), version=targqc.get_version())
+    parser = OptionParser(description=main.get_description(), version=main.get_version())
     parser.set_usage('Usage: %prog *.bam -o targqc_stats [--bed target.bed ...]')
     for args, kwargs in options:
         parser.add_option(*args, **kwargs)
@@ -205,8 +205,8 @@ def main():
     logger.init(opts.debug)
 
     output_dir, work_dir, log_dir = set_up_dirs(
-            targqc.targqc_name, opts.output_dir, opts.work_dir,
-            opts.log_dir)
+         main.targqc_name, opts.output_dir, opts.work_dir,
+         opts.log_dir)
 
     tag = ('targqc_' + opts.project_name) if opts.project_name else 'targqc'
     parallel_cfg = ParallelCfg(opts.scheduler, opts.queue, opts.resources,
@@ -243,14 +243,14 @@ def main():
     samples = _prep_samples(fastqs_by_sample, bam_by_sample, output_dir, work_dir)
     info()
 
-    targqc.start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, bwa_prefix,
-                        fai_fpath=fai_fpath,
-                        genome=genome,
-                        depth_threshs=depth_threshs,
-                        downsample_to=downsample_to,
-                        padding=padding,
-                        dedup=dedup,
-                        reannotate=reannotate)
+    main.start_targqc(work_dir, output_dir, samples, target_bed_fpath, parallel_cfg, bwa_prefix,
+                      fai_fpath=fai_fpath,
+                      genome=genome,
+                      depth_threshs=depth_threshs,
+                      downsample_to=downsample_to,
+                      padding=padding,
+                      dedup=dedup,
+                      reannotate=reannotate)
 
     # info()
     # info('Summarizing: running MultiQC')
