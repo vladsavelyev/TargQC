@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 
+import ensembl as ebl
 import os
 import shutil
 from optparse import OptionParser, SUPPRESS_HELP
 from os.path import isfile, join, basename, dirname, pardir
-
-from utilz.logger import debug
+from targqc.utilz import logger
+from targqc.utilz.logger import critical, info
+from targqc.utilz.logger import debug
 from utilz.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file
-from utilz.logger import critical, info
-from utilz import logger
-
-import ensembl as ebl
 
 
 def main():

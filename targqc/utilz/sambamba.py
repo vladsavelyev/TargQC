@@ -1,14 +1,12 @@
 import os
 import subprocess
+import sys
 import traceback
 from os.path import join, dirname, abspath, basename, isfile, getmtime
-import sys
-
 from pybedtools import BedTool
-
+from targqc.utilz.logger import debug, warn, err, critical
 from utilz.call_process import run
 from utilz.file_utils import verify_file, splitext_plus, which, can_reuse, intermediate_fname
-from utilz.logger import debug, warn, err, critical
 
 
 def get_executable():

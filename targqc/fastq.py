@@ -1,14 +1,13 @@
+import gzip
 import os
 import random
-import gzip
-from os.path import splitext, dirname, join, basename, isfile, abspath
 import six
-
+from os.path import splitext, dirname, join, basename, isfile, abspath
+from targqc.utilz.logger import critical, debug, info, warn, err
 from utilz import sambamba
 from utilz.bam_utils import verify_bam
 from utilz.call_process import run
 from utilz.file_utils import open_gzipsafe, file_transaction, verify_file, add_suffix, safe_mkdir, which, can_reuse
-from utilz.logger import critical, debug, info, warn, err
 
 try:
     from itertools import izip as zip
@@ -92,7 +91,7 @@ def proc_fastq(samples, parall_view, work_dir, bwa_prefix, downsample_to, num_pa
 
 
 def count_read_pairs(s_name, work_dir, fastq_fpath):
-    from utilz.logger import info
+    from targqc.utilz.logger import info
 
     pairs_counts_fpath = make_pair_counts_fpath(work_dir)
     if can_reuse(pairs_counts_fpath, fastq_fpath):

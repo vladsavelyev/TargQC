@@ -1,14 +1,14 @@
 """Centralize running of external commands, providing logging and tracking.
 """
 from __future__ import division
+
 import collections
 import os
+import six
 import subprocess
 from os.path import isfile
-import six
-
+from targqc.utilz.logger import info, err
 from utilz.file_utils import file_transaction, verify_file
-from utilz.logger import info, err
 
 
 def run(cmd, output_fpath=None, input_fpath=None, checks=None, stdout_to_outputfile=True,

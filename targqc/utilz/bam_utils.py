@@ -1,5 +1,5 @@
+from targqc.utilz.logger import critical, err
 from utilz.file_utils import verify_file, adjust_path
-from utilz.logger import critical, err
 
 
 def verify_bam(fpath, description='', is_critical=False, silent=False):

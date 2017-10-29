@@ -1,18 +1,16 @@
 import os
-import subprocess
-from distutils.version import LooseVersion
-from os.path import getsize, dirname, join, abspath, relpath, isdir, exists, splitext, basename, isfile
-from os import listdir
 import shutil
-
+import subprocess
+import targqc.config as cfg
+from distutils.version import LooseVersion
+from os import listdir
+from os.path import getsize, dirname, join, abspath, relpath, isdir, exists, splitext, basename, isfile
+from targqc.utilz.logger import info, warn, err, critical, debug
 from utilz.call_process import run
 from utilz.file_utils import safe_mkdir, verify_file, verify_dir, file_transaction, file_exists, intermediate_fname, \
     can_reuse, which
-from utilz.logger import info, warn, err, critical, debug
 from utilz.reporting.reporting import write_tsv_rows
 from utilz.sambamba import sort_bam
-
-import targqc.config as cfg
 
 
 def get_qualimap_max_mem(bam):

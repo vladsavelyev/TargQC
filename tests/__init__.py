@@ -1,11 +1,10 @@
 import os
-import sys
 import shutil
-from os.path import dirname, join, exists, isfile, splitext, basename, isdir, relpath, getsize, getmtime
-from datetime import datetime
+import sys
 from collections import namedtuple
-
-from utilz.testing import BaseTestCase, info, check_call, swap_output
+from datetime import datetime
+from os.path import dirname, join, exists, isfile, splitext, basename, isdir, relpath, getsize, getmtime
+from targqc.utilz.testing import BaseTestCase, info, check_call, swap_output
 
 
 class BaseTargQC(BaseTestCase):

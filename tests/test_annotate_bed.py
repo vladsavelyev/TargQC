@@ -1,14 +1,12 @@
 import os
-from genericpath import getmtime
-from os.path import dirname, join, exists, isfile, splitext, basename, isdir, relpath
-
-from datetime import datetime
 from collections import namedtuple
+from datetime import datetime
+from genericpath import getmtime
 from nose import SkipTest
-
-from utilz.file_utils import add_suffix
-from utilz.testing import BaseTestCase, swap_output, check_call
+from os.path import dirname, join, exists, isfile, splitext, basename, isdir, relpath
+from targqc.utilz.testing import BaseTestCase, swap_output, check_call
 from tests import BaseTargQC, info
+from utilz.file_utils import add_suffix
 
 
 class AnnotateBedTests(BaseTestCase):

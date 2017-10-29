@@ -1,4 +1,4 @@
-from utilz.logger import warn
+from targqc.utilz.logger import warn
 
 metric_names = [
     'Reference size',

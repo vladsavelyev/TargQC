@@ -14,14 +14,14 @@ package_name = 'targqc'
 from setuptools import setup, find_packages
 
 try:
-    from utilz import setup_utils
+    from targqc.utilz import setup_utils
 except:
     version = open('VERSION.txt').read().strip().split('\n')[0]
     setup(version=version)  # For conda-build jinja context to read the version
 else:
     version = setup_utils.init(package_name, package_name, __file__)
-    from utilz.setup_utils import write_version_py, find_package_files, get_reqs
-    from utilz import setup_utils
+    from targqc.utilz.setup_utils import write_version_py, find_package_files, get_reqs
+    from targqc.utilz import setup_utils
     setup(
         name=name,
         version=version,
@@ -35,9 +35,7 @@ else:
         license='GPLv3',
         packages=find_packages(),
         package_data={
-            package_name: [
-                'gender/*.bed',
-            ],
+            package_name: setup_utils.find_package_files('', package_name, skip_exts=['.sass', '.coffee']),
             'ensembl': [
                 'hg19/ensembl.bed.gz',
                 'hg19/ensembl.bed.gz.tbi',

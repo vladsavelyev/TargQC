@@ -1,6 +1,6 @@
 from os.path import isfile
 
-from utilz.bed_utils import get_genes_from_bed, get_total_bed_size
+from targqc.utilz.bed_utils import get_genes_from_bed, get_total_bed_size
 
 
 def get_bed_genes(bed_fpath):

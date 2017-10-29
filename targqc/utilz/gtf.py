@@ -1,10 +1,10 @@
 import gffutils
-import tempfile
+import gzip
 import os
 import random
-import gzip
+import tempfile
+from targqc.utilz.logger import debug
 from utilz.file_utils import file_exists, file_transaction
-from utilz.logger import debug
 
 
 def guess_infer_extent(gtf_file):

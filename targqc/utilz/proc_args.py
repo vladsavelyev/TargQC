@@ -1,15 +1,14 @@
+import datetime
 import os
+import re
 from collections import OrderedDict
 from genericpath import exists
 from os.path import splitext, basename, join, isfile, isdir, abspath, realpath, islink
 from random import random
-import datetime
-
-import re
-from utilz import logger
+from targqc.utilz import logger
+from targqc.utilz.logger import info, critical, err, debug
 from utilz.bam_utils import verify_bam
 from utilz.file_utils import verify_file, adjust_path, splitext_plus, safe_mkdir, file_exists
-from utilz.logger import info, critical, err, debug
 
 
 def read_samples(args):

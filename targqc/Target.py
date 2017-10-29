@@ -1,16 +1,14 @@
+import ensembl as ebl
 from collections import defaultdict
-
+from ensembl.bed_annotation import overlap_with_features, get_sort_key, tx_priority_sort_key
+from os.path import join, basename
+from pybedtools import BedTool
+from targqc import config as cfg
+from targqc.utilz.bed_utils import sort_bed, verify_bed, get_genes_from_bed
 from utilz import reference_data
-from utilz.bed_utils import sort_bed, verify_bed, get_genes_from_bed
 from utilz.file_utils import add_suffix, intermediate_fname, file_transaction, verify_file, can_reuse
 from utilz.logger import debug
 from utilz.utils import OrderedDefaultDict
-from os.path import join, basename
-from pybedtools import BedTool
-
-import ensembl as ebl
-from ensembl.bed_annotation import overlap_with_features, get_sort_key, tx_priority_sort_key
-from targqc import config as cfg
 
 
 class Target:

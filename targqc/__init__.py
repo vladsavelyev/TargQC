@@ -1,19 +1,17 @@
 import os
-from os.path import join, splitext, dirname
-
 import utilz.reference_data as ref
-from utilz.Sample import BaseSample
-from utilz.file_utils import safe_mkdir, can_reuse
-from utilz.sambamba import index_bam, sort_bam
-from utilz.logger import info, critical, debug
-from utilz import logger
-
+from os.path import join, splitext, dirname
 from targqc import config
-from targqc.fastq import proc_fastq
-from targqc.region_coverage import make_region_reports
-from targqc.general_report import make_general_reports
 from targqc.Target import Target
+from targqc.fastq import proc_fastq
+from targqc.general_report import make_general_reports
+from targqc.region_coverage import make_region_reports
 from targqc.summarize import make_tarqc_html_report, combined_regional_reports
+from targqc.utilz.Sample import BaseSample
+from utilz import logger
+from utilz.file_utils import safe_mkdir, can_reuse
+from utilz.logger import info, critical, debug
+from utilz.sambamba import index_bam, sort_bam
 
 targqc_repr              = 'TargQC'
 targqc_name              = 'targqc'

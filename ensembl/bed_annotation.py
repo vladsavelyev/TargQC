@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 
+import ensembl as ebl
 import os
-from collections import defaultdict, OrderedDict
-from os.path import isfile, join, basename
-import tempfile
-from contextlib import contextmanager
 import pybedtools
+import tempfile
+from collections import defaultdict, OrderedDict
+from contextlib import contextmanager
+from os.path import isfile, join, basename
 from pybedtools import BedTool
-
+from targqc.utilz.bed_utils import verify_bed, SortableByChrom, count_bed_cols, sort_bed, clean_bed
 from utilz import reference_data
-from utilz.logger import debug
-from utilz.utils import OrderedDefaultDict
-from utilz.bed_utils import verify_bed, SortableByChrom, count_bed_cols, sort_bed, clean_bed
 from utilz.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file, tx_tmpdir
 from utilz.logger import critical, info, is_debug
-
-import ensembl as ebl
+from utilz.logger import debug
+from utilz.utils import OrderedDefaultDict
 
 
 def bed_chrom_order(bed_fpath):

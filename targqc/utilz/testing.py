@@ -1,15 +1,15 @@
-import subprocess
-import unittest
 import os
-from os.path import dirname, join, exists, isfile, splitext, basename, isdir, relpath, getctime, getsize, abspath, expanduser, \
-    realpath
 import shutil
-import sys
 import six
+import subprocess
+import sys
+import unittest
 from datetime import datetime
-
+from os.path import dirname, join, exists, isfile, splitext, basename, isdir, relpath, getctime, getsize, abspath, \
+    expanduser, \
+    realpath
+from targqc.utilz.utils import is_travis
 from utilz.file_utils import verify_dir, verify_file
-from utilz.utils import is_travis
 
 
 def info(msg=''):

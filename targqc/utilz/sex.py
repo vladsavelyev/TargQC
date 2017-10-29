@@ -1,15 +1,15 @@
 from __future__ import division
+
 import pybedtools
+import utilz.reference_data as ref
 from os.path import join, dirname, abspath
 from pybedtools import BedTool
-
-from utilz.bed_utils import filter_bed_with_gene_set, sort_bed, get_total_bed_size
-from utilz.logger import err, info, debug, critical, warn
+from targqc.utilz.bed_utils import filter_bed_with_gene_set, sort_bed, get_total_bed_size
 from utilz.file_utils import verify_file, safe_mkdir, file_transaction, can_reuse
+from utilz.logger import err, info, debug, critical, warn
 from utilz.parallel import parallel_view, ParallelCfg
 from utilz.reporting.reporting import get_val, get_float_val, get_int_val
 from utilz.sambamba import index_bam, sambamba_depth
-import utilz.reference_data as ref
 
 
 def get_gender(genome, bam_fpath, bed_fpath, sample, avg_depth):

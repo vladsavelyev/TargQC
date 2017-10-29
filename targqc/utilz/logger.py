@@ -1,16 +1,15 @@
 import getpass
 import os
-import sys
-from datetime import datetime
-from time import sleep
-import smtplib
-from email.mime.text import MIMEText
-import traceback
-from subprocess import check_output
 import six
+import smtplib
+import sys
+import traceback
+from datetime import datetime
+from email.mime.text import MIMEText
 from os.path import exists, getctime
-
-from utilz.utils import is_cluster, is_local
+from subprocess import check_output
+from targqc.utilz.utils import is_cluster, is_local
+from time import sleep
 
 log_fpath = None
 project_name = None

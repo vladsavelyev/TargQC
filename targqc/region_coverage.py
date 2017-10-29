@@ -1,17 +1,15 @@
 # coding=utf-8
 
+import ensembl as ebl
 from collections import defaultdict
 from os.path import isfile, join
-
+from targqc.utilz.bed_utils import count_bed_cols
 from utilz import reference_data
-from utilz.bed_utils import count_bed_cols
-from utilz.sambamba import sambamba_depth
 from utilz.call_process import run
 from utilz.file_utils import intermediate_fname, verify_file, file_transaction, can_reuse
 from utilz.logger import info, debug
+from utilz.sambamba import sambamba_depth
 from utilz.utils import OrderedDefaultDict
-
-import ensembl as ebl
 
 
 def make_region_reports(view, work_dir, samples, target, genome, depth_thresholds):

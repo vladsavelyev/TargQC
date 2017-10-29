@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 
-import shutil
-from optparse import OptionParser, SUPPRESS_HELP
-from tempfile import mkdtemp
+import ensembl as ebl
 import os
+import shutil
+from ensembl.bed_annotation import annotate
+from optparse import OptionParser, SUPPRESS_HELP
 from os.path import join, basename
-
+from targqc.utilz.bed_utils import verify_bed, clean_bed
+from tempfile import mkdtemp
 from utilz import logger
-from utilz.bed_utils import verify_bed, clean_bed
 from utilz.file_utils import adjust_path, safe_mkdir, verify_file
 from utilz.logger import critical, info
 from utilz.logger import debug
-
-import ensembl as ebl
-from ensembl.bed_annotation import annotate
 
 
 # TODO: prefer consecutive annotations

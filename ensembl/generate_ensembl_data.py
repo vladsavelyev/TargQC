@@ -1,17 +1,15 @@
 #!/usr/bin/env python
-import os
-from os.path import join, isfile, dirname
-from optparse import OptionParser
 import csv
-
+import ensembl as ebl
+import os
 import utilz.reference_data as ref
+from optparse import OptionParser
+from os.path import join, isfile, dirname
+from targqc.utilz.bed_utils import bgzip_and_tabix, sort_bed
 from utilz import gtf
 from utilz import logger
-from utilz.bed_utils import bgzip_and_tabix, sort_bed
 from utilz.file_utils import verify_file, add_suffix
 from utilz.logger import debug, warn, critical
-
-import ensembl as ebl
 
 
 def main():

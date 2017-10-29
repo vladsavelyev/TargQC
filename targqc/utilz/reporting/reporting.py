@@ -1,19 +1,19 @@
 from __future__ import division
+
+import datetime
+import io
+import itertools
 import shutil
+import six
+import traceback
 from collections import OrderedDict
 from itertools import repeat
-from os.path import join, relpath, dirname, abspath, basename
 from json import load, dump
 from math import floor
-import traceback
-import datetime
-import itertools
-import six
-import io
-
-from utilz import jsontemplate
-from utilz.file_utils import file_transaction, verify_file, safe_mkdir
+from os.path import join, relpath, dirname, abspath, basename
+from targqc.utilz import jsontemplate
 from utilz import logger
+from utilz.file_utils import file_transaction, verify_file, safe_mkdir
 from utilz.logger import critical, info, err, warn, debug
 from utilz.utils import mean
 

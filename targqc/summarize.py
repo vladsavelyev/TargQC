@@ -1,17 +1,16 @@
-import shutil
 import os
-from os import listdir
-from os.path import relpath, join, exists, dirname, basename, abspath, splitext
-from collections import OrderedDict, defaultdict
-
+import shutil
 import targqc
 import targqc.config as tc
-from utilz.file_utils import verify_dir, verify_file, adjust_path, symlink_plus, file_transaction, add_suffix
-from utilz.logger import info, err, debug
-from utilz.reporting.reporting import PerRegionSampleReport, BaseReport, Metric, ReportSection, MetricStorage, \
-    FullReport
+from collections import OrderedDict, defaultdict
+from os import listdir
+from os.path import relpath, join, exists, dirname, basename, abspath, splitext
 from targqc.general_report import get_header_metric_storage
 from targqc.qualimap.runner import run_multisample_qualimap
+from targqc.utilz.logger import info, err, debug
+from utilz.file_utils import verify_dir, verify_file, adjust_path, symlink_plus, file_transaction, add_suffix
+from utilz.reporting.reporting import PerRegionSampleReport, BaseReport, Metric, ReportSection, MetricStorage, \
+    FullReport
 
 
 def _make_targetcov_symlinks(samples):

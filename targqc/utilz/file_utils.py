@@ -1,25 +1,24 @@
 """Partly taken from bcbio-nextgen.
 """
 
-import shutil
+import collections
+import contextlib
+import fnmatch
+import functools
+import gzip
+import itertools
 import os
+import random
+import shutil
+import six
 import string
+import tempfile
+import time
 from datetime import datetime
+from functools import reduce
 from os.path import isfile, isdir, getsize, exists, basename, join, abspath, splitext, \
     islink, dirname, realpath, getmtime, getctime
-import gzip
-import tempfile
-import contextlib
-import itertools
-import functools
-import random
-import collections
-import fnmatch
-import time
-from functools import reduce
-import six
-
-from utilz.logger import info, err, warn, critical, debug
+from targqc.utilz.logger import info, err, warn, critical, debug
 
 try:
     from concurrent import futures

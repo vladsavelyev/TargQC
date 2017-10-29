@@ -1,21 +1,20 @@
 from __future__ import division
-import os
-import sys
+
 import math
-from collections import OrderedDict
-
+import os
 import pybedtools
-from utilz.call_process import run
+import sys
+from collections import OrderedDict
 from os.path import isfile, join, abspath, basename, dirname, getctime, getmtime, splitext, realpath
-from subprocess import check_output
 from pybedtools import BedTool
-
+from subprocess import check_output
+from targqc.utilz.utils import md5
 from utilz import call_process
+from utilz import reference_data as ref
+from utilz.call_process import run
 from utilz.file_utils import intermediate_fname, iterate_file, splitext_plus, verify_file, adjust_path, add_suffix, \
     safe_mkdir, file_transaction, which, file_exists, open_gzipsafe, can_reuse
 from utilz.logger import info, critical, warn, err, debug
-from utilz import reference_data as ref
-from utilz.utils import md5
 
 
 def get_chrom_order(genome=None, fai_fpath=None):
