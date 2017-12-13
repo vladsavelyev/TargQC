@@ -2,11 +2,10 @@ import os
 import sys
 from os.path import dirname, join, abspath, isfile, pardir
 from pybedtools import BedTool
-from targqc.utilz.bed_utils import bedtools_version
 from targqc.utilz.file_utils import which, open_gzipsafe, verify_file
 from targqc.utilz.logger import debug, critical
 
-SUPPORTED_GENOMES = ['hg19', 'hg19-noalt', 'hg38', 'hg38-noalt', 'mm10']
+SUPPORTED_GENOMES = ['GRCh37', 'hg19', 'hg19-noalt', 'hg38', 'hg38-noalt', 'mm10']
 
 class BedCols:
     CHROM, \
@@ -54,7 +53,11 @@ def check_genome(genome):
 #################
 def get_all_features(genome, high_confidence=False, features=None, gene_names=None, only_canonical=False):
     _canon_filt = get_only_canonical_filter(genome) if only_canonical else None
-    
+
+    ori_genome = genome
+    genome = genome.replace('GRCh37', 'hg19')
+    genome = genome.replace('GRCh38', 'hg38')
+
     bed = _get_ensembl_file('ensembl.bed', genome)
     def _filter(x):
         if high_confidence:
@@ -72,6 +75,11 @@ def get_all_features(genome, high_confidence=False, features=None, gene_names=No
         return True
     debug('Filtering BEDTool for: HUGO annotation, specific features, specific genes, canonical')
     bed = bed.filter(_filter)
+    if ori_genome.startswith('GRCh'):
+        def fix_chr(r):
+            r.chrom = r.chrom.replace('chrM', 'MT').replace('chr', '')
+            return r
+        bed = bed.each(fix_chr)
     return bed
 
 def get_merged_cds(genome):
