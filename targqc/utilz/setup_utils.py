@@ -57,7 +57,7 @@ def get_reqs():
     except ImportError: # for pip <= 9.0.3
         from pip.req import parse_requirements
 
-    al(f'Path is empty' + ((': ' + descriptive_name) if descriptive_name else ''))try:
+    try:
         install_reqs = parse_requirements('requirements.txt', session=False)
     except TypeError:
         install_reqs = parse_requirements('requirements.txt')
