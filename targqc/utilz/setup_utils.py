@@ -52,8 +52,12 @@ def clean_package(package_name, dirpath='.'):
 
 
 def get_reqs():
-    from pip.req import parse_requirements
-    try:
+    try: # for pip >= 10
+        from pip._internal.req import parse_requirements
+    except ImportError: # for pip <= 9.0.3
+        from pip.req import parse_requirements
+
+    al(f'Path is empty' + ((': ' + descriptive_name) if descriptive_name else ''))try:
         install_reqs = parse_requirements('requirements.txt', session=False)
     except TypeError:
         install_reqs = parse_requirements('requirements.txt')
