@@ -94,14 +94,14 @@ class BaseTargQC(BaseTestCase):
 
     def _check_results(self, output_dir, used_samples):
         assert isdir(output_dir)
-        self._check_file_throws(join(output_dir, 'regions.tsv'))
-        self._check_file_throws(join(output_dir, 'summary.tsv'))
-        self._check_file_throws(join(output_dir, 'summary.html'), ignore_matching_lines='report_date')
+        self._check_file_throws(join(output_dir, 'regions.tsv'), wrapper='wc -l')
+        self._check_file_throws(join(output_dir, 'summary.tsv'), wrapper='wc -l')
+        self._check_file_throws(join(output_dir, 'summary.html'), ignore_matching_lines='report_date', check_diff=False)
         for s in used_samples:
             s_dir = join(output_dir, s.name)
             assert isdir(s_dir)
-            self._check_file_throws(join(s_dir, 'regions.tsv'))
-            self._check_file_throws(join(s_dir, 'summary.txt'))
-            self._check_file_throws(join(s_dir, 'summary.html'), ignore_matching_lines='report_date')
-            self._check_file_throws(join(s_dir, 'summary.json'), ignore_matching_lines='work_dir')
+            self._check_file_throws(join(s_dir, 'regions.tsv'), wrapper='wc -l')
+            self._check_file_throws(join(s_dir, 'summary.txt'), wrapper='wc -l')
+            self._check_file_throws(join(s_dir, 'summary.html'), ignore_matching_lines='report_date', check_diff=False)
+            self._check_file_throws(join(s_dir, 'summary.json'), ignore_matching_lines='work_dir', check_diff=False)
         # TODO: check line numbers and some values isntead of diff?
