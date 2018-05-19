@@ -23,12 +23,6 @@ before_install:
   - conda update -q conda
   - conda info -a  # Useful for debugging any issues with conda
 
-  # Downloading the test data
-  - if [ ! -d tests/data ] ; then
-      mkdir -p tests/data ;
-      wget -qO- http://quast.bioinf.spbau.ru/static/chr21.tar.gz | tar xvz -C tests/data ;
-    fi
-
 install:
   # Install conda packages
   - conda create -q -n test-environment -c vladsaveliev -c bioconda -c conda-forge
@@ -44,7 +38,3 @@ script:
 #  on_success: always
 #  email: false
 #  slack: astrazeneca-ngs:cP6TAiGMYU857H0Vahc42SHD
-
-cache:
-  directories:
-  - $HOME/anaconda

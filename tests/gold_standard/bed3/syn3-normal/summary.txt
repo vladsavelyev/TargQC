@@ -1,57 +1,57 @@
-## Target: /Users/vsaveliev/git/TargQC/tests/data/chr21/NGv3.chr21.3col.bed
+## Target: /Users/vsaveliev/git/TargQC/tests/data/chr21_az300/NGv3.chr21.3col.bed
 ## Ready target (clean, sorted and annotated): /Users/vsaveliev/git/TargQC/tests/results/bed3/NGv3.chr21.3col.clean_sorted_ann.bed
-## Regions in target: 3019
-## Bases in target: 1,074,280bp
-## Percentage of reference: 0.03%
+## Regions in target: 39
+## Bases in target: 29,281bp
+## Percentage of reference: 
 ## Genes in target: 0
 ## Scope: targeted
-## Target: /Users/vsaveliev/git/TargQC/tests/data/chr21/NGv3.chr21.3col.bed
+## Target: /Users/vsaveliev/git/TargQC/tests/data/chr21_az300/NGv3.chr21.3col.bed
 ## Ready target (clean, sorted and annotated): /Users/vsaveliev/git/TargQC/tests/results/bed3/NGv3.chr21.3col.clean_sorted_ann.bed
-## Regions in target: 3019                       
-## Bases in target: 1,074,280bp                  
-## Percentage of reference: 0.03%                
+## Regions in target: 39                         
+## Bases in target: 29,281bp                     
+## Percentage of reference:                      
 ## Genes in target: 0                            
 ## Scope: targeted                               
-Sample                                           syn3-normal   
-Original reads                                   .             
-Reads                                            1,171,868     
-Mapped reads                                     1,154,385     
-Percentage of mapped reads                       98.51%        
-Properly paired mapped reads percent             98.51%        
-Duplication rate                                 5.35%         
-Read min length                                  30            
-Read mean length                                 101.10bp      
-Read max length                                  101           
-Median insert size                               343           
-Median GC                                        52.63%        
-Covered bases in target                          871,390bp     
-Percentage of target covered by at least 1 read  81.11%        
-Percentage of reads mapped on target             45.12%        
-Percentage of reads mapped off target            54.88%        
-Percentage of reads mapped on padded target      72.02%        
-Percentage of usable reads                       42.35%        
-Read bases mapped on target                      40,345,981bp  
-Median target coverage depth                     40            
-Mean target coverage depth                       37.56         
-Std. dev. of target coverage depth               36.32         
-Percentage of target within 20% of med depth     19.89%        
-Part of target covered at least by 1x            81.11%        
-Part of target covered at least by 5x            79.05%        
-Part of target covered at least by 10x           77.65%        
-Part of target covered at least by 20x           72.24%        
-Part of target covered at least by 50x           36.83%        
-Part of target covered at least by 100x          0.34%         
-Part of target covered at least by 250x          0.05%         
-Part of target covered at least by 500x          0.03%         
-Part of target covered at least by 1000x         0.02%         
-Part of target covered at least by 5000x         .             
-Part of target covered at least by 10000x        .             
-Part of target covered at least by 50000x        .             
-Estimated target full coverage depth             .             
-Mean Mapping Quality                             59.22         
-Mismatches                                       403,798       
-Insertions                                       3843          
-Deletions                                        3638          
-Homopolymer indels                               0.60          
-Qualimap                                         Qualimap      
-Sex                                              .             
+Sample                                           syn3-normal  
+Original reads                                   .            
+Reads                                            7980         
+Mapped reads                                     7861         
+Percentage of mapped reads                       98.51%       
+Properly paired mapped reads percent             98.51%       
+Duplication rate                                 4.35%        
+Read min length                                  30           
+Read mean length                                 101.07bp     
+Read max length                                  101          
+Median insert size                               345          
+Median GC                                        48.17%       
+Covered bases in target                          17,749bp     
+Percentage of target covered by at least 1 read  60.62%       
+Percentage of reads mapped on target             100.00%      
+Percentage of reads mapped off target            0            
+Percentage of reads mapped on padded target      100.00%      
+Percentage of usable reads                       94.40%       
+Read bases mapped on target                      680,847bp    
+Median target coverage depth                     20           
+Mean target coverage depth                       23.25        
+Std. dev. of target coverage depth               23.10        
+Percentage of target within 20% of med depth     6.78%        
+Part of target covered at least by 1x            60.62%       
+Part of target covered at least by 5x            58.14%       
+Part of target covered at least by 10x           56.90%       
+Part of target covered at least by 20x           50.33%       
+Part of target covered at least by 50x           17.88%       
+Part of target covered at least by 100x          .            
+Part of target covered at least by 250x          .            
+Part of target covered at least by 500x          .            
+Part of target covered at least by 1000x         .            
+Part of target covered at least by 5000x         .            
+Part of target covered at least by 10000x        .            
+Part of target covered at least by 50000x        .            
+Estimated target full coverage depth             .            
+Mean Mapping Quality                             59.69        
+Mismatches                                       5639         
+Insertions                                       45           
+Deletions                                        35           
+Homopolymer indels                               0.31         
+Qualimap                                         Qualimap     
+Sex                                              .            

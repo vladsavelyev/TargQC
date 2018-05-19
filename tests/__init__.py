@@ -14,9 +14,6 @@ class BaseTargQC(BaseTestCase):
     results_dir = join(dirname(__file__), BaseTestCase.results_dir)
     gold_standard_dir = join(join(dirname(__file__), BaseTestCase.gold_standard_dir))
 
-    syn3_url = 'http://quast.bioinf.spbau.ru/static/chr21.tar.gz'
-    bwa_url = 'http://quast.bioinf.spbau.ru/static/bwa.tar.gz'
-
     Sample = namedtuple('Sample', 'name bam l_fastq r_fastq')
     samples = [
         Sample('syn3-tumor', 'syn3-tumor.bam', 'syn3-tumor_R1.fq.gz', 'syn3-tumor_R2.fq.gz'),
@@ -29,7 +26,7 @@ class BaseTargQC(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
 
-        self.syn3_dir = join(BaseTargQC.data_dir, 'chr21')
+        self.syn3_dir = join(BaseTargQC.data_dir, 'chr21_az300')
         self.bed3 = join(self.syn3_dir, 'NGv3.chr21.3col.bed')
         self.bed4 = join(self.syn3_dir, 'NGv3.chr21.4col.bed')
         self.bams = [join(self.syn3_dir, s.bam) for s in BaseTargQC.samples]
@@ -104,4 +101,3 @@ class BaseTargQC(BaseTestCase):
             self._check_file_throws(join(s_dir, 'summary.txt'), wrapper='wc -l')
             self._check_file_throws(join(s_dir, 'summary.html'), ignore_matching_lines='report_date', check_diff=False)
             self._check_file_throws(join(s_dir, 'summary.json'), ignore_matching_lines='work_dir', check_diff=False)
-        # TODO: check line numbers and some values isntead of diff?
