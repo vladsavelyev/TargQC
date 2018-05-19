@@ -1,0 +1,57 @@
+## Target: /Users/vsaveliev/git/TargQC/tests/data/chr21/NGv3.chr21.3col.bed
+## Ready target (clean, sorted and annotated): /Users/vsaveliev/git/TargQC/tests/results/bed3/NGv3.chr21.3col.clean_sorted_ann.bed
+## Regions in target: 3019
+## Bases in target: 1,074,280bp
+## Percentage of reference: 0.03%
+## Genes in target: 0
+## Scope: targeted
+## Target: /Users/vsaveliev/git/TargQC/tests/data/chr21/NGv3.chr21.3col.bed
+## Ready target (clean, sorted and annotated): /Users/vsaveliev/git/TargQC/tests/results/bed3/NGv3.chr21.3col.clean_sorted_ann.bed
+## Regions in target: 3019                       
+## Bases in target: 1,074,280bp                  
+## Percentage of reference: 0.03%                
+## Genes in target: 0                            
+## Scope: targeted                               
+Sample                                           syn3-tumor    
+Original reads                                   .             
+Reads                                            1,167,673     
+Mapped reads                                     1,150,318     
+Percentage of mapped reads                       98.51%        
+Properly paired mapped reads percent             98.51%        
+Duplication rate                                 5.31%         
+Read min length                                  30            
+Read mean length                                 101.10bp      
+Read max length                                  101           
+Median insert size                               343           
+Median GC                                        52.70%        
+Covered bases in target                          870,920bp     
+Percentage of target covered by at least 1 read  81.07%        
+Percentage of reads mapped on target             45.03%        
+Percentage of reads mapped off target            54.97%        
+Percentage of reads mapped on padded target      71.90%        
+Percentage of usable reads                       42.27%        
+Read bases mapped on target                      40,127,795bp  
+Median target coverage depth                     40            
+Mean target coverage depth                       37.35         
+Std. dev. of target coverage depth               36.58         
+Percentage of target within 20% of med depth     20.55%        
+Part of target covered at least by 1x            81.07%        
+Part of target covered at least by 5x            79.04%        
+Part of target covered at least by 10x           77.67%        
+Part of target covered at least by 20x           72.25%        
+Part of target covered at least by 50x           35.96%        
+Part of target covered at least by 100x          0.35%         
+Part of target covered at least by 250x          0.05%         
+Part of target covered at least by 500x          0.03%         
+Part of target covered at least by 1000x         0.02%         
+Part of target covered at least by 5000x         .             
+Part of target covered at least by 10000x        .             
+Part of target covered at least by 50000x        .             
+Estimated target full coverage depth             .             
+Mean Mapping Quality                             59.25         
+Mismatches                                       399,473       
+Insertions                                       3850          
+Deletions                                        3494          
+Homopolymer indels                               0.61          
+Qualimap                                         Qualimap      
+Sex                                              .             

@@ -1,0 +1,46 @@
+##Target=whole genome
+##Reference size=3137161264
+##Scope=WGS
+Sample	syn3-normal	syn3-tumor
+Original reads	.	.
+Reads	1171868	1167673
+Mapped reads	1154385	1150318
+Percentage of mapped reads	0.985081084218	0.985137106022
+Properly paired mapped reads percent	0.985081084218	0.985137106022
+Duplication rate	0.049	0.0488
+Read min length	30	30
+Read mean length	101.1	101.1
+Read max length	101	101
+Median insert size	344	344
+Median GC	0.504300461335	0.504818199316
+Covered bases in genome	3830249	3840624
+Percentage of genome covered by at least 1 read	0.00122092830992	0.00122423543988
+Covered bases in exome	.	.
+Percentage of exome covered by at least 1 read	.	.
+Percentage of reads mapped on exome	0.237050736834	0.236492619898
+Percentage of reads mapped off exome	0.762949263166	0.763507380102
+Percentage of usable reads	0.938478565845	0.938724283254
+Median genome coverage depth	0	0
+Mean genome coverage depth	0.0349	0.0348
+Std. dev. of genome coverage depth	.	.
+Percentage of genome within 20% of med depth	.	.
+Part of genome covered at least by 1x	0.00122092830992	0.00122423543988
+Part of genome covered at least by 5x	0.000900099409107	0.000900848812725
+Part of genome covered at least by 10x	0.000840542700262	0.00084116715015
+Part of genome covered at least by 20x	0.000702014915609	0.000700041156698
+Part of genome covered at least by 50x	0.000271481102924	0.000266804582093
+Part of genome covered at least by 100x	4.81167486454e-06	4.59938102819e-06
+Part of genome covered at least by 250x	3.25134704328e-07	3.0951548814e-07
+Part of genome covered at least by 500x	1.0869699429e-07	1.09972032346e-07
+Part of genome covered at least by 1000x	7.77773214275e-08	7.93711189977e-08
+Part of genome covered at least by 5000x	.	.
+Part of genome covered at least by 10000x	.	.
+Part of genome covered at least by 50000x	.	.
+Estimated genome full coverage depth	.	.
+Mean Mapping Quality	0.62	0.62
+Mismatches	903815	898350
+Insertions	10263	10337
+Deletions	10135	9989
+Homopolymer indels	0.5761	0.5796
+Qualimap	Qualimap	Qualimap
+Sex	.	.

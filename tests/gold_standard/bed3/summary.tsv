@@ -1,0 +1,50 @@
+##Target=/Users/vsaveliev/git/TargQC/tests/data/chr21/NGv3.chr21.3col.bed
+##Ready target (clean, sorted and annotated)=/Users/vsaveliev/git/TargQC/tests/results/bed3/NGv3.chr21.3col.clean_sorted_ann.bed
+##Regions in target=3019
+##Bases in target=1074280
+##Percentage of reference=0.0003
+##Genes in target=0
+##Scope=targeted
+Sample	syn3-normal	syn3-tumor
+Original reads	.	.
+Reads	1171868	1167673
+Mapped reads	1154385	1150318
+Percentage of mapped reads	0.985081084218	0.985137106022
+Properly paired mapped reads percent	0.985081084218	0.985137106022
+Duplication rate	0.0535	0.0531
+Read min length	30	30
+Read mean length	101.1	101.1
+Read max length	101	101
+Median insert size	343	343
+Median GC	0.526260799517	0.5269857273
+Covered bases in target	871390	870920
+Percentage of target covered by at least 1 read	0.811138623078	0.810701120751
+Percentage of reads mapped on target	0.451245848007	0.45028979412
+Percentage of reads mapped off target	0.548754151993	0.54971020588
+Percentage of reads mapped on padded target	0.720194076414	0.719044304334
+Percentage of usable reads	0.423484556281	0.422697964242
+Read bases mapped on target	40345981	40127795
+Median target coverage depth	40	40
+Mean target coverage depth	37.5563	37.3532
+Std. dev. of target coverage depth	36.3193	36.5777
+Percentage of target within 20% of med depth	0.198880180214	0.205506944186
+Part of target covered at least by 1x	0.811138623078	0.810701120751
+Part of target covered at least by 5x	0.790488513237	0.790376810515
+Part of target covered at least by 10x	0.776455858808	0.77670067394
+Part of target covered at least by 20x	0.722351714637	0.722455039654
+Part of target covered at least by 50x	0.368327624083	0.359617604349
+Part of target covered at least by 100x	0.00344137468816	0.00351677402539
+Part of target covered at least by 250x	0.000524071936553	0.000490561120006
+Part of target covered at least by 500x	0.000311836765089	0.00031556018915
+Part of target covered at least by 1000x	0.000227128867707	0.000231783147783
+Part of target covered at least by 5000x	.	.
+Part of target covered at least by 10000x	.	.
+Part of target covered at least by 50000x	.	.
+Estimated target full coverage depth	.	.
+Mean Mapping Quality	59.22	59.25
+Mismatches	403798	399473
+Insertions	3843	3850
+Deletions	3638	3494
+Homopolymer indels	0.6019	0.6073
+Qualimap	Qualimap	Qualimap
+Sex	.	.
