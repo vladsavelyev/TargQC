@@ -31,7 +31,7 @@ before_install:
 
 install:
   # Install conda packages
-  - conda create -q -n test-environment -c vladsaveliev -c bioconda -c conga-forge
+  - conda create -q -n test-environment -c vladsaveliev -c bioconda -c conda-forge
                  python=3.6 targqc
   - source activate test-environment
   # Installing
