@@ -45,7 +45,7 @@ class BaseTargQC(BaseTestCase):
             os.chdir(cur_dir)
 
     def _test(self, output_dirname=None, used_samples=samples, bams=None, fastq=None, bed=None,
-              debug=False, reuse_intermediate=False, reuse_output_dir=False, reannotate=False,
+              debug=True, reuse_intermediate=False, reuse_output_dir=False, reannotate=False,
               genome='hg19-chr21', bwa=None, threads=None, ipython=None, keep_work_dir=True):
         os.chdir(self.results_dir)
         cmdl = [self.script]

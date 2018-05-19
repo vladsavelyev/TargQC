@@ -106,6 +106,7 @@ def annotate(input_bed_fpath, output_fpath, work_dir, genome=None,
     header = [ebl.BedCols.names[i] for i in ebl.BedCols.cols]
 
     info('Saving annotated regions...')
+    total = 0
     with file_transaction(work_dir, output_fpath) as tx:
         with open(tx, 'w') as out:
             if short:
@@ -126,7 +127,9 @@ def annotate(input_bed_fpath, output_fpath, work_dir, genome=None,
                 if not extended:
                     fields = fields[:6]
                 out.write('\t'.join(map(_format_field, fields)) + '\n')
-
+                total += 1
+    
+    debug('Saved ' + str(total) + ' total annotated regions')
     return output_fpath
 
 

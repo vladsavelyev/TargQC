@@ -5,7 +5,7 @@ from pybedtools import BedTool
 from targqc.utilz.file_utils import which, open_gzipsafe, verify_file
 from targqc.utilz.logger import debug, critical
 
-SUPPORTED_GENOMES = ['GRCh37', 'hg19', 'hg19-noalt', 'hg38', 'hg38-noalt', 'mm10']
+SUPPORTED_GENOMES = ['GRCh37', 'hg19', 'hg19-noalt', 'hg38', 'hg38-noalt', 'mm10', 'hg19-chr21']
 
 class BedCols:
     CHROM, \
