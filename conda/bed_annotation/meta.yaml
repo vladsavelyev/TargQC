@@ -1,7 +1,7 @@
 {% set version=load_setup_py_data().get('version') %}
 
 package:
-  name: targqc
+  name: bed_annotation
   version: "{{ version }}"
 
 source:
@@ -13,16 +13,15 @@ build:
 
 test:
   imports:
-   - targqc
    - ensembl
 
   commands:
-   - targqc --version
+   - annotate_bed.py --help
 
 about:
   home: https://github.com/vladsaveliev/TargQC
   license: GNU General Public License v3 (GPLv3)
-  summary: 'Target capture coverage QC'
+  summary: 'Annotate BED files'
   license_family: GPL3
 
 requirements:
@@ -32,19 +31,13 @@ requirements:
     - ngs_utils
   run:
     - python ==3.6
-    - six
-    - qualimap
-    - sambamba
     - bedtools >=2.25
     - pybedtools
-    - nose
     - cython
     - numpy
     - joblib
     - gffutils
-    - beautifulsoup4
-    - lxml
-    - xlsxwriter >=0.5.5
-    - natsort
     - click
+    - nose
     - ngs_utils
+    - natsort

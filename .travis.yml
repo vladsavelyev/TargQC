@@ -5,34 +5,28 @@ python:
   # We don't actually use the Travis Python (since we are on conda), but this keeps it organized.
   - "3.6"
 
-before_install:
-  # Temporal fix for networking problem: https://github.com/travis-ci/travis-ci/issues/1484
-  - echo "127.0.1.1 "`hostname` | sudo tee /etc/hosts
-
-  # The next couple lines fix a crash with multiprocessing on Travis and
-  # are not specific to using Miniconda
-  - sudo rm -rf /dev/shm
-  - sudo ln -s /run/shm /dev/shm
-
+install:
   # Get and install anaconda (https://conda.io/docs/travis.html)
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH=$HOME/miniconda/bin:$PATH
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda info -a  # Useful for debugging any issues with conda
-
-install:
+  - conda env create -n targqc -c vladsaveliev -c bioconda -c conda-forge targqc
   # Install conda packages
-  - conda create -q -n test-environment -c vladsaveliev -c bioconda -c conda-forge
-                 python=3.6 targqc
-  - source activate test-environment
+  - source activate targqc
+  - conda info -a  # Useful for debugging any issues with conda
   # Installing
   - python setup.py install --single-version-externally-managed --record=record.txt
 
 script:
   - nosetests --nocapture tests/test_travis.py
+
+#after_success:
+#  # building and uploading conda package
+#  - conda install -y anaconda
+#  - bash conda/build_all.sh targqc $CONDA_UPLOAD_TOKEN
 
 #notifications:
 #  on_success: always
