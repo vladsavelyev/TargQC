@@ -1,155 +1,87 @@
 #!/usr/bin/env python
 
-import ensembl as ebl
+import click as click
 import os
 import shutil
-from ensembl.bed_annotation import annotate
-from optparse import OptionParser, SUPPRESS_HELP
 from os.path import join, basename
-from targqc.utilz.bed_utils import verify_bed, clean_bed
 from tempfile import mkdtemp
-from targqc.utilz import logger
-from targqc.utilz.file_utils import adjust_path, safe_mkdir, verify_file
-from targqc.utilz.logger import critical, info
-from targqc.utilz.logger import debug
+
+import ensembl as ebl
+from ensembl.bed_annotation import annotate
+from ngs_utils.bed_utils import verify_bed, clean_bed
+from ngs_utils import logger
+from ngs_utils.file_utils import adjust_path, safe_mkdir, verify_file
+from ngs_utils.logger import info
+from ngs_utils.logger import debug
 
 
-# TODO: prefer consecutive annotations
+@click.command()
+@click.argument('input_bed', type=click.Path(exists=True))
+@click.option('-o', '--output-file', type=click.Path(), help='Output file path')
+@click.option('--output-features', is_flag=True, help='Also output featues that was used to annotate')
+@click.option('-g', 'genome', default='GRCh37', type=click.Choice(ebl.SUPPORTED_GENOMES), help='Genome build')
+@click.option('--canonical', '--only-canonical', is_flag=True, help='Use only features from canonical transcripts to annotate')
+@click.option('--short', is_flag=True, help='Add only "Gene" column (outputa 4-col BED file instead of 6-col)')
+@click.option('--cds-only', is_flag=True, help='Use only CDS to annotate')
+@click.option('-e', '--extended', is_flag=True, help='Output additional columns: transcript, GC, overlap size...')
+@click.option('--high-confidence', is_flag=True, help='Annotate with only high confidence regions (TSL is 1 or NA, with HUGO symbol, total overlap size > 50%)')
+@click.option('-a', '--ambiguities', '--ambiguities-method', type=click.Choice(['best_one', 'best_ask', 'best_all', 'all_ask', 'all']), default='best_all',
+              help='How to resolve ambuguios overlaps with reliable transcripts for a single region')
+@click.option('--collapse-exons', is_flag=False)
+@click.option('--work-dir', default=None, type=click.Path())
+@click.option('-d', '--debug', '--is-debug', is_flag=True)
+def main(input_bed, output_file, output_features=False, genome=None,
+         only_canonical=False, short=False, cds_only=False, extended=False, high_confidence=False,
+         ambiguities_method=False, collapse_exons=False, work_dir=False, is_debug=False):
+    """ Annotating BED file based on reference features annotations.
+    """
+    logger.init(is_debug_=is_debug)
 
+    if not genome:
+        raise click.BadParameter('Error: please, specify genome build name with -g (e.g. `-g hg19`)', param='genome')
 
-def main():
-    options = [
-        (['-o', '--output-file'], dict(
-            dest='output_file',
-            metavar='FILE',
-            help='Output file',
-        )),
-        (['--output-features'], dict(
-            dest='output_features',
-            action='store_true',
-            default=False,
-            help='Also output featues that was used to annotate',
-        )),
-        (['--reuse'], dict(
-            dest='reuse_intermediate',
-            action='store_true',
-            help='reuse intermediate non-empty files in the work dir from previous run',
-        )),
-        (['-g', '--genome'], dict(
-            dest='genome',
-            help='Genome build. Accepted values: ' + ', '.join(ebl.SUPPORTED_GENOMES),
-        )),
-        (['--canonical'], dict(
-            dest='only_canonical',
-            action='store_true',
-            default=False,
-            help='Use only features from canonical transcripts to annotate',
-        )),
-        (['--short'], dict(
-            dest='short',
-            action='store_true',
-            default=False,
-            help='Add only "Gene" column (outputa 4-col BED file instead of 6-col)',
-        )),
-        (['--cds-only'], dict(
-            dest='cds_only',
-            action='store_true',
-            default=False,
-            help='Use only CDS to annotate',
-        )),
-        (['-e', '--extended'], dict(
-            dest='extended',
-            action='store_true',
-            default=False,
-            help='Output additional columns: transcript, GC, overlap size...',
-        )),
-        (['--high-confidence'], dict(
-            dest='high_confidence',
-            action='store_true',
-            default=False,
-            help='Annotate with only high confidence regions (TSL is 1 or NA, with HUGO symbol, total overlap size > 50%)',
-        )),
-        (['-a', '--ambiguities'], dict(
-            dest='ambiguities',
-            choices=['best_one', 'best_ask', 'best_all', 'all_ask', 'all'],
-            default='best_all',
-            help='How to resolve ambuguios overlaps with reliable transcripts for a single region',
-        )),
-        (['--seq2c'], dict(
-            dest='seq2c',
-            action='store_true',
-            default=False,
-            help=SUPPRESS_HELP,  # For back-compability
-        )),
-        (['-d', '--debug'], dict(
-            dest='debug',
-            action='store_true',
-            default=False,
-            help=SUPPRESS_HELP,
-         )),
-        (['--not-collapse-exons'], dict(
-            dest='collapse_exons',
-            action='store_false',
-            default=True,
-            help=SUPPRESS_HELP,
-         )),
-        (['--work-dir'], dict(dest='work_dir', metavar='DIR', help=SUPPRESS_HELP)),
-        (['--log-dir'], dict(dest='log_dir', metavar='DIR', help=SUPPRESS_HELP)),
-    ]
-
-    parser = OptionParser(description='Annotating BED file based on reference features annotations.')
-    for args, kwargs in options:
-        parser.add_option(*args, **kwargs)
-    opts, args = parser.parse_args()
-    logger.init(opts.debug)
-
-    if not opts.genome:
-        critical('Error: please, specify genome build name with -g (e.g. `-g hg19`)')
-
-    output_features             = opts.output_features
-    cds_only                    = opts.cds_only
-    collapse_exons              = opts.collapse_exons
-    extended                    = opts.extended
-    short                       = opts.short
-    high_confidence             = opts.high_confidence
-    only_canonical              = opts.only_canonical
-    ambiguities_method          = opts.ambiguities
     if short:
-        if extended:        critical('--short and --extended can\'t be set both')
-        if output_features: critical('--short and --output-features can\'t be set both')
+        if extended:        raise click.BadParameter('--short and --extended can\'t be set both', param='extended')
+        if output_features: raise click.BadParameter('--short and --output-features can\'t be set both', param='output_features')
     elif output_features or extended:
         extended = True
-        short = False
+        short    = False
 
-    if len(args) < 1:
-        parser.exit('Usage: ' + __file__ + ' Input_BED_file -g hg19 -o Annotated_BED_file [options]')
-    input_bed_fpath = verify_file(args[0], is_critical=True, description='Input BED file for ' + __file__)
-    output_fpath = adjust_path(opts.output_file)
+    if not verify_file(input_bed):
+        click.BadParameter(f'Usage: {__file__} Input_BED_file -g hg19 -o Annotated_BED_file [options]', param='input_bed')
+    input_bed = verify_file(input_bed, is_critical=True, description=f'Input BED file for {__file__}')
 
-    if opts.work_dir:
-        work_dir = join(adjust_path(opts.work_dir), os.path.splitext(basename(input_bed_fpath))[0])
+    if work_dir:
+        work_dir = join(adjust_path(work_dir), os.path.splitext(basename(input_bed))[0])
         safe_mkdir(work_dir)
-        info('Created work directory ' + work_dir)
+        info(f'Created work directory {work_dir}')
     else:
         work_dir = mkdtemp('bed_annotate')
-        debug('Created temporary work directory ' + work_dir)
+        debug('Created temporary work directory {work_dir}')
 
-    input_bed_fpath = clean_bed(input_bed_fpath, work_dir)
-    input_bed_fpath = verify_bed(input_bed_fpath, is_critical=True, description='Input BED file for ' + __file__)
+    input_bed = clean_bed(input_bed, work_dir)
+    input_bed = verify_bed(input_bed, is_critical=True, description=f'Input BED file for {__file__} after cleaning')
 
-    output_fpath = annotate(
-        input_bed_fpath, output_fpath, work_dir, genome=opts.genome,
+    output_file = adjust_path(output_file)
+
+    output_file = annotate(
+        input_bed, output_file, work_dir, genome=genome,
         only_canonical=only_canonical, short=short, extended=extended,
         high_confidence=high_confidence, collapse_exons=collapse_exons,
         output_features=output_features, cds_only=cds_only,
-        ambiguities_method=ambiguities_method)
+        ambiguities_method=ambiguities_method,
+        is_debug=is_debug)
 
-    if not opts.work_dir:
-        debug('Removing work directory ' + work_dir)
+    if not work_dir:
+        debug(f'Removing work directory {work_dir}')
         shutil.rmtree(work_dir)
 
-    info('Done, saved to ' + output_fpath)
+    info(f'Done, saved to {output_file}')
 
 
 if __name__ == '__main__':
     main()
+
+
+
+# TODO: prefer consecutive annotations

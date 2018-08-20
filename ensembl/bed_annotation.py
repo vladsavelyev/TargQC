@@ -8,12 +8,12 @@ from collections import defaultdict, OrderedDict
 from contextlib import contextmanager
 from os.path import isfile, join, basename
 from pybedtools import BedTool
-from targqc.utilz.bed_utils import verify_bed, SortableByChrom, count_bed_cols, sort_bed, clean_bed
-from targqc.utilz import reference_data
-from targqc.utilz.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file, tx_tmpdir
-from targqc.utilz.logger import critical, info, is_debug
-from targqc.utilz.logger import debug
-from targqc.utilz.utils import OrderedDefaultDict
+from ngs_utils.bed_utils import verify_bed, SortableByChrom, count_bed_cols, sort_bed, clean_bed
+from ngs_utils import reference_data
+from ngs_utils.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file, tx_tmpdir
+from ngs_utils.logger import critical, info
+from ngs_utils.logger import debug
+from ngs_utils.utils import OrderedDefaultDict
 
 
 def bed_chrom_order(bed_fpath):
@@ -51,7 +51,8 @@ canon_tx_by_gname = dict()
 
 def annotate(input_bed_fpath, output_fpath, work_dir, genome=None,
              reannotate=True, high_confidence=False, only_canonical=False, cds_only=False,
-             short=False, extended=False, **kwargs):
+             short=False, extended=False, is_debug=False, **kwargs):
+
     debug('Getting features from storage')
     features_bed = ebl.get_all_features(genome)
     if features_bed is None:
@@ -66,18 +67,18 @@ def annotate(input_bed_fpath, output_fpath, work_dir, genome=None,
 
     input_bed_fpath = sort_bed(input_bed_fpath, work_dir=work_dir, chr_order=chr_order, genome=genome)
 
-    bed = BedTool(input_bed_fpath)
-    col_num = bed.field_count()
-    keep_gene_column = False
+    ori_bed = BedTool(input_bed_fpath)
+    ori_col_num = ori_bed.field_count()
+    reannotate = reannotate or ori_col_num == 3
     pybedtools.set_tempdir(safe_mkdir(join(work_dir, 'bedtools')))
-    if col_num > 3:
-        if reannotate:
-            bed = BedTool(input_bed_fpath).cut([0, 1, 2])
-            keep_gene_column = False
-        else:
-            if col_num > 4:
-                bed = BedTool(input_bed_fpath).cut([0, 1, 2, 3])
-            keep_gene_column = True
+    ori_bed = BedTool(input_bed_fpath)
+        # if reannotate:
+        #     bed = BedTool(input_bed_fpath).cut([0, 1, 2])
+        #     keep_gene_column = False
+        # else:
+        #     if col_num > 4:
+        #         bed = BedTool(input_bed_fpath).cut([0, 1, 2, 3])
+        #     keep_gene_column = True
 
     # features_bed = features_bed.saveas()
     # cols = features_bed.field_count()
@@ -98,21 +99,30 @@ def annotate(input_bed_fpath, output_fpath, work_dir, genome=None,
 
     info('Overlapping regions with Ensembl data')
     if is_debug:
-        bed = bed.saveas(join(work_dir, 'bed.bed'))
+        ori_bed = ori_bed.saveas(join(work_dir, 'bed.bed'))
+        debug(f'Saved regions to {ori_bed.fn}')
         features_bed = features_bed.saveas(join(work_dir, 'features.bed'))
-    annotated = _annotate(bed, features_bed, chr_order, fai_fpath, work_dir,
-                          high_confidence=False, keep_gene_column=keep_gene_column, **kwargs)
+        debug(f'Saved features to {features_bed.fn}')
+    annotated = _annotate(ori_bed, features_bed, chr_order, fai_fpath, work_dir, ori_col_num,
+                          high_confidence=False, reannotate=reannotate, is_debug=is_debug, **kwargs)
 
-    header = [ebl.BedCols.names[i] for i in ebl.BedCols.cols]
+    full_header = [ebl.BedCols.names[i] for i in ebl.BedCols.cols]
+    add_ori_extra_fields = ori_col_num > 3
+    if not reannotate and ori_col_num == 4:
+        add_ori_extra_fields = False  # no need to report the original gene field if we are not re-annotating
 
     info('Saving annotated regions...')
     total = 0
     with file_transaction(work_dir, output_fpath) as tx:
         with open(tx, 'w') as out:
+            header = full_header[:6]
             if short:
-                header = header[:4]
-            if not extended:
-                header = header[:6]
+                header = full_header[:4]
+            if extended:
+                header = full_header[:-1]
+            if add_ori_extra_fields:
+                header.append(full_header[-1])
+
             if extended:
                 out.write('## ' + ebl.BedCols.names[ebl.BedCols.TX_OVERLAP_PERCENTAGE] +
                           ': part of region overlapping with transcripts\n')
@@ -121,11 +131,15 @@ def annotate(input_bed_fpath, output_fpath, work_dir, genome=None,
                 out.write('## ' + ebl.BedCols.names[ebl.BedCols.CDS_OVERLAPS_PERCENTAGE] +
                           ': part of region overlapping with protein coding regions\n')
                 out.write('\t'.join(header) + '\n')
-            for fields in annotated:
+            for full_fields in annotated:
+                fields = full_fields[:6]
                 if short:
-                    fields = fields[:4]
-                if not extended:
-                    fields = fields[:6]
+                    fields = full_fields[:4]
+                if extended:
+                    fields = full_fields[:-1]
+                if add_ori_extra_fields:
+                    fields.append(full_fields[-1])
+
                 out.write('\t'.join(map(_format_field, fields)) + '\n')
                 total += 1
     
@@ -250,12 +264,13 @@ def _resolve_ambiguities(overlaps_by_tx_by_gene_by_loc, chrom_order,
     # ])
 
     annotated = []
-    for (chrom, start, end), overlaps_by_tx_by_gene in overlaps_by_tx_by_gene_by_loc.items():
+    for (chrom, start, end, a_extra_columns), overlaps_by_tx_by_gene in overlaps_by_tx_by_gene_by_loc.items():
         features = dict()
         annotation_alternatives = []
         for gname, overlaps_by_tx in overlaps_by_tx_by_gene.items():
             consensus = [None for _ in ebl.BedCols.cols]
             consensus[:3] = chrom, start, end
+            consensus[ebl.BedCols.ORIGINAL_FIELDS] = '|'.join(a_extra_columns)
             if gname:
                 consensus[3] = gname
             consensus[ebl.BedCols.FEATURE] = 'capture'
@@ -367,8 +382,8 @@ def bedtools_tmpdir(work_dir):
             tempfile.tempdir = None
 
 
-def _annotate(bed, ref_bed, chr_order, fai_fpath, work_dir,
-              high_confidence=False, keep_gene_column=False, **kwargs):
+def _annotate(bed, ref_bed, chr_order, fai_fpath, work_dir, ori_col_num,
+              high_confidence=False, reannotate=False, is_debug=False, **kwargs):
     # if genome:
         # genome_fpath = cut(fai_fpath, 2, output_fpath=intermediate_fname(work_dir, fai_fpath, 'cut2'))
         # intersection = bed.intersect(ref_bed, sorted=True, wao=True, g='<(cut -f1,2 ' + fai_fpath + ')')
@@ -387,7 +402,7 @@ def _annotate(bed, ref_bed, chr_order, fai_fpath, work_dir,
     if not intersection_bed:
         if count_bed_cols(fai_fpath) == 2:
             debug('Fai fields size is 2 ' + fai_fpath)
-            intersection_bed = bed.intersect(ref_bed, wao=True, sorted=True, g=fai_fpath)
+            intersection_bed = bed.intersect(ref_bed, wao=True, g=fai_fpath)
         else:
             debug('Fai fields is ' + str(count_bed_cols(fai_fpath)) + ', not 2')
             intersection_bed = bed.intersect(ref_bed, wao=True)
@@ -404,31 +419,32 @@ def _annotate(bed, ref_bed, chr_order, fai_fpath, work_dir,
     overlaps_by_tx_by_gene_by_loc = OrderedDefaultDict(lambda: OrderedDefaultDict(lambda: defaultdict(list)))
     # off_targets = list()
 
-    for intersection_fields in intersection_bed:
-        inters_list = list(intersection_fields)
-        if len(inters_list) < 3 + len(ebl.BedCols.cols) - 3 + 1:
-            critical('Cannot parse the reference BED file - unexpected number of lines '
-                     '(' + str(len(inters_list)) + ') in ' + str(inters_list) +
-                     ' (less than ' + str(3 + len(ebl.BedCols.cols) - 2 + 1) + ')')
+    expected_fields_num = ori_col_num + len(ebl.BedCols.cols[:-4]) + 1
+    for i, intersection_fields in enumerate(intersection_bed):
+        inters_fields_list = list(intersection_fields)
+        if len(inters_fields_list) < expected_fields_num:
+            critical(f'Cannot parse the reference BED file - unexpected number of lines '
+                     '({len(inters_fields_list} in {inters_fields_list}' +
+                     ' (less than {expected_fields_num})')
 
         a_chr, a_start, a_end = intersection_fields[:3]
+        a_extra_columns = intersection_fields[3:ori_col_num]
 
         overlap_fields = [None for _ in ebl.BedCols.cols]
 
+        overlap_fields[:len(intersection_fields[ori_col_num:])] = intersection_fields[ori_col_num:]
+        keep_gene_column = not reannotate
+        a_gene = None
         if keep_gene_column:
-            a_gene = intersection_fields[3]
-            overlap_fields[:len(intersection_fields[4:])] = intersection_fields[4:]
-        else:
-            a_gene = None
-            overlap_fields[:len(intersection_fields[3:])] = intersection_fields[3:]
+            a_gene = a_extra_columns[0]
 
         e_chr = overlap_fields[0]
         overlap_size = int(intersection_fields[-1])
-        assert e_chr == '.' or a_chr == e_chr, str((a_chr + ', ' + e_chr))
+        assert e_chr == '.' or a_chr == e_chr, f'Error on line {i}: chromosomes don\'t match ({a_chr} vs {e_chr}). Line: {intersection_fields}'
 
         # fs = [None for _ in ebl.BedCols.cols]
         # fs[:3] = [a_chr, a_start, a_end]
-        reg = (a_chr, int(a_start), int(a_end))
+        reg = (a_chr, int(a_start), int(a_end), tuple(a_extra_columns))
 
         if e_chr == '.':
             total_off_target += 1
@@ -446,8 +462,8 @@ def _annotate(bed, ref_bed, chr_order, fai_fpath, work_dir,
             if keep_gene_column and e_gene != a_gene:
                 overlaps_by_tx_by_gene_by_loc[reg][a_gene] = OrderedDefaultDict(list)
             else:
-                tx = overlap_fields[ebl.BedCols.ENSEMBL_ID]
-                overlaps_by_tx_by_gene_by_loc[reg][e_gene][tx].append((overlap_fields, overlap_size))
+                transcript_id = overlap_fields[ebl.BedCols.ENSEMBL_ID]
+                overlaps_by_tx_by_gene_by_loc[reg][e_gene][transcript_id].append((overlap_fields, overlap_size))
 
     info('  Total annotated regions: ' + str(total_annotated))
     info('  Total unique annotated regions: ' + str(total_uniq_annotated))

@@ -16,6 +16,7 @@ requirements:
     - python >=3.6
     - numpy
     - six
+    - ngs_utils
   run:
     - python >=3.6
     - six
@@ -32,6 +33,8 @@ requirements:
     - lxml
     - xlsxwriter >=0.5.5
     - natsort
+    - click
+    - ngs_utils
 
 test:
   imports:

@@ -21,8 +21,9 @@ class BedCols:
     HUGO, \
     TX_OVERLAP_PERCENTAGE, \
     EXON_OVERLAPS_PERCENTAGE, \
-    CDS_OVERLAPS_PERCENTAGE \
-        = cols = range(14)
+    CDS_OVERLAPS_PERCENTAGE, \
+    ORIGINAL_FIELDS \
+        = cols = range(15)
 
     names = {
         CHROM: '#Chrom',
@@ -41,6 +42,7 @@ class BedCols:
         # EXON_OVERLAPS_BASES: 'Exon_overlaps_bp',
         EXON_OVERLAPS_PERCENTAGE: 'Exon_overlaps_%',
         CDS_OVERLAPS_PERCENTAGE: 'CDS_overlaps_%',
+        ORIGINAL_FIELDS: 'Ori_Fields',
     }
 
 def check_genome(genome):
