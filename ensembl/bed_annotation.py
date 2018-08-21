@@ -50,8 +50,8 @@ canon_tx_by_gname = dict()
 
 
 def annotate(input_bed_fpath, output_fpath, work_dir, genome=None,
-             reannotate=True, high_confidence=False, only_canonical=False, cds_only=False,
-             short=False, extended=False, is_debug=False, **kwargs):
+             reannotate=True, high_confidence=False, only_canonical=False,
+             coding_only=False, short=False, extended=False, is_debug=False, **kwargs):
 
     debug('Getting features from storage')
     features_bed = ebl.get_all_features(genome)
@@ -88,7 +88,7 @@ def annotate(input_bed_fpath, output_fpath, work_dir, genome=None,
         features_bed = features_bed.filter(ebl.high_confidence_filter)
     if only_canonical:
         features_bed = features_bed.filter(ebl.get_only_canonical_filter(genome))
-    if cds_only:
+    if coding_only:
         features_bed = features_bed.filter(ebl.protein_coding_filter)
     # unique_tx_by_gene = find_best_tx_by_gene(features_bed)
 

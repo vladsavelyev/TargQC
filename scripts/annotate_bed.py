@@ -22,17 +22,17 @@ from ngs_utils.logger import debug
 @click.option('-g', 'genome', default='GRCh37', type=click.Choice(ebl.SUPPORTED_GENOMES), help='Genome build')
 @click.option('--canonical', '--only-canonical', is_flag=True, help='Use only features from canonical transcripts to annotate')
 @click.option('--short', is_flag=True, help='Add only "Gene" column (outputa 4-col BED file instead of 6-col)')
-@click.option('--cds-only', is_flag=True, help='Use only CDS to annotate')
 @click.option('-e', '--extended', is_flag=True, help='Output additional columns: transcript, GC, overlap size...')
 @click.option('--high-confidence', is_flag=True, help='Annotate with only high confidence regions (TSL is 1 or NA, with HUGO symbol, total overlap size > 50%)')
 @click.option('-a', '--ambiguities', '--ambiguities-method', type=click.Choice(['best_one', 'best_ask', 'best_all', 'all_ask', 'all']), default='best_all',
               help='How to resolve ambuguios overlaps with reliable transcripts for a single region')
-@click.option('--collapse-exons', is_flag=False)
+@click.option('--coding-only', is_flag=True, help='Use only protein coding genes to annotate')
+@click.option('--collapse-exons', is_flag=True)
 @click.option('--work-dir', default=None, type=click.Path())
 @click.option('-d', '--debug', '--is-debug', is_flag=True)
 def main(input_bed, output_file, output_features=False, genome=None,
-         only_canonical=False, short=False, cds_only=False, extended=False, high_confidence=False,
-         ambiguities_method=False, collapse_exons=False, work_dir=False, is_debug=False):
+         only_canonical=False, short=False, extended=False, high_confidence=False,
+         ambiguities_method=False, coding_only=False, collapse_exons=False, work_dir=False, is_debug=False):
     """ Annotating BED file based on reference features annotations.
     """
     logger.init(is_debug_=is_debug)
@@ -68,8 +68,8 @@ def main(input_bed, output_file, output_features=False, genome=None,
         input_bed, output_file, work_dir, genome=genome,
         only_canonical=only_canonical, short=short, extended=extended,
         high_confidence=high_confidence, collapse_exons=collapse_exons,
-        output_features=output_features, cds_only=cds_only,
-        ambiguities_method=ambiguities_method,
+        output_features=output_features,
+        ambiguities_method=ambiguities_method, coding_only=coding_only,
         is_debug=is_debug)
 
     if not work_dir:

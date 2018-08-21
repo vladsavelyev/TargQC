@@ -2,3 +2,4 @@
 #       error "Setuptools downloading is disabled in conda build. Be sure to add all dependencies in the meta.yaml"
 $PYTHON setup.py install --single-version-externally-managed --root=/
 chmod -R o+r $PREFIX/lib/python*/site-packages/targqc*
+chmod -R o+r $PREFIX/lib/python*/site-packages/ensembl*
