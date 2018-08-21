@@ -1,7 +1,7 @@
+# TargQC - target capture coverage QC tool
+
 [![Anaconda-Server Badge](https://anaconda.org/vladsaveliev/targqc/badges/installer/conda.svg)](https://conda.anaconda.org/vladsaveliev)
 [![Build Status](https://travis-ci.org/vladsaveliev/TargQC.svg?branch=master)](https://travis-ci.org/vladsaveliev/TargQC)
-
-# TargQC - target capture coverage QC tool
 
 ## Input
 
@@ -91,6 +91,12 @@ Other supported schedulers: Platform LSF ("lsf"), Sun Grid Engine ("sge"), Torqu
 [![Anaconda-Server Badge](https://anaconda.org/vladsaveliev/bed_annotation/badges/installer/conda.svg)](https://conda.anaconda.org/vladsaveliev)
 
 The package provides a script named `annotate_bed.py` that annotates a BED file regions with gene symbols, based on Ensembl data.
+
+### Installation
+
+```
+conda install -c vladsaveliev bed_annotation
+```
 
 ### Usage
 
