@@ -13,7 +13,7 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda env create -n targqc -c vladsaveliev -c bioconda -c conda-forge targqc
+  - conda create -n targqc -c vladsaveliev -c bioconda -c conda-forge targqc
   # Install conda packages
   - source activate targqc
   - conda info -a  # Useful for debugging any issues with conda
