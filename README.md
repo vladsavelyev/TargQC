@@ -86,11 +86,11 @@ If the number of samples is higher than the requested number of jobs, the proces
 Other supported schedulers: Platform LSF ("lsf"), Sun Grid Engine ("sge"), Torque ("torque"), SLURM ("slurm") (see details at https://github.com/roryk/ipython-cluster-helper)
 
 
-# bed_annotation - a tool that assings gene names to regions in a BED file based on Ensembl genomic features overlap
+# BED Annotation
 
 [![Anaconda-Server Badge](https://anaconda.org/vladsaveliev/bed_annotation/badges/installer/conda.svg)](https://conda.anaconda.org/vladsaveliev)
 
-The package provides a script named `annotate_bed.py` that takes a BED file on input, and outputs it with a 4th column containing gene symbols based on Ensembl data.
+A tool that assings gene names to regions in a BED file based on Ensembl genomic features overlap.
 
 ### Installation
 
@@ -104,7 +104,7 @@ conda install -c vladsaveliev bed_annotation
 annotate_bed.py INPUT.bed -g hg19 -o OUTPUT.bed
 ``` 
 
-Script checks each region against the Ensembl genomic features database, and writes a BED file in a standardized format with a gene symbol, strand and exon rank in 4-6th columns:
+The script checks each BED region against the Ensembl genomic features database, and writes a BED file in a standardized format with a gene symbol, strand and exon rank in 4-6th columns:
 
 `INPUT.bed`:
 
