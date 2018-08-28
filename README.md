@@ -88,15 +88,11 @@ Other supported schedulers: Platform LSF ("lsf"), Sun Grid Engine ("sge"), Torqu
 
 # BED Annotation
 
+UPD: Moved into a separate directory [https://github.com/vladsaveliev/bed_annotation](https://github.com/vladsaveliev/bed_annotation)
+
 [![Anaconda-Server Badge](https://anaconda.org/vladsaveliev/bed_annotation/badges/installer/conda.svg)](https://conda.anaconda.org/vladsaveliev)
 
 A tool that assings gene names to regions in a BED file based on Ensembl genomic features overlap.
-
-### Installation
-
-```
-conda install -c vladsaveliev bed_annotation
-```
 
 ### Usage
 
