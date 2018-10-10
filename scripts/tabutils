@@ -1,0 +1,38 @@
+#!/bin/bash
+
+if [ "$1" == "" ] || [ "$1" == "help" ] && [ "$2" == "" ]; then
+    echo "Usage: tabutils COMMAND"
+    echo ""
+    echo "Commands"
+    echo "    filter  - Filters a tab-delmited file based upon critera"
+    echo "    merge   - Merges tab-delimited files together, combining common columns"
+    echo "    reorder - Re-orders columns in a tab-delimited file"
+    echo "    view    - A data aware tab-delimited file viewer"
+    echo ""
+    echo "    less   - view | less -S"
+    echo ""
+    echo "See 'tabutils help CMD' for more information about a specific command"
+    exit -1
+fi
+
+LIBS=`python -c 'import tab_utils, os; print(os.path.dirname(tab_utils.__file__))'`
+
+if [ "$1" == "help" ]; then
+    action=tab_$2.py
+    if [ ! -e "$LIBS"/$action ]; then
+        echo "Unknown command '$2'"
+        exit 1
+    fi
+    python "$LIBS"/$action -h
+elif [ "$1" == "less" ]; then
+    python "$LIBS"/tab_view.py $@ 2> /dev/null | less -S
+else
+    action=tab_$1.py
+    if [ ! -e "$LIBS"/$action ]; then
+        echo "Unknown command '$1'"
+        exit 1
+    fi
+    shift
+
+    python "$LIBS"/$action $@
+fi

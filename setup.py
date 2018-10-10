@@ -44,6 +44,9 @@ setup(
     scripts=[
         join('scripts', script_name),
         join('scripts', 'annotate_bed.py'),
+        join('scripts', 'cols'),
+        join('scripts', 'tsv'),
+        join('scripts', 'tabutils'),
     ],
     install_requires=setup_utils.get_reqs(),
     setup_requires=['numpy'],
