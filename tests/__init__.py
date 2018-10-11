@@ -7,6 +7,9 @@ from os.path import dirname, join, exists, isfile, splitext, basename, isdir, re
 from targqc.utilz.testing import BaseTestCase, info, check_call, swap_output
 
 
+ONLY_DIFF=False
+
+
 class BaseTargQC(BaseTestCase):
     script = 'targqc'
 
@@ -67,17 +70,19 @@ class BaseTargQC(BaseTestCase):
         if keep_work_dir: cmdl.append('--keep-work-dir')
 
         output_dir = output_dir or self._default_output_dir()
-        if reuse_output_dir is False:
-            swap_output(output_dir)
 
-        info('-' * 100)
-        check_call(cmdl)
-        info('-' * 100)
-        info('')
+        if not ONLY_DIFF:
+            if reuse_output_dir is False:
+                swap_output(output_dir)
+
+            info('-' * 100)
+            check_call(cmdl)
+            info('-' * 100)
+            info('')
 
         self._check_results(output_dir, used_samples)
 
-        if self.remove_work_dir_on_success and not reuse_intermediate and not reuse_output_dir:
+        if not ONLY_DIFF and self.remove_work_dir_on_success and not reuse_intermediate and not reuse_output_dir:
             work_dir = join(output_dir, 'work')
             if not isdir(work_dir):
                 info('Work dir for run ' + output_dirname + ' does not exist under ' + work_dir)
