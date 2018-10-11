@@ -82,10 +82,10 @@ def combined_regional_reports(work_dir, output_dir, samples):
             for s in samples:
                 if s.targqc_region_tsv and verify_file(s.targqc_region_tsv):
                     with open(s.targqc_region_tsv) as tsv_in:
-                        for l in tsv_in:
-                            if l.startswith('#'):
-                                if not l.startswith('##') and sample_i == 0:
-                                    tsv_out.write('#Sample\t' + l[1:])
+                        for i, l in enumerate(tsv_in):
+                            if i == 0:
+                                if sample_i == 0:
+                                    tsv_out.write('sample\t' + l)
                             else:
                                 tsv_out.write(s.name + '\t' + l)
                     sample_i += 1

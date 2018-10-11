@@ -77,6 +77,13 @@ def get_all_features(genome, high_confidence=False, features=None, gene_names=No
             r.chrom = r.chrom.replace('chrM', 'MT').replace('chr', '')
             return r
         bed = bed.each(fix_chr)
+
+    # selecting columns up to TX_OVERLAP_PERCENTAGE (to remove Hugo)
+    def _select_cols(r):
+        r = r[:len(BedCols.cols)-4]
+        return r
+    bed = bed.each(_select_cols)
+
     return bed
 
 def get_merged_cds(genome):

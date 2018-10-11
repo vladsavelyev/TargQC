@@ -78,7 +78,7 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                     #wn_20_pcnt_col = fs.index('percentWithin20PercentOfMedian') if 'percentWithin20PercentOfMedian' in fs else None
 
                     write_line(out, [
-                        'chr',
+                        'chrom',
                         'start',
                         'end',
                         'size',
