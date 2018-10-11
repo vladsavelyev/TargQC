@@ -70,32 +70,33 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                 fs = line.strip('\n').split('\t')
                 if line.startswith('#'):
                     fs = line.split('\t')
-                    read_count_col = fs.index('readCount')
-                    mean_cov_col = fs.index('meanCoverage')
-                    median_cov_col = fs.index('medianCoverage') if 'medianCoverage' in fs else None
-                    min_depth_col = fs.index('minDepth') if 'minDepth' in fs else None
-                    std_dev_col = fs.index('stdDev') if 'stdDev' in fs else None
-                    wn_20_pcnt_col = fs.index('percentWithin20PercentOfMedian') if 'percentWithin20PercentOfMedian' in fs else None
+                    read_count_col = fs.index('readCount') + 1
+                    mean_cov_col = fs.index('meanCoverage') + 1
+                    #median_cov_col = fs.index('medianCoverage') if 'medianCoverage' in fs else None
+                    #min_depth_col = fs.index('minDepth') if 'minDepth' in fs else None
+                    #std_dev_col = fs.index('stdDev') if 'stdDev' in fs else None
+                    #wn_20_pcnt_col = fs.index('percentWithin20PercentOfMedian') if 'percentWithin20PercentOfMedian' in fs else None
 
                     write_line(out, [
-                        '#Chr',
-                        'Start',
-                        'End',
-                        'Size',
-                        'Gene',
-                        'Exon',
-                        'Strand',
-                        'Feature',
-                        'Biotype',
-                        'Transcript',
-                        'Tx overlap',
-                        'Exome overlap',
-                        'Min depth',
-                        'Avg depth',
-                        'Median depth',
-                        'Std dev',
-                        'W/n 20% of median',
-                    ] + ['{}x'.format(ths) for ths in depth_thresholds])
+                        'chr',
+                        'start',
+                        'end',
+                        'size',
+                        'gene',
+                        'exon',
+                        'strand',
+                        'feature',
+                        'biotype',
+                        'transcript',
+                        'trx_overlap',
+                        'exome_overlap',
+                        'cds_overlap',
+                        # 'min_depth',
+                        'avg_depth',
+                        # 'median_depth',
+                        # 'std_dev',
+                        # 'within_20pct_of_median',
+                    ] + ['at{}x'.format(ths) for ths in depth_thresholds])
                     continue
 
                 chrom = fs[0]
@@ -109,15 +110,16 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                 transcript = fs[ebl.BedCols.ENSEMBL_ID]
                 transcript_overlap = fs[ebl.BedCols.TX_OVERLAP_PERCENTAGE]
                 exome_overlap = fs[ebl.BedCols.EXON_OVERLAPS_PERCENTAGE]
+                cds_overlap = fs[ebl.BedCols.CDS_OVERLAPS_PERCENTAGE]
                 avg_depth = float(fs[mean_cov_col])
-                min_depth = int(fs[min_depth_col]) if min_depth_col is not None else '.'
-                std_dev = float(fs[std_dev_col]) if std_dev_col is not None else '.'
-                median_depth = int(fs[median_cov_col]) if median_cov_col is not None else '.'
-                rate_within_normal = float(fs[wn_20_pcnt_col]) if wn_20_pcnt_col is not None else '.'
+                # min_depth = int(fs[min_depth_col]) if min_depth_col is not None else '.'
+                # std_dev = float(fs[std_dev_col]) if std_dev_col is not None else '.'
+                # median_depth = int(fs[median_cov_col]) if median_cov_col is not None else '.'
+                # rate_within_normal = float(fs[wn_20_pcnt_col]) if wn_20_pcnt_col is not None else '.'
                 last_cov_col = max(mean_cov_col or 0, median_cov_col or 0, std_dev_col or 0, wn_20_pcnt_col or 0)
-                rates_within_threshs = fs[last_cov_col + 1:-1]
+                rates_within_threshs = fs[last_cov_col+1:-1]
 
-                write_line(out, map(str, [
+                write_line(out, [str(v) if v not in ['', None, '.'] else '.' for v in [
                         chrom,
                         start,
                         end,
@@ -130,12 +132,13 @@ def _proc_sambamba_depth(sambamba_depth_output_fpath, output_fpath, sample_name,
                         transcript,
                         ((transcript_overlap + '%') if transcript_overlap not in ['', None, '.'] else '.'),
                         ((exome_overlap + '%') if exome_overlap not in ['', None, '.'] else '.'),
-                        min_depth,
+                        ((cds_overlap + '%') if cds_overlap not in ['', None, '.'] else '.'),
+                        # min_depth,
                         avg_depth,
-                        median_depth,
-                        std_dev,
-                        rate_within_normal,
-                    ] + rates_within_threshs))
+                        # median_depth,
+                        # std_dev,
+                        # rate_within_normal,
+                    ] + rates_within_threshs])
 
                 total_regions_count += 1
                 if total_regions_count > 0 and total_regions_count % 10000 == 0:

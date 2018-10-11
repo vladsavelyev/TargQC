@@ -96,6 +96,7 @@ class Target:
             bed = BedTool(ann_target_bed_fpath).remove_invalid()
             with file_transaction(work_dir, final_clean_target_bed_fpath) as tx:
                 bed.saveas(tx)
+                pass
             verify_file(final_clean_target_bed_fpath, is_critical=True)
 
         self.bed_fpath = final_clean_target_bed_fpath

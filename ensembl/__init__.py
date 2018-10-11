@@ -18,31 +18,29 @@ class BedCols:
     BIOTYPE, \
     ENSEMBL_ID, \
     TSL, \
-    HUGO, \
     TX_OVERLAP_PERCENTAGE, \
     EXON_OVERLAPS_PERCENTAGE, \
     CDS_OVERLAPS_PERCENTAGE, \
     ORIGINAL_FIELDS \
-        = cols = range(15)
+        = cols = range(14)
 
     names = {
-        CHROM: '#Chrom',
-        START: 'Start',
-        END: 'End',
-        GENE: 'Gene',
-        EXON: 'Exon',
-        STRAND: 'Strand',
-        FEATURE: 'Feature',
-        BIOTYPE: 'Biotype',
-        ENSEMBL_ID: 'Ensembl_ID',
-        TSL: 'TSL',
-        HUGO: 'HUGO',
+        CHROM: '#chrom',
+        START: 'start',
+        END: 'end',
+        GENE: 'gene',
+        EXON: 'exon',
+        STRAND: 'strand',
+        FEATURE: 'feature',
+        BIOTYPE: 'biotype',
+        ENSEMBL_ID: 'ens_id',
+        TSL: 'tsl',
         # TX_OVERLAP_BASES: 'Tx_overlap_bp',
-        TX_OVERLAP_PERCENTAGE: 'Tx_overlap_%',
+        TX_OVERLAP_PERCENTAGE: 'tx_overlap_pct',
         # EXON_OVERLAPS_BASES: 'Exon_overlaps_bp',
-        EXON_OVERLAPS_PERCENTAGE: 'Exon_overlaps_%',
-        CDS_OVERLAPS_PERCENTAGE: 'CDS_overlaps_%',
-        ORIGINAL_FIELDS: 'Ori_Fields',
+        EXON_OVERLAPS_PERCENTAGE: 'exon_overlaps_pct',
+        CDS_OVERLAPS_PERCENTAGE: 'cds_overlaps_pct',
+        ORIGINAL_FIELDS: 'ori_fields',
     }
 
 def check_genome(genome):
@@ -62,9 +60,6 @@ def get_all_features(genome, high_confidence=False, features=None, gene_names=No
 
     bed = _get_ensembl_file('ensembl.bed', genome)
     def _filter(x):
-        if high_confidence:
-            if x[BedCols.HUGO] in ['', '.', None]:
-                return False
         if features:
             if x[BedCols.FEATURE] not in features:
                 return False
@@ -75,7 +70,7 @@ def get_all_features(genome, high_confidence=False, features=None, gene_names=No
             if not _canon_filt(x):
                 return False
         return True
-    debug('Filtering BEDTool for: HUGO annotation, specific features, specific genes, canonical')
+    debug('Filtering BEDTool for: specific features, specific genes, canonical')
     bed = bed.filter(_filter)
     if ori_genome.startswith('GRCh'):
         def fix_chr(r):
@@ -235,12 +230,11 @@ def get_hgnc_gene_synonyms():
     return _get('HGNC_gene_synonyms.txt')
 
 def high_confidence_filter(x):
-    return x[BedCols.TSL] in ['1', '2', 'NA', '.', None] and x[BedCols.HUGO] not in ['', '.', None]
+    return x[BedCols.TSL] in ['1', '2', 'NA', '.', None]
 
 def get_only_canonical_filter(genome):
     canon_tx_by_gname = get_canonical_transcripts_ids(genome)
-    return lambda x: x[BedCols.ENSEMBL_ID] == canon_tx_by_gname.get(x[BedCols.HUGO]) or \
-                     x[BedCols.ENSEMBL_ID] == canon_tx_by_gname.get(x[BedCols.GENE])
+    return lambda x: x[BedCols.ENSEMBL_ID] == canon_tx_by_gname.get(x[BedCols.GENE])
 
 def protein_coding_filter(x):
     return x[BedCols.BIOTYPE] == 'protein_coding'

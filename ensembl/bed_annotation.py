@@ -8,12 +8,12 @@ from collections import defaultdict, OrderedDict
 from contextlib import contextmanager
 from os.path import isfile, join, basename
 from pybedtools import BedTool
-from ngs_utils.bed_utils import verify_bed, SortableByChrom, count_bed_cols, sort_bed, clean_bed
-from ngs_utils import reference_data
-from ngs_utils.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file, tx_tmpdir
-from ngs_utils.logger import critical, info
-from ngs_utils.logger import debug
-from ngs_utils.utils import OrderedDefaultDict
+from targqc.utilz.bed_utils import verify_bed, SortableByChrom, count_bed_cols, sort_bed, clean_bed
+from targqc.utilz import reference_data
+from targqc.utilz.file_utils import file_transaction, adjust_path, safe_mkdir, verify_file, tx_tmpdir
+from targqc.utilz.logger import critical, info
+from targqc.utilz.logger import debug
+from targqc.utilz.utils import OrderedDefaultDict
 
 
 def bed_chrom_order(bed_fpath):
@@ -199,9 +199,6 @@ def _format_field(value):
 #         tsl1_txs = [tx for tx in txs if tx[ebl.BedCols.TSL] in ['1', 'NA']]
 #         if tsl1_txs:
 #             txs = tsl1_txs[:]
-#         hugo_txs = [tx for tx in txs if tx[ebl.BedCols.HUGO]]
-#         if hugo_txs:
-#             txs = hugo_txs[:]
 #         best_tx = max(txs, key=lambda tx_: int(tx_[ebl.BedCols.END]) - int(tx_[ebl.BedCols.START]))
 #         unique_tx_by_gene[g] = best_tx[ebl.BedCols.ENSEMBL_ID]
 #     return unique_tx_by_gene
@@ -228,15 +225,12 @@ def tx_priority_sort_key(x):
 
     tsl_key = {'1': 0, '2': 2, '3': 3, '4': 4, '5': 5}.get(x[ebl.BedCols.TSL], 1)
 
-    hugo_key = 0 if x[ebl.BedCols.HUGO] not in ['.', '', None] else 1
-
-    is_canon = x[ebl.BedCols.ENSEMBL_ID] == canon_tx_by_gname.get(x[ebl.BedCols.HUGO]) or \
-               x[ebl.BedCols.ENSEMBL_ID] == canon_tx_by_gname.get(x[ebl.BedCols.GENE])
+    is_canon = x[ebl.BedCols.ENSEMBL_ID] == canon_tx_by_gname.get(x[ebl.BedCols.GENE])
     canon_tx_key = 0 if is_canon else 1
     
     length_key = -(int(x[ebl.BedCols.END]) - int(x[ebl.BedCols.START]))
 
-    return overlap_key, biotype_key, tsl_key, hugo_key, canon_tx_key, length_key
+    return overlap_key, biotype_key, tsl_key, canon_tx_key, length_key
 
 
 # def select_best_tx(overlaps_by_tx):
@@ -244,9 +238,6 @@ def tx_priority_sort_key(x):
 #     tsl1_overlaps = [(o, size) for (o, size) in tx_overlaps if o[ebl.BedCols.TSL] in ['1', 'NA']]
 #     if tsl1_overlaps:
 #         tx_overlaps = tsl1_overlaps
-#     hugo_overlaps = [(o, size) for (o, size) in tx_overlaps if o[ebl.BedCols.HUGO]]
-#     if hugo_overlaps:
-#         tx_overlaps = hugo_overlaps
 #     (best_overlap, size) = max(sorted(tx_overlaps, key=lambda (o, size): int(o[ebl.BedCols.END]) - int(o[ebl.BedCols.START])))
 #     tx_id = best_overlap[ebl.BedCols.ENSEMBL_ID]
 #     return tx_id
@@ -330,7 +321,6 @@ def _resolve_ambiguities(overlaps_by_tx_by_gene_by_loc, chrom_order,
                     consensus[ebl.BedCols.BIOTYPE] = fields[ebl.BedCols.BIOTYPE]
                     consensus[ebl.BedCols.ENSEMBL_ID] = fields[ebl.BedCols.ENSEMBL_ID]
                     consensus[ebl.BedCols.TSL] = fields[ebl.BedCols.TSL]
-                    consensus[ebl.BedCols.HUGO] = fields[ebl.BedCols.HUGO]
                     # consensus[ebl.BedCols.TX_OVERLAP_BASES] = c_overlap_bp
                     consensus[ebl.BedCols.TX_OVERLAP_PERCENTAGE] = c_overlap_pct
 
@@ -368,18 +358,6 @@ def _resolve_ambiguities(overlaps_by_tx_by_gene_by_loc, chrom_order,
         if output_features:
             annotated.extend(features)
     return annotated
-
-
-@contextmanager
-def bedtools_tmpdir(work_dir):
-    with tx_tmpdir(work_dir) as tmpdir:
-        orig_tmpdir = tempfile.gettempdir()
-        pybedtools.set_tempdir(tmpdir)
-        yield
-        if orig_tmpdir and os.path.exists(orig_tmpdir):
-            pybedtools.set_tempdir(orig_tmpdir)
-        else:
-            tempfile.tempdir = None
 
 
 def _annotate(bed, ref_bed, chr_order, fai_fpath, work_dir, ori_col_num,
@@ -432,7 +410,7 @@ def _annotate(bed, ref_bed, chr_order, fai_fpath, work_dir, ori_col_num,
 
         overlap_fields = [None for _ in ebl.BedCols.cols]
 
-        overlap_fields[:len(intersection_fields[ori_col_num:])] = intersection_fields[ori_col_num:]
+        overlap_fields[:len(intersection_fields[ori_col_num:-1])] = intersection_fields[ori_col_num:-1]
         keep_gene_column = not reannotate
         a_gene = None
         if keep_gene_column:
@@ -458,7 +436,7 @@ def _annotate(bed, ref_bed, chr_order, fai_fpath, work_dir, ori_col_num,
                 total_uniq_annotated += 1
                 met.add((a_chr, a_start, a_end))
 
-            e_gene = overlap_fields[ebl.BedCols.GENE] if not high_confidence else overlap_fields[ebl.BedCols.HUGO]
+            e_gene = overlap_fields[ebl.BedCols.GENE]
             if keep_gene_column and e_gene != a_gene:
                 overlaps_by_tx_by_gene_by_loc[reg][a_gene] = OrderedDefaultDict(list)
             else:

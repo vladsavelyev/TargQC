@@ -12,7 +12,34 @@
 
 - `summary.html` – sample-level coverage statistics and plots.
 - `summary.tsv` – sample-level coverage, parsable version
-- `regions.txt` – region-level coverage statistics.
+- `regions.tsv` – region-level coverage statistics.
+
+To view `regions.tsv` contents in a nice aligned table, you can use `tsv` command, e.g.:
+
+```
+tsv regions.tsv
+chr    start     end       size  gene          exon        strand  feature  biotype                             transcript       trx_overlap  exome_overlap  cds_overlap  avg_depth  at1x     at5x     at10x     at20x    at50x     at100x   at250x   at500x   at1000x  at5000x  at10000x  at50000x
+chr21  9907173   9907501   328   TEKT4P2       3           -       capture  transcribed_unprocessed_pseudogene  ENST00000400754  95.1%        95.1%          0%           115.137    100      100      100       100      100       66.7683  0        0        0        0        0         0
+chr21  10863011  10863111  100   IGHV1OR21-1   2           +       capture  IG_V_gene                           ENST00000559480  56.0%        56.0%          53.0%        106.93     100      100      100       100      100       100      0        0        0        0        0         0
+chr21  10910285  10910401  116   TPTE          22          -       capture  protein_coding                      ENST00000361285  100.0%       80.2%          80.2%        36.3621    100      100      100       100      0         0        0        0        0        0        0         0
+```
+
+Or you can use bioawk (`conda install -c bioconda bioawk`) to query certain columns with:
+
+```
+cat ./tests/gold_standard/bed3/syn3-tumor/regions.tsv | bioawk -tc hdr '{ print $chr, $start, $end, $gene, $avg_depth, $at100x }' | tsv
+chr    start     end       gene        avg_depth  at100x
+chr21  9907173   9907501   TEKT4P2     115.137    66.7683
+chr21  10863011  10863111  IGHV1OR21-1 106.93     100    
+chr21  10910285  10910401  TPTE        36.3621    0      
+```
+
+## Columns explanation
+ 
+- `trx_overlap`, `exome_overlap`, `cds_overlap` - percentage of the region that overlaps transcripts, exons, or CDS (coding regions) in Ensembl database, correspondingly.
+
+- `at1x`, `at5x`, etc - percentage of the region that is covered at least at this depth (1x, 5x) by reads, excluding duplicated, quality-failed, secondary and supplemetrary aligned reads.
+
 
 ## Installation
 
@@ -100,3 +127,4 @@ UPD: Moved into a separate repository [https://github.com/vladsaveliev/bed_annot
 Build a web-page with size-proportional Venn diagrams for an unlimited set of BED files:
 
 UPD: Moved into a separate repository [https://github.com/vladsaveliev/Venn](https://github.com/vladsaveliev/Venn)
+
