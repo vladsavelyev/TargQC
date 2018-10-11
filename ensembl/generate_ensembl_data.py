@@ -106,7 +106,7 @@ Usage:
             # fs[ebl.BedCols.REFSEQ_ID] = refseq_id or '.'
             # fs[ebl.BedCols.IS_CANONICAL] = 'canonical' if refseq_id in canonical_transcripts_ids else ''
             fs[ebl.BedCols.TSL] = tsl or '.'
-            fs[ebl.BedCols.HUGO] = hugo_gene or '.'
+            # fs[ebl.BedCols.HUGO] = hugo_gene or '.'
             # fs[ebl.BedCols.names[ensembl.BedCols.GC]] = gc
             out.write('\t'.join(fs) + '\n')
 

@@ -163,7 +163,7 @@ class Target:
         debug('Select best transcript to report')
         for r in all_features:
             if r[ebl.BedCols.FEATURE] != 'gene':
-                gene = r[ebl.BedCols.HUGO]
+                gene = r[ebl.BedCols.GENE]
                 tx = r[ebl.BedCols.ENSEMBL_ID]
                 r_by_tx_by_gene[gene][tx].append(r.fields)
 
