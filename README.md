@@ -45,9 +45,23 @@ chr21  10910285  10910401  TPTE        36.3621    0
 
 ### From conda
 
+Install miniconda if not already:
+
+```
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh   # linux
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh  # macos
+bash miniconda.sh -b -p ./miniconda
+unset PYTHONPATH
+export PATH=$(pwd)/miniconda/bin:$PATH
+conda activate base  # or create an environment with `conda env create -n targqc`
+```
+
+Install targqc:
+
 ```
 conda install -c vladsaveliev -c bioconda -c conda-forge targqc
 ```
+
 
 ### From source
 
