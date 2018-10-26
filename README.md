@@ -46,10 +46,12 @@ chr21  10910285  10910401  TPTE        36.3621    0
 ### From conda
 
 ```
-conda install -c vladsaveliev targqc
+conda install -c vladsaveliev -c bioconda -c conda-forge targqc
 ```
 
 ### From source
+
+This approach assumes you have dependencies like qualimap, bedtools, sambamba already installed on your system and available in PATH.
 
 ```
 git clone --recursive https://github.com/vladsaveliev/TargQC
