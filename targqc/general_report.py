@@ -440,14 +440,14 @@ def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
     _add('Mapped reads', reads_stats['mapped'])
     # _add('Unmapped reads', reads_stats['totaAvgl'] - reads_stats['mapped'])
     percent_mapped = 1.0 * (reads_stats['mapped'] or 0) / reads_stats['total'] if reads_stats['total'] else None
-    assert percent_mapped <= 1.0 or percent_mapped is None, str(percent_mapped)
+    if percent_mapped > 1.0: percent_mapped = 1.0
     _add('Percentage of mapped reads', percent_mapped)
     # percent_unmapped = 1.0 * (reads_stats['total'] - reads_stats['mapped']) / reads_stats['total'] if reads_stats['total'] else None
     # assert percent_unmapped <= 1.0 or percent_unmapped is None, str(percent_unmapped)
     # _add('Percentage of unmapped reads', percent_unmapped)
     if reads_stats.get('mapped_paired') is not None:
         total_paired_reads_pecent = 1.0 * (reads_stats['mapped_paired'] or 0) / reads_stats['total'] if reads_stats['total'] else None
-        assert total_paired_reads_pecent <= 1.0 or total_paired_reads_pecent is None, str(total_paired_reads_pecent)
+        if total_paired_reads_pecent > 1.0: total_paired_reads_pecent = 1.0
         _add('Properly paired mapped reads percent', total_paired_reads_pecent)
     # if reads_stats.get('paired') is not None:
     #     total_paired_reads_pecent = 1.0 * (reads_stats['paired'] or 0) / reads_stats['total'] if reads_stats['total'] else None
@@ -487,8 +487,7 @@ def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
         bases_within_threshs = depth_stats['bases_within_threshs']
         v_covered_bases_in_targ = list(bases_within_threshs.items())[0][1]
         v_percent_covered_bases_in_targ = 1.0 * (v_covered_bases_in_targ or 0) / target.bases_num if target.bases_num else None
-        assert v_percent_covered_bases_in_targ <= 1.0 or v_percent_covered_bases_in_targ is None, str(v_percent_covered_bases_in_targ)
-
+        if v_percent_covered_bases_in_targ > 1.0: v_percent_covered_bases_in_targ = 1.0
         _add('Covered bases in ' + trg_type, v_covered_bases_in_targ)
         _add('Percentage of ' + trg_type + ' covered by at least 1 read', v_percent_covered_bases_in_targ)
 
@@ -499,16 +498,16 @@ def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
             # _add('Reads mapped on target', reads_stats['mapped_on_target'])
             debug('Unique mapped reads on target: ' + str(reads_stats['mapped_dedup_on_target']))
             percent_mapped_dedup_on_target = 1.0 * reads_stats['mapped_dedup_on_target'] / reads_stats['mapped_dedup'] if reads_stats['mapped_dedup'] != 0 else None
+            if percent_mapped_dedup_on_target > 1.0: percent_mapped_dedup_on_target = 1.0
             _add('Percentage of reads mapped on target', percent_mapped_dedup_on_target)
-            assert percent_mapped_dedup_on_target <= 1.0 or percent_mapped_dedup_on_target is None, str(percent_mapped_dedup_on_target)
 
             percent_mapped_dedup_off_target = 1.0 * (reads_stats['mapped_dedup'] - reads_stats['mapped_dedup_on_target']) / reads_stats['mapped_dedup'] if reads_stats['mapped_dedup'] != 0 else None
+            if percent_mapped_dedup_off_target > 1.0: percent_mapped_dedup_off_target = 1.0
             _add('Percentage of reads mapped off target', percent_mapped_dedup_off_target)
-            assert percent_mapped_dedup_off_target <= 1.0 or percent_mapped_dedup_off_target is None, str(percent_mapped_dedup_off_target)
 
             percent_usable = 1.0 * reads_stats['mapped_dedup_on_target'] / reads_stats['total'] if reads_stats['total'] != 0 else None
+            if percent_usable > 1.0: percent_usable = 1.0  # for edge case where multimappers cause number of alignments to be higher than number of reads
             _add('Percentage of usable reads', percent_usable)
-            assert percent_usable <= 1.0 or percent_usable is None, str(percent_usable)
 
         read_bases_on_targ = int(target.bases_num * depth_stats['ave_depth'])  # sum of all coverages
         _add('Read bases mapped on target', read_bases_on_targ)
@@ -516,21 +515,21 @@ def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
         if 'mapped_dedup_on_padded_target' in reads_stats:
             # _add('Reads mapped on padded target', reads_stats['mapped_reads_on_padded_target'])
             percent_mapped_on_padded_target = 1.0 * reads_stats['mapped_dedup_on_padded_target'] / reads_stats['mapped_dedup'] if reads_stats['mapped_dedup'] else None
+            if percent_mapped_on_padded_target > 1.0: percent_mapped_on_padded_target = 1.0
             _add('Percentage of reads mapped on padded target', percent_mapped_on_padded_target)
-            assert percent_mapped_on_padded_target <= 1.0 or percent_mapped_on_padded_target is None, str(percent_mapped_on_padded_target)
 
     elif 'mapped_dedup_on_exome' in reads_stats:
         # _add('Reads mapped on target', reads_stats['mapped_on_target'])
         percent_mapped_on_exome = 1.0 * reads_stats['mapped_dedup_on_exome'] / reads_stats['mapped_dedup'] if reads_stats['mapped_dedup'] != 0 else None
         if percent_mapped_on_exome:
+            if percent_mapped_on_exome > 1.0: percent_mapped_on_exome = 1.0
             _add('Percentage of reads mapped on exome', percent_mapped_on_exome)
-            assert percent_mapped_on_exome <= 1.0 or percent_mapped_on_exome is None, str(percent_mapped_on_exome)
             percent_mapped_off_exome = 1.0 - percent_mapped_on_exome
             _add('Percentage of reads mapped off exome ', percent_mapped_off_exome)
 
         percent_usable = 1.0 * reads_stats['mapped_dedup'] / reads_stats['total'] if reads_stats['total'] != 0 else None
+        if percent_usable > 1.0: percent_usable = 1.0
         _add('Percentage of usable reads', percent_usable)
-        assert percent_usable <= 1.0 or percent_usable is None, str(percent_usable)
 
     debug()
     _add('Mean ' + trg_type + ' coverage depth', depth_stats['ave_depth'])
@@ -545,15 +544,15 @@ def _build_report(depth_stats, reads_stats, mm_indels_stats, sample, target,
     # _add('Minimal ' + trg_type + ' coverage depth', depth_stats['min_depth'])
     # _add('Maximum ' + trg_type + ' coverage depth', depth_stats['max_depth'])
     if 'wn_20_percent' in depth_stats:
+        if depth_stats['wn_20_percent'] > 1.0: depth_stats['wn_20_percent'] = 1.0
         _add('Percentage of ' + trg_type + ' within 20% of med depth', depth_stats['wn_20_percent'])
-        assert depth_stats['wn_20_percent'] <= 1.0 or depth_stats['wn_20_percent'] is None, str(depth_stats['wn_20_percent'])
 
     if 'bases_within_threshs' in depth_stats:
         for depth, bases in depth_stats['bases_within_threshs'].items():
             fraction_val = 1.0 * (bases or 0) / target.bases_num if target.bases_num else 0
+            if fraction_val > 1.0: fraction_val = 1.0
             if fraction_val > 0:
                 _add('Part of ' + trg_type + ' covered at least by ' + str(depth) + 'x', fraction_val)
-            assert fraction_val <= 1.0 or fraction_val is None, str(fraction_val)
     debug()
 
     _add('Read mean length', reads_stats['ave_len'])
