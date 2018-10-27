@@ -9,7 +9,7 @@ source:
   git_rev: master
 
 build:
-  number: 2
+  number: 0
 
 test:
   imports:
@@ -34,7 +34,7 @@ requirements:
     - python ==3.6
     - six
     - qualimap
-    - sambamba
+    - sambamba ==0.6.6  # having issues with 0.6.8 https://github.com/vladsaveliev/TargQC/issues/5#issuecomment-433388616
     - bedtools >=2.25
     - pybedtools
     - nose
